@@ -6,8 +6,14 @@ A desktop horror game built with Electron and a canvas/JS game engine.
 
 ## Download
 
-Prebuilt Windows build: see the [Releases](../../releases) page
-(`FiveNightsAtZayeds-win32-x64.zip` — unzip and run `FiveNightsAtZayeds.exe`).
+Prebuilt builds are on the [Releases](../../releases) page.
+
+- **Windows:** `FiveNightsAtZayeds-win32-x64.zip`. Unzip and run `FiveNightsAtZayeds.exe`.
+- **macOS:** `FiveNightsAtZayeds-mac-arm64.zip` for Apple Silicon (M1 and newer), `FiveNightsAtZayeds-mac-x64.zip` for Intel.
+  Unzip, then **right-click `FiveNightsAtZayeds.app` and choose Open** the first time (the app is not notarised by
+  Apple, so a double-click is refused). If macOS says the app is damaged, run
+  `xattr -cr /path/to/FiveNightsAtZayeds.app` in Terminal once and open it again.
+  Quit with Cmd+Q; fullscreen toggles with F11 (Fn+F11 on most Macs).
 
 ## Run from source
 

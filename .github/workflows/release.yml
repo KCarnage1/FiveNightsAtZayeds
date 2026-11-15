@@ -51,3 +51,42 @@ jobs:
             gh release create "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip \
               --target "$GITHUB_SHA" --title "Five Nights at Zayed's ${TAG#v}" --generate-notes
           fi
+
+  macos:
+    needs: windows # the Windows job creates the release; this one adds its zips to it
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --omit=dev
+
+      - name: Package macOS build
+        run: >
+          npx --yes @electron/packager . FiveNightsAtZayeds
+          --platform=darwin --arch=${{ matrix.arch }} --asar
+          --electron-version=$ELECTRON_VERSION
+          --ignore="^/verity-song-dub \(1\)\.mp4$"
+          --ignore="^/\.github"
+          --out=dist
+
+      # Apple Silicon refuses to start an app whose signature is missing or broken, so sign it ad hoc.
+      # This is not notarised: the first launch needs right-click, Open (see README).
+      - name: Ad-hoc sign
+        run: codesign --force --deep --sign - dist/FiveNightsAtZayeds-darwin-${{ matrix.arch }}/FiveNightsAtZayeds.app
+
+      - name: Zip
+        run: ditto -c -k --sequesterRsrc --keepParent dist/FiveNightsAtZayeds-darwin-${{ matrix.arch }}/FiveNightsAtZayeds.app dist/FiveNightsAtZayeds-mac-${{ matrix.arch }}.zip
+
+      - name: Add to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: gh release upload "$TAG" dist/FiveNightsAtZayeds-mac-${{ matrix.arch }}.zip --clobber
