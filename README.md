@@ -60,6 +60,7 @@ Game traffic is direct peer to peer; PeerJS's public broker is only used for the
 - **Guard vs animatronic:** the host is the guard, the guest plays one animatronic (the other three stay AI).
   Moving uses the normal rules (doors, tablet, Freddy at 4B, Foxy's cooldown) plus a short cooldown
   (`MOVE_COOLDOWN` in `net.js`).
+- Discord shows your online game too (lobby, co-op or guard vs animatronic, and "2 of 2" in the party).
 - The host picks the night, 4/20 or custom AI levels. `Enter` opens chat, `F1`-`F4` send quick messages.
 
 ## Packaging

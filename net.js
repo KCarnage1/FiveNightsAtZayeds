@@ -584,6 +584,25 @@
     });
   }
 
+  /* ---------------- Discord Rich Presence ---------------- */
+  // Called from the game's once-a-second presence update; returns the status to show, or null for the offline one.
+  NET.presence = function (t) {
+    const y = H.y;
+    const connected = !!(conn && conn.open);
+    if (!NET.role) return y && y.screen === 'online' ? { details: 'Online lobby', state: 'Setting up a game' } : null;
+    const party = [connected ? 2 : 1, 2];
+    const name = NET.ani && H.nn ? H.nn[NET.ani] : '';
+    if (!NET.playing) {
+      return { details: 'Online lobby', state: connected ? 'Friend connected, picking settings' : (NET.role === 'host' ? 'Waiting for a friend' : 'Joining a game'), party };
+    }
+    const mode = NET.mode === 'coop' ? 'Co-op guards' : (NET.role === 'guest' ? 'Playing as ' + name : 'Guard vs ' + name);
+    const out = Object.assign({}, t, { party });
+    out.details = 'Online: ' + t.details;
+    if (y.screen === 'game' && !y.dead && !y.paused && !y.blackout) out.state = mode + ', ' + (y.hour === 0 ? 12 : Math.min(6, y.hour)) + ' AM';
+    else if (y.screen === 'game') out.state = mode + '. ' + t.state;
+    return out;
+  };
+
   /* ---------------- chat & leaving ---------------- */
   function sendChat(text) {
     text = text.trim().slice(0, 120);

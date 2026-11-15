@@ -64,6 +64,10 @@ ipcMain.on('fnaz:presence', (e, p) => {
   if (!p || typeof p !== 'object' || rpc.status === 'off') return;
   const a = { details: text(p.details, 100), state: text(p.state, 100), largeImageKey: 'logo', largeImageText: "Five Nights at Zayed's", instance: false };
   if (Number.isFinite(p.since)) a.startTimestamp = Math.round(p.since);
+  if (Array.isArray(p.party)) { // online play: shows "(1 of 2)" on the Discord card
+    const [size, max] = p.party.map((n) => Math.round(Number(n)));
+    if (size >= 1 && max >= size && max <= 10) { a.partySize = size; a.partyMax = max; }
+  }
   rpc.latest = a;
   rpcFlush();
 });
