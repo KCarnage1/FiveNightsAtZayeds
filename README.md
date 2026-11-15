@@ -27,6 +27,7 @@ Requires Node.js 18+.
 | `index.html` / `styles.css` | Shell and menus |
 | `game.bundle.js` | Bundled game logic |
 | `audio.js` | Sound manager |
+| `net.js`, `peerjs.min.js` | Online play (WebRTC peer to peer via PeerJS) |
 | `assets/` | Faces, voice lines, music, video, fonts |
 | `discord.json` | Discord application ID for Rich Presence |
 
@@ -43,6 +44,17 @@ Electron user-data folder and applied at the next launch (VSync is disabled when
 uncapped).
 
 **Controls:** `F11` toggles fullscreen.
+
+## Online play
+
+Main menu, **Online**. One player hosts and shares the 4-letter room code; the other joins with it.
+Game traffic is direct peer to peer; PeerJS's public broker is only used for the handshake.
+
+- **Co-op guards:** both players are guards in the same office and share doors, lights, power and the tablet.
+- **Guard vs animatronic:** the host is the guard, the guest plays one animatronic (the other three stay AI).
+  Moving uses the normal rules (doors, tablet, Freddy at 4B, Foxy's cooldown) plus a short cooldown
+  (`MOVE_COOLDOWN` in `net.js`).
+- The host picks the night, 4/20 or custom AI levels. `Enter` opens chat, `F1`-`F4` send quick messages.
 
 ## Packaging
 

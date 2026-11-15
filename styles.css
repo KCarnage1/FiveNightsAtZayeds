@@ -291,3 +291,42 @@ input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
 .fps { position: absolute; right: 40px; bottom: 28px; font: 600 22px var(--osd); color: var(--paper-dim); display: none; }
 .fps.on { display: block; }
 .hud.dark > .fps { display: none; }
+
+/* ---------- online play ---------- */
+#online.screen { padding-top: 44px; }
+#online h3 { font: 400 30px var(--display); margin: 0 0 12px; }
+.ol-or { font-size: 24px; color: var(--paper-dim); }
+#olCode { width: 150px; font: 400 34px var(--display); letter-spacing: .15em; text-align: center; text-transform: uppercase; background: var(--ink-2); color: var(--paper); border: 2px solid var(--paper-dim); border-radius: var(--r); padding: 8px 10px; user-select: text; }
+#olCode:focus-visible, #olNight:focus-visible, #netChatIn:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+.ol-status { font-size: 30px; margin: 6px 0 26px; min-height: 40px; }
+.ol-grid { display: grid; grid-template-columns: 640px 560px; gap: 50px; margin-bottom: 30px; }
+.ol-col.ro { opacity: .75; }
+.ol-line { display: flex; gap: 20px; align-items: center; font-size: 24px; margin: 16px 0; }
+#olNight { font: 600 22px var(--ui); background: var(--ink-2); color: var(--paper); border: 2px solid var(--paper-dim); border-radius: var(--r); padding: 6px 12px; }
+.ol-levels { display: grid; gap: 6px; font-size: 22px; }
+.ol-lv { display: grid; grid-template-columns: 110px 1fr 44px; gap: 14px; align-items: center; }
+.ol-lv output { text-align: right; font-variant-numeric: tabular-nums; }
+#olRoom .hint { margin: 10px 0 0; font-size: 20px; color: var(--paper-dim); max-width: 600px; line-height: 1.35; }
+
+#netChat { position: absolute; left: 24px; bottom: 150px; width: 520px; z-index: 30; pointer-events: none; text-shadow: 0 2px 6px #000; font-size: 22px; }
+#netChat[hidden], #netHud[hidden], #netToast[hidden] { display: none; }
+#netLog { display: flex; flex-direction: column; gap: 4px; }
+.ol-msg { transition: opacity 1.5s; }
+.ol-msg.old { opacity: 0; }
+.ol-msg.me { color: var(--paper); }
+.ol-msg.them { color: #8fe3ff; }
+.ol-msg.sys { color: var(--paper-dim); font-style: italic; }
+#netChatIn { pointer-events: auto; width: 100%; margin-top: 8px; font: 600 22px var(--ui); background: rgba(18, 13, 16, .9); color: var(--paper); border: 2px solid var(--paper-dim); border-radius: var(--r); padding: 6px 10px; user-select: text; }
+#netHint { font-size: 16px; color: var(--paper-dim); margin-top: 6px; opacity: .7; }
+#online.screen.active ~ #netChat { bottom: 24px; }
+#netToast { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); z-index: 60; background: var(--danger); color: #fff; padding: 12px 26px; border-radius: var(--r); font-size: 26px; text-shadow: none; }
+
+/* the animatronic player sees through the cameras, so the guard's controls are hidden */
+#netHud { position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%); z-index: 25; text-align: center; background: rgba(18, 13, 16, .82); padding: 14px 26px; border-radius: var(--r); min-width: 520px; }
+.ni-name { font: 400 32px var(--display); }
+.ni-info { font-size: 22px; color: var(--paper-dim); margin: 4px 0 8px; }
+.ni-cd { font-size: 22px; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.ni-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.ni-btns button { pointer-events: auto; }
+.ni-btns button:disabled { opacity: .45; }
+body.role-ani #bar, body.role-ani #keys, body.role-ani #call { display: none !important; }
