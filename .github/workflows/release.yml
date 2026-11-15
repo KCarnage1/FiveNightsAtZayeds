@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing tag to build and publish (e.g. v3.0.1)
+        description: Tag to publish (created on the commit this runs on if it does not exist), e.g. v1.0.0
         required: true
 
 permissions:
@@ -20,8 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -51,5 +49,5 @@ jobs:
             gh release upload "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip --clobber
           else
             gh release create "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip \
-              --verify-tag --title "Five Nights at Zayed's ${TAG#v}" --generate-notes
+              --target "$GITHUB_SHA" --title "Five Nights at Zayed's ${TAG#v}" --generate-notes
           fi
