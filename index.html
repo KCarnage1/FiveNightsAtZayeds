@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Five Nights at Zayed's</title>
+<link rel="preload" href="assets/fonts/titan-one.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main id="stage">
+  <canvas id="gl" width="1600" height="900" aria-label="The shop, seen through Rashid's eyes or a security camera"></canvas>
+
+  <!-- security camera overlay -->
+  <div id="camOverlay" class="cam-overlay">
+    <canvas id="noise" width="320" height="180" aria-hidden="true"></canvas>
+    <div class="scan" aria-hidden="true"></div>
+    <div id="kitchen" class="kitchen"><p>Camera disabled</p><p>Audio only</p><p id="kitchenMsg" class="clatter"></p></div>
+    <div class="cam-label"><div id="camName"></div><div class="cam-sub"><span id="camId"></span><span class="rec"><i aria-hidden="true"></i>REC</span></div></div>
+    <div id="map" class="map" role="group" aria-label="Camera map"></div>
+  </div>
+  <div id="tablet" class="tablet" aria-hidden="true"><div class="tablet-screen"></div></div>
+
+  <!-- in-game HUD -->
+  <div id="hud" class="hud">
+    <div class="hud-time"><div id="clock">12 AM</div><div id="nightLbl">Night 1</div></div>
+    <div class="hud-power">
+      <div id="power">Power 100%</div>
+      <div class="usage-row"><span>Usage</span><span id="usage"></span></div>
+      <div class="doors"><span id="doorWest">West door open</span><span id="doorEast">East door open</span></div>
+    </div>
+    <button id="bar" class="bar" type="button">Cameras <kbd>Space</kbd></button>
+    <div id="call" class="call">
+      <div class="call-who" id="callWho"></div>
+      <p id="callText" aria-live="polite"></p>
+      <button type="button" data-act="muteCall">Hang up <kbd>M</kbd></button>
+    </div>
+    <div id="caption" class="caption" aria-live="polite"></div>
+    <div id="fpsMeter" class="fps" aria-hidden="true"></div>
+    <div id="keys" class="keys"><kbd>A</kbd> <kbd>D</kbd> doors <kbd>Q</kbd> <kbd>E</kbd> lights (hold) <kbd>Space</kbd> cameras <kbd>Esc</kbd> pause</div>
+    <div id="bubble" class="bubble"></div>
+    <img id="halluc" class="halluc" src="assets/faces/scream.png" width="659" height="900" alt="">
+    <div id="scareFlash" class="scare-flash"></div>
+    <div id="fade" class="fade"><div>12:00 AM</div><div id="fadeNight">Night 1</div></div>
+  </div>
+
+  <!-- TITLE: the backdrop is one still frame of the real show stage -->
+  <section id="title" class="screen active" aria-labelledby="logo">
+    <div class="title-block">
+      <h1 id="logo"><span class="logo-small">Five Nights at</span><span class="logo-big">Zayed's</span></h1>
+      <div class="stripe" aria-hidden="true"></div>
+      <p class="tag">Night shift at Salem's Candy. You are Rashid. Every robot is Zayed, and Zayed remembers.</p>
+      <nav class="menu" aria-label="Main menu">
+        <button type="button" data-act="continue" id="btnContinue">Continue</button>
+        <button type="button" data-act="newgame">New game</button>
+        <button type="button" data-act="nights">Time card</button>
+        <button type="button" data-act="custom">Custom night</button>
+        <button type="button" data-act="extras">Staff and robots</button>
+        <button type="button" data-act="help">How to play</button>
+        <button type="button" data-act="settings">Settings</button>
+        <button type="button" data-act="quit" id="btnQuit">Quit</button>
+      </nav>
+    </div>
+    <p class="ver">Version 3.1. Produced by Qerh Cooperations.</p>
+  </section>
+
+  <!-- TIME CARD (night select) -->
+  <section id="nights" class="screen" aria-labelledby="nightsH">
+    <article class="paper timecard">
+      <div class="stripe" aria-hidden="true"></div>
+      <header>
+        <h2 id="nightsH">Time card</h2>
+        <p>Salem's Candy. Employee: Rashid. Position: night guard.</p>
+      </header>
+      <div id="nightGrid" class="rows"></div>
+      <p id="stars" class="stars"></p>
+    </article>
+    <button type="button" class="back" data-act="title">Back</button>
+  </section>
+
+  <!-- CUSTOM NIGHT -->
+  <section id="custom" class="screen" aria-labelledby="customH">
+    <h2 id="customH">Custom night</h2>
+    <p class="lead">Set how restless each Zayed is, from 0 (asleep) to 20 (never stops).</p>
+    <div id="customGrid" class="custom-grid"></div>
+    <div class="row">
+      <button type="button" data-act="preset" data-p="0">All 0</button>
+      <button type="button" data-act="preset" data-p="10">All 10</button>
+      <button type="button" data-act="preset" data-p="20">All 20</button>
+      <button type="button" class="primary" data-act="customGo" data-primary>Clock in</button>
+    </div>
+    <button type="button" class="back" data-act="title">Back</button>
+  </section>
+
+  <!-- STAFF AND ROBOTS -->
+  <section id="extras" class="screen" aria-labelledby="extrasH">
+    <h2 id="extrasH">Staff and robots</h2>
+    <div class="cast">
+      <nav id="castList" class="menu cast-list" aria-label="Cast"></nav>
+      <div class="cast-photo" id="castPhoto"></div>
+      <div class="cast-bio"><h3 id="castName"></h3><p id="castRole" class="cast-role"></p><p id="castBio"></p></div>
+    </div>
+    <button type="button" class="back" data-act="title">Back</button>
+  </section>
+
+  <!-- HOW TO PLAY -->
+  <section id="help" class="screen" aria-labelledby="helpH">
+    <h2 id="helpH">How to play</h2>
+    <div class="help-cols">
+      <div>
+        <p class="lead">Stay alive from 12 AM to 6 AM. Doors, lights and cameras all drain the power. At 0% the shop goes dark.</p>
+        <table class="keys-table">
+          <caption>Controls</caption>
+          <tr><th scope="row"><kbd>Mouse</kbd></th><td>Look around. Click the red door button and the white light button beside each doorway.</td></tr>
+          <tr><th scope="row"><kbd>A</kbd> <kbd>D</kbd></th><td>West door, east door</td></tr>
+          <tr><th scope="row"><kbd>Q</kbd> <kbd>E</kbd></th><td>West light, east light (hold)</td></tr>
+          <tr><th scope="row"><kbd>Space</kbd></th><td>Raise or lower the camera tablet. Hovering the bottom bar also works.</td></tr>
+          <tr><th scope="row"><kbd>1</kbd> to <kbd>0</kbd>, <kbd>R</kbd></th><td>Switch camera. Or click the map.</td></tr>
+          <tr><th scope="row"><kbd>M</kbd></th><td>Hang up the phone</td></tr>
+          <tr><th scope="row"><kbd>Esc</kbd></th><td>Pause</td></tr>
+          <tr><th scope="row"><kbd>F11</kbd></th><td>Fullscreen on or off</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Know your Zayeds</h3>
+        <dl class="rules">
+          <dt>Zayed the Camel</dt><dd>Moves only while the tablet is down. Watch him and he freezes. When he reaches camera 4B, shut the east door.</dd>
+          <dt>Zayed the Cat</dt><dd>West door. Check with the west light. If he is there, shut the door until he leaves.</dd>
+          <dt>Zayed the Goat</dt><dd>East door. Pans in the kitchen mean she is on her way.</dd>
+          <dt>Zayed the Falcon</dt><dd>Lives in the Nest. If the sign says OUT FOR DELIVERY, shut the west door.</dd>
+          <dt>A gold camel in your office</dt><dd>Raise the tablet. Do not look at him.</dd>
+        </dl>
+      </div>
+    </div>
+    <button type="button" class="back" data-act="title">Back</button>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings" class="screen" aria-labelledby="settingsH">
+    <h2 id="settingsH">Settings</h2>
+    <div class="settings">
+      <div class="set-row">
+        <label for="setVolume">Volume</label>
+        <input id="setVolume" type="range" min="0" max="100" step="5">
+        <output id="setVolumeOut" for="setVolume"></output>
+      </div>
+      <fieldset class="set-row">
+        <legend>Graphics</legend>
+        <div class="seg" id="setQuality">
+          <label><input type="radio" name="quality" value="low"><span>Low</span></label>
+          <label><input type="radio" name="quality" value="medium"><span>Medium</span></label>
+          <label><input type="radio" name="quality" value="high"><span>High</span></label>
+        </div>
+        <p class="hint" id="qualityHint"></p>
+      </fieldset>
+      <fieldset class="set-row">
+        <legend>Frame rate</legend>
+        <div class="seg" id="setFpsMode">
+          <label><input type="radio" name="fpsMode" value="auto"><span>Auto</span></label>
+          <label><input type="radio" name="fpsMode" value="custom"><span>Custom</span></label>
+        </div>
+        <p class="hint"><span id="fpsHint"></span> <button type="button" id="btnRestart" data-act="restartGame" hidden>Restart now</button></p>
+      </fieldset>
+      <div class="set-row">
+        <label for="setFps">Frame limit</label>
+        <input id="setFps" type="range" min="30" max="360" step="10">
+        <output id="setFpsOut" for="setFps"></output>
+      </div>
+      <div class="set-row">
+        <label for="setSubs">Subtitles for voice lines</label>
+        <input id="setSubs" type="checkbox">
+      </div>
+      <div class="set-row">
+        <label for="setFpsShow">Show frame rate in game</label>
+        <input id="setFpsShow" type="checkbox">
+      </div>
+      <div class="set-row">
+        <label for="setRpc">Show my night on Discord</label>
+        <input id="setRpc" type="checkbox">
+        <p class="hint" id="rpcHint"></p>
+      </div>
+      <div class="set-row">
+        <span id="resetLbl">Progress</span>
+        <div id="resetBox"><button type="button" data-act="resetAsk" aria-describedby="resetLbl">Erase progress</button></div>
+      </div>
+    </div>
+    <button type="button" class="secret star" data-act="secretStar" aria-label="Star button" title="Star">★</button>
+    <button type="button" class="secret" data-act="secret" aria-label="Mystery button" title="?">?</button>
+    <button type="button" class="back" data-act="settingsBack">Back</button>
+  </section>
+
+  <!-- NEWSPAPER before each night -->
+  <section id="loading" class="screen" aria-label="Tonight's newspaper">
+    <article class="paper news" id="paper"></article>
+    <button type="button" class="primary start" data-act="skip" data-primary id="btnStart">Start shift</button>
+  </section>
+
+  <!-- PAUSE -->
+  <section id="pause" class="screen overlay" aria-labelledby="pauseH">
+    <h2 id="pauseH">Paused</h2>
+    <nav class="menu" aria-label="Pause menu">
+      <button type="button" data-act="resume" data-primary>Resume</button>
+      <button type="button" data-act="retry">Restart night</button>
+      <button type="button" data-act="settings">Settings</button>
+      <button type="button" data-act="title">Quit to menu</button>
+    </nav>
+  </section>
+
+  <!-- GAME OVER: incident report -->
+  <section id="over" class="screen" aria-labelledby="overH">
+    <article class="paper report">
+      <div class="stripe" aria-hidden="true"></div>
+      <h2 id="overH">Incident report</h2>
+      <dl>
+        <dt>Employee</dt><dd>Rashid, night guard</dd>
+        <dt>Shift</dt><dd id="overNight"></dd>
+        <dt>Time</dt><dd id="overTime"></dd>
+        <dt>Cause</dt><dd id="overCause"></dd>
+      </dl>
+      <blockquote id="overQuote"></blockquote>
+      <p class="tip"><strong>Next time:</strong> <span id="overTip"></span></p>
+      <div class="stamp" aria-hidden="true">Deceased</div>
+    </article>
+    <nav class="menu over-menu" aria-label="Game over">
+      <button type="button" data-act="retry" data-primary>Try again</button>
+      <button type="button" data-act="title">Main menu</button>
+    </nav>
+  </section>
+
+  <!-- WIN -->
+  <section id="win" class="screen" aria-labelledby="winTitle">
+    <div class="clock-roll" aria-hidden="true"><span class="d">5</span><span class="d6">6</span><span class="am">AM</span></div>
+    <div id="winBox" class="win-box">
+      <h2 id="winTitle"></h2>
+      <p id="winNote" class="win-note"></p>
+      <nav class="menu win-menu" aria-label="Shift complete">
+        <button type="button" data-act="next" id="btnNext" data-primary>Next night</button>
+        <button type="button" data-act="title">Main menu</button>
+      </nav>
+    </div>
+  </section>
+
+  <div id="powerWrap" class="vid-wrap"><video id="powerVideo" src="assets/verity-song-dub.mp4" preload="auto" playsinline></video><button type="button" class="vid-skip" data-act="skipSecret">Skip <kbd>Esc</kbd></button></div>
+  <div id="goldenWrap" class="vid-wrap golden"><video id="goldenVideo" src="assets/FNAZ_.mp4" preload="none" playsinline></video><button type="button" class="vid-skip" data-act="skipGolden">Skip <kbd>Esc</kbd></button></div>
+  <div id="boot" class="boot" role="status"><p id="bootMsg">Building Salem's Candy</p></div>
+</main>
+
+<script src="audio.js"></script>
+<script src="game.bundle.js"></script>
+</body>
+</html>
