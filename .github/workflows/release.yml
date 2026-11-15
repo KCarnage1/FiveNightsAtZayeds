@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and publish (e.g. v3.0.1)
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  ELECTRON_VERSION: 33.2.0
+
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --omit=dev
+
+      - name: Package Windows build
+        run: >
+          npx --yes @electron/packager . FiveNightsAtZayeds
+          --platform=win32 --arch=x64 --asar
+          --electron-version=$ELECTRON_VERSION
+          --ignore="^/verity-song-dub \(1\)\.mp4$"
+          --ignore="^/\.github"
+          --out=dist
+
+      - name: Zip
+        run: cd dist && zip -qr FiveNightsAtZayeds-win32-x64.zip FiveNightsAtZayeds-win32-x64
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip --clobber
+          else
+            gh release create "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip \
+              --verify-tag --title "Five Nights at Zayed's ${TAG#v}" --generate-notes
+          fi
