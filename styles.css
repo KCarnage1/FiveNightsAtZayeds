@@ -330,3 +330,5 @@ input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
 .ni-btns button { pointer-events: auto; }
 .ni-btns button:disabled { opacity: .45; }
 body.role-ani #bar, body.role-ani #keys, body.role-ani #call { display: none !important; }
+
+.cheat-toast { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); z-index: 70; background: var(--pink); color: var(--ink); padding: 12px 28px; border-radius: var(--r); font: 400 30px var(--display); pointer-events: none; }
