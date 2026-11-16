@@ -188,6 +188,10 @@ const Voice = (() => {
     goat:   [['foxy3', "I'm gonna get your ass."], ['bonnie3', '']], // bonnie3 is unclear on the recording, so no caption
     falcon: [['foxy1', 'Here I come, San Francisco!'], ['foxy2', 'Arrrr!']]
   };
+  /* "Authentic Zayed" (Settings): every robot uses these recordings instead of the stock clips. They have
+     no captions, and each plays at random, never the same one twice in a row. */
+  const AUTHENTIC = ['zayed1', 'zayed2', 'zayed3', 'zayed4', 'zayed5', 'zayed6', 'zayed7', 'zayed8'];
+  let authentic = false;
   const chan = {};   // speaker -> Audio
   const base = {};   // speaker -> clip volume before master
   const last = {};   // speaker -> last line index, so the same line never plays twice in a row
@@ -212,6 +216,13 @@ const Voice = (() => {
     // Returns the caption text, or null if the robot was already talking.
     say(who, idx) {
       if (talking(who)) return null;
+      if (authentic) {
+        let k = (Math.random() * AUTHENTIC.length) | 0;
+        if (k === last[who]) k = (k + 1) % AUTHENTIC.length;
+        last[who] = k;
+        play(who, AUTHENTIC[k], 0.9);
+        return '';
+      }
       const list = LINES[who];
       let i = idx;
       if (i === undefined) { i = (Math.random() * list.length) | 0; if (i === last[who]) i = (i + 1) % list.length; }
@@ -220,6 +231,7 @@ const Voice = (() => {
       return list[i][1];
     },
     phone(n) { return play('phone', 'phone' + n, 1); },
+    setAuthentic(on) { authentic = !!on; },
     stop,
     pause(on) { Object.values(chan).forEach(a => { if (a && !a.ended) { if (on) a.pause(); else { const p = a.play(); if (p && p.catch) p.catch(() => {}); } } }); },
     setVolume(v) { vol = v; Object.keys(chan).forEach(k => { if (chan[k]) chan[k].volume = base[k] * v; }); }

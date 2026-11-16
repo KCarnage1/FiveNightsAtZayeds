@@ -524,7 +524,9 @@
   function applyEvent(m) {
     const y = H.y;
     if (m.k === 'dead') {
+      NET.applying = true;
       H.Ni(m.v);
+      NET.applying = false;
       if (isAni()) setTimeout(() => {
         $('#overH').textContent = 'You got him!';
         $('#overCause').textContent = 'The guard fell to ' + H.nn[m.v] + '.';
