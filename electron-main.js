@@ -88,6 +88,7 @@ function startUpdater(win) {
   const enabled = app.isPackaged && !process.env.FNZ_NO_UPDATE;
   updater = createUpdater({
     enabled,
+    fs: require('original-fs'), // plain fs: the patched one treats app.asar as read-only
     version: app.getVersion(),
     asarPath: path.join(process.resourcesPath || '', 'app.asar'),
     platform: process.platform,

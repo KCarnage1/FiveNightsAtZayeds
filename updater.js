@@ -8,7 +8,7 @@
  * If the install folder is not writable, or a release has no app.asar, the "update" opens the download page instead.
  * Nothing here touches Electron, so it can be tested in plain Node (see createUpdater's options). */
 'use strict';
-const fs = require('fs');
+const nodeFs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
@@ -27,8 +27,11 @@ function isNewer(a, b) {
 }
 
 function createUpdater(opt) {
+  // Inside Electron the normal fs treats app.asar as a read-only folder, so the app passes in 'original-fs'.
+  const fs = opt.fs || nodeFs;
   const apiUrl = opt.apiUrl || `https://api.github.com/repos/${REPO}/releases/latest`;
   const allowPrefix = opt.allowUrlPrefix || `https://github.com/${REPO}/releases/download/`;
+  const webBase = opt.webBase || 'https://github.com';
   const doFetch = opt.fetch || globalThis.fetch;
   let asset = null; // { url, size, sha256 } of the release's app.asar
   let busy = false;
@@ -48,13 +51,26 @@ function createUpdater(opt) {
     } catch (e) { return false; }
   }
 
+  // The same facts without the API: /releases/latest redirects to the newest tag, and the file's address never changes.
+  async function viaWebsite() {
+    const r = await doFetch(`${webBase}/${REPO}/releases/latest`, { redirect: 'manual', headers: { 'User-Agent': 'FiveNightsAtZayeds-updater' } });
+    const m = /\/releases\/tag\/(v?\d+\.\d+\.\d+)/.exec(r.headers.get('location') || '');
+    if (!m) throw new Error('Could not read the latest release');
+    const url = `${webBase}/${REPO}/releases/download/${m[1]}/app.asar`;
+    const head = await doFetch(url, { method: 'HEAD', headers: { 'User-Agent': 'FiveNightsAtZayeds-updater' } });
+    const assets = head.ok ? [{ name: 'app.asar', browser_download_url: url, size: Number(head.headers.get('content-length')) || 0, digest: '' }] : [];
+    return { tag_name: m[1], html_url: `${webBase}/${REPO}/releases/tag/${m[1]}`, assets };
+  }
+
   async function check(manual) {
     if (opt.enabled === false || busy) return;
     set({ status: 'checking', error: null });
     try {
+      let rel;
       const res = await doFetch(apiUrl, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'FiveNightsAtZayeds-updater' } });
-      if (!res.ok) throw new Error('GitHub answered ' + res.status);
-      const rel = await res.json();
+      if (res.ok) rel = await res.json();
+      else if (res.status === 403 || res.status === 429) rel = await viaWebsite(); // anonymous API limit (shared network): use the release page instead
+      else throw new Error('GitHub answered ' + res.status);
       const found = (rel.assets || []).find((a) => a.name === 'app.asar');
       if (!isNewer(rel.tag_name, opt.version)) { asset = null; return set({ status: 'uptodate', latest: String(rel.tag_name || '').replace(/^v/, '') }); }
       asset = found ? { url: found.browser_download_url, size: found.size || 0, sha256: /^sha256:([0-9a-f]{64})$/i.test(found.digest || '') ? found.digest.slice(7).toLowerCase() : '' } : null;
@@ -91,7 +107,7 @@ function createUpdater(opt) {
         if (pct !== lastPct) { lastPct = pct; set({ progress: pct }); }
       }
       await new Promise((resolve, reject) => { out.end((err) => (err ? reject(err) : resolve())); });
-      if (asset.size && got !== asset.size) throw new Error('The download was incomplete');
+      if ((asset.size && got !== asset.size) || (total && got !== total)) throw new Error('The download was incomplete');
       if (asset.sha256 && hash.digest('hex') !== asset.sha256) throw new Error('The download did not match its checksum');
       fs.renameSync(part, ready);
       set({ status: 'ready', progress: 100 });
