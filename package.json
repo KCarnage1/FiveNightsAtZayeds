@@ -1,7 +1,7 @@
 {
   "name": "five-nights-at-zayeds",
   "productName": "Five Nights at Zayed's",
-  "version": "3.0.0",
+  "version": "1.1.1",
   "description": "Survive five nights as Rashid at Salem's Candy.",
   "main": "electron-main.js",
   "dependencies": {

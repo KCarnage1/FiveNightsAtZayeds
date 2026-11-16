@@ -332,3 +332,13 @@ input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
 body.role-ani #bar, body.role-ani #keys, body.role-ani #call { display: none !important; }
 
 .cheat-toast { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); z-index: 70; background: var(--pink); color: var(--ink); padding: 12px 28px; border-radius: var(--r); font: 400 30px var(--display); pointer-events: none; }
+
+/* ---------- updates ---------- */
+#upBanner { position: absolute; right: 40px; top: 36px; z-index: 10; display: flex; align-items: center; gap: 14px; background: rgba(18, 13, 16, .88); border: 2px solid var(--pink); border-radius: var(--r); padding: 12px 18px; font-size: 24px; }
+#upBanner[hidden] { display: none; }
+#upBanner button { font-size: 22px; padding-top: 6px; padding-bottom: 6px; }
+.up-row { grid-column: 2 / 4; display: flex; align-items: center; gap: 16px; font-size: 22px; color: var(--paper-dim); }
+#settings .set-row { padding-top: 3px; padding-bottom: 3px; }
+#settings .set-row .hint { font-size: 18px; }
+.up-row button { white-space: nowrap; }
+.up-row #upMsg { font-size: 20px; }
