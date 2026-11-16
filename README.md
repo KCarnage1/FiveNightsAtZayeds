@@ -51,6 +51,13 @@ uncapped).
 
 **Controls:** `F11` toggles fullscreen.
 
+## Updates
+
+The desktop app checks GitHub for a newer release a few seconds after launch and shows a banner on the title screen.
+**Update now** downloads just the game files (`app.asar`, checked against its SHA-256), swaps them in and restarts, so
+there is no need to download and unzip the whole build again. Settings has a **Check for updates** button. If the
+install folder is not writable, the button opens the release page instead. Set `FNZ_NO_UPDATE=1` to turn the check off.
+
 ## Online play
 
 Main menu, **Online**. One player hosts and shares the 4-letter room code; the other joins with it.

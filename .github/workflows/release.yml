@@ -25,6 +25,11 @@ jobs:
         with:
           node-version: 20
 
+      - name: Stamp the release version into the app
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: npm version "${TAG#v}" --no-git-tag-version --allow-same-version
+
       - name: Install dependencies
         run: npm install --omit=dev
 
@@ -40,15 +45,19 @@ jobs:
       - name: Zip
         run: cd dist && zip -qr FiveNightsAtZayeds-win32-x64.zip FiveNightsAtZayeds-win32-x64
 
+      # the in-game updater downloads this file instead of the whole zip
+      - name: Copy app.asar
+        run: cp dist/FiveNightsAtZayeds-win32-x64/resources/app.asar dist/app.asar
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip --clobber
+            gh release upload "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip dist/app.asar --clobber
           else
-            gh release create "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip \
+            gh release create "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip dist/app.asar \
               --target "$GITHUB_SHA" --title "Five Nights at Zayed's ${TAG#v}" --generate-notes
           fi
 
@@ -64,6 +73,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Stamp the release version into the app
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: npm version "${TAG#v}" --no-git-tag-version --allow-same-version
 
       - name: Install dependencies
         run: npm install --omit=dev

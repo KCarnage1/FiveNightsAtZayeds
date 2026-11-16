@@ -1,7 +1,8 @@
 // Desktop wrapper: opens the game fullscreen. F11 toggles fullscreen.
 // Self-test: set FNZ_SELFTEST=1 to load the game hidden, check that every sound and
 // video file decodes from inside the packaged app, print the result and exit (0 = ok).
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
+const { createUpdater } = require('./updater');
 const fs = require('fs');
 const path = require('path');
 
@@ -79,6 +80,29 @@ ipcMain.on('fnaz:fps', (e, v) => {
 });
 ipcMain.on('fnaz:relaunch', () => { app.relaunch(); app.exit(0); });
 
+/* ---------- updates ----------
+   Checks GitHub for a newer release a few seconds after launch (set FNZ_NO_UPDATE=1 to turn that off).
+   The renderer shows the banner; see updater.js for how the swap works. Only packaged builds update themselves. */
+let updater = null;
+function startUpdater(win) {
+  const enabled = app.isPackaged && !process.env.FNZ_NO_UPDATE;
+  updater = createUpdater({
+    enabled,
+    version: app.getVersion(),
+    asarPath: path.join(process.resourcesPath || '', 'app.asar'),
+    platform: process.platform,
+    execPath: process.execPath,
+    relaunch: () => { app.relaunch(); app.exit(0); },
+    quit: () => app.exit(0),
+    openExternal: (u) => { if (/^https:\/\/github\.com\//.test(u)) shell.openExternal(u); },
+    onState: (s) => { if (!win.isDestroyed()) win.webContents.send('fnaz:update', s); }
+  });
+  if (enabled) setTimeout(() => updater.check(false), 4000);
+}
+ipcMain.handle('fnaz:update-state', () => (updater ? updater.state() : null));
+ipcMain.on('fnaz:update-check', () => { if (updater) updater.check(true); });
+ipcMain.on('fnaz:update-install', () => { if (updater) updater.install(); });
+
 app.whenReady().then(() => {
   const id = SELFTEST ? '' : discordId();
   if (id) { rpc.status = 'waiting for Discord'; rpcConnect(id); }
@@ -91,6 +115,7 @@ app.whenReady().then(() => {
   });
   win.removeMenu();
   win.loadFile(path.join(__dirname, 'index.html'));
+  if (!SELFTEST) startUpdater(win);
   win.webContents.on('before-input-event', (e, input) => {
     if (input.type === 'keyDown' && input.key === 'F11') win.setFullScreen(!win.isFullScreen());
   });
