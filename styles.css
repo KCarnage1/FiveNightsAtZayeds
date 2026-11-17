@@ -239,11 +239,13 @@ input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
 .caption.on { display: block; }
 .caption span { background: rgba(18, 13, 16, .78); padding: 6px 16px; border-radius: var(--r); text-shadow: none; }
 
-/* camera tablet */
-.tablet { position: absolute; left: 60px; right: 60px; top: 30px; bottom: -40px; transform: translateY(100%); display: none; z-index: 3;
-  background: #1b1d20; border: 10px solid #44494e; border-radius: 28px; }
+/* the monitor: flips up from the bottom like the original (rotated about its bottom edge; the angle is set from the game each frame) */
+.tablet { position: absolute; left: 36px; right: 36px; top: 16px; bottom: -30px; transform: perspective(1500px) rotateX(86deg); transform-origin: 50% 100%; display: none; z-index: 3; backface-visibility: hidden;
+  background: linear-gradient(180deg, #4b5055, #23272a 18%, #1a1d1f); border: 7px solid #5d6368; border-top-color: #7b8187; border-bottom-color: #34383b; border-radius: 10px; box-shadow: 0 -10px 40px rgba(0, 0, 0, .7), inset 0 0 0 3px #101214; }
 .tablet.on { display: block; }
-.tablet-screen { position: absolute; inset: 30px; background: #0b1a10; border-radius: var(--r); }
+.tablet::after { content: ""; position: absolute; right: 30px; bottom: 12px; width: 12px; height: 12px; border-radius: 50%; background: #4cff6a; box-shadow: 0 0 10px #4cff6a; } /* the monitor's power light */
+.tablet-screen { position: absolute; inset: 26px 26px 40px; background: radial-gradient(ellipse at center, #1c3a26 0%, #0a1810 75%), #0b1a10; border-radius: 6px; box-shadow: inset 0 0 50px rgba(0, 0, 0, .9);
+  background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, .3) 0 2px, transparent 2px 4px), radial-gradient(ellipse at center, #1c3a26 0%, #0a1810 75%); }
 
 .cam-overlay { position: absolute; inset: 0; display: none; z-index: 2; font-family: var(--osd); } /* a CCTV overlay is monospaced */
 .cam-overlay.on { display: block; }
