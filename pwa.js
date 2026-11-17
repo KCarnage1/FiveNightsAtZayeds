@@ -17,10 +17,29 @@
   $('#title').appendChild(banner);
   $('#webReload').addEventListener('click', () => location.reload());
 
+  /* An installed web app stays alive in the background, and browsers only look for a new version after a page load (and
+     at most about once a day), so we ask ourselves: when the app starts, when you come back to it, when the connection
+     returns, and every 15 minutes. */
+  const checkNow = async () => {
+    try { const r = await navigator.serviceWorker.getRegistration(); if (r) await r.update(); } catch (e) { /* offline */ }
+  };
+  const buildId = async () => {
+    if (!window.caches) return '';
+    const k = (await caches.keys()).find((x) => x.startsWith('fnaz-core-'));
+    return k ? k.slice('fnaz-core-'.length) : '';
+  };
+  const showBuild = async () => {
+    const id = await buildId(), v = $('#title .ver');
+    if (id && v) v.textContent = 'Web version ' + id + '. Produced by Qerh Cooperations.';
+  };
   if ('serviceWorker' in navigator) {
     let hadController = !!navigator.serviceWorker.controller;
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) banner.hidden = false; hadController = true; });
-    navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is optional */ });
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) banner.hidden = false; hadController = true; showBuild(); });
+    navigator.serviceWorker.register('sw.js').then(() => { checkNow(); showBuild(); }).catch(() => { /* offline support is optional */ });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkNow(); });
+    window.addEventListener('online', checkNow);
+    window.addEventListener('pageshow', checkNow);
+    setInterval(checkNow, 15 * 60 * 1000);
   }
 
   /* ----- install ----- */
@@ -47,6 +66,33 @@
   const settings = $('#settings .settings');
   if (settings) settings.insertBefore(row, settings.firstChild);
   const btn = $('#offVideos'), msg = $('#offMsg');
+
+  /* ----- update controls (Settings) ----- */
+  const vrow = document.createElement('div');
+  vrow.className = 'set-row';
+  vrow.innerHTML = '<span>Web version <span id="webVer"></span></span><div class="up-row"><button type="button" id="webCheck">Check for updates</button> <button type="button" id="webReset">Reset app files</button> <span id="webMsg" aria-live="polite"></span></div>';
+  if (settings) settings.insertBefore(vrow, settings.firstChild);
+  const wmsg = $('#webMsg'), wcheck = $('#webCheck');
+  const refreshVer = async () => { $('#webVer').textContent = (await buildId()) || ''; };
+  refreshVer();
+  wcheck.addEventListener('click', async () => {
+    wcheck.disabled = true; wmsg.textContent = 'Checking…';
+    await checkNow();
+    for (let i = 0; i < 12 && banner.hidden; i++) await new Promise((r) => setTimeout(r, 500));
+    if (!banner.hidden) { wmsg.textContent = 'Update found. Restarting…'; setTimeout(() => location.reload(), 600); return; }
+    await refreshVer();
+    wmsg.textContent = navigator.onLine ? 'You have the latest version.' : 'You are offline, so this could not be checked.';
+    wcheck.disabled = false;
+  });
+  $('#webReset').addEventListener('click', async () => {
+    if (!confirm('Re-download the game files? Your progress and saved videos are kept.')) return;
+    wmsg.textContent = 'Resetting…';
+    try {
+      for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+      for (const k of await caches.keys()) if (k.startsWith('fnaz-core-')) await caches.delete(k);
+    } catch (e) { /* reload anyway */ }
+    location.reload();
+  });
 
   async function have() {
     if (!window.caches) return 0;

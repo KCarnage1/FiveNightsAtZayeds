@@ -390,3 +390,10 @@ body.touch.cams .caption { bottom: 160px; }
 #secretIn { width: 100%; font: 600 40px var(--ui); background: var(--ink-2); color: var(--paper); border: 2px solid var(--paper-dim); border-radius: var(--r); padding: 10px 14px; text-align: center; user-select: text; -webkit-user-select: text; }
 #secretMsg { min-height: 34px; margin: 8px 0; font-size: 26px; color: var(--paper-dim); }
 #secretBox button { font-size: 34px; }
+
+/* Settings has grown (version, updates, offline, voices, flicker...), so it uses two columns to stay on screen */
+#settings .settings { width: 1420px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; align-items: start; }
+#settings .set-row { grid-template-columns: 250px 1fr 84px; gap: 6px 18px; }
+#settings .set-row legend { width: 250px; }
+#settings .up-row { flex-wrap: wrap; gap: 8px 12px; }
+#settings .up-row button { font-size: 22px; padding: 6px 12px 6px 22px; }
