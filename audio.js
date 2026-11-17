@@ -155,6 +155,7 @@ const Sound = (() => {
     powerOut() { if (!ok()) return; tone(now(), 220, 1.6, 0.25, 'sawtooth', 0, 40); noise(now(), 0.6, 0.3, 300, 0.7); },
     honk() { if (!ok()) return; const t = now(); tone(t, 330, 0.18, 0.3, 'square', 0, 280); tone(t + 0.2, 300, 0.25, 0.3, 'square', 0, 240); },
     clatter(vol = 0.15) { if (!ok()) return; for (let i = 0; i < 6; i++) { const t = now() + Math.random() * 0.8; tone(t, 1500 + Math.random() * 2500, 0.25, vol * 0.5, 'triangle'); noise(t, 0.1, vol, 4000, 2); } },
+    siren() { if (!ok()) return; const t = now(); for (let i = 0; i < 6; i++) tone(t + i * 0.5, i % 2 ? 700 : 950, 0.45, 0.06, 'sine'); },
     achieve() { if (!ok()) return; const t = now(); tone(t, 660, 0.12, 0.12, 'square'); tone(t + 0.12, 880, 0.12, 0.12, 'square'); tone(t + 0.24, 1320, 0.25, 0.12, 'square'); },
     tick() { if (!ok()) return; tone(now(), 900, 0.05, 0.05, 'square'); },
     ring() { if (!ok()) return; for (let r = 0; r < 2; r++) for (let i = 0; i < 12; i++) tone(now() + r * 0.9 + i * 0.05, i % 2 ? 1300 : 1600, 0.05, 0.06, 'square'); },
@@ -235,6 +236,7 @@ const Voice = (() => {
       return list[i][1];
     },
     phone(n) { return play('phone', 'phone' + n, 1); },
+    phone2(n) { return play('phone2', 'phone' + n, 1); }, // a second line on the same call (Night 5's replacement phone guy)
     setAuthentic(on) { authentic = !!on; },
     stop,
     pause(on) { Object.values(chan).forEach(a => { if (a && !a.ended) { if (on) a.pause(); else { const p = a.play(); if (p && p.catch) p.catch(() => {}); } } }); },

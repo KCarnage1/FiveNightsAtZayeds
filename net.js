@@ -17,7 +17,7 @@
   const ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   const QUICK_CHAT = ['Check the west door!', 'Check the east door!', 'Cameras, now!', 'Save power!'];
   const ANI_KEYS = ['zayed', 'bubbles', 'taffy', 'sherbet'];
-  const NO_FORWARD = new Set(['unlock', 'setVolume', 'ambient', 'stopAll', 'jumpscare', 'chime', 'powerOut', 'achieve']);
+  const NO_FORWARD = new Set(['unlock', 'setVolume', 'ambient', 'stopAll', 'jumpscare', 'chime', 'powerOut', 'achieve', 'siren']);
   const DEDUPE = new Set(['musicBox', 'lightBuzz']);
 
   const H = {}; // internals bound from the game bundle
