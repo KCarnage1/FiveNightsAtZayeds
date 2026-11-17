@@ -17,7 +17,7 @@
   const ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   const QUICK_CHAT = ['Check the west door!', 'Check the east door!', 'Cameras, now!', 'Save power!'];
   const ANI_KEYS = ['zayed', 'bubbles', 'taffy', 'sherbet'];
-  const NO_FORWARD = new Set(['unlock', 'setVolume', 'ambient', 'stopAll', 'jumpscare', 'chime', 'powerOut']);
+  const NO_FORWARD = new Set(['unlock', 'setVolume', 'ambient', 'stopAll', 'jumpscare', 'chime', 'powerOut', 'achieve']);
   const DEDUPE = new Set(['musicBox', 'lightBuzz']);
 
   const H = {}; // internals bound from the game bundle
@@ -377,6 +377,7 @@
           sherbet: [a.sherbet.stage, a.sherbet.running, a.sherbet.runT],
         },
         hcd: NET.hcd,
+        cool: [y.coolL, y.coolR], heat: [y.heatL, y.heatR], // door overheating, for the other player's HUD
         wait: a.sherbet.wait, // seconds until Foxy runs on his own (animatronic HUD)
         zArmed: a.zayed.armed,
       },
@@ -460,7 +461,7 @@
       a.stage += 1;
       a.t = 0;
       H.oi('falcon');
-      if (a.stage === 4) { a.wait = 25; Sound.steps(-0.8, 2, 0.1); }
+      if (a.stage === 4) { a.wait = 12; Sound.steps(-0.8, 2, 0.1); }
       NET.hcd = MOVE_COOLDOWN[who];
     }
   }
@@ -509,6 +510,7 @@
     a.sherbet.wait = s.wait;
     a.zayed.armed = s.zArmed;
     NET.hcd = s.hcd;
+    if (s.cool) { y.coolL = s.cool[0]; y.coolR = s.cool[1]; y.heatL = s.heat[0]; y.heatR = s.heat[1]; }
     if (isAni()) {
       const cam = aniCam();
       if (cam !== y.cam) y.statBurst = 0.8;
