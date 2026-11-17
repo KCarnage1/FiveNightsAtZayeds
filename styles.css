@@ -416,3 +416,10 @@ body.touch.cams .caption { bottom: 160px; }
 #nightmare .timecard { width: 1000px; }
 #nightmare h2 { font-size: 56px; }
 #nightmare .rows button { grid-template-columns: 240px 1fr 150px; }
+
+/* Night 5 ending: the fight plays on the 3D canvas; this layer adds captions, the skip button and the fade */
+.cut-wrap { position: absolute; inset: 0; z-index: 40; display: none; pointer-events: none; }
+.cut-wrap.on { display: block; }
+.cut-wrap::before { content: ""; position: absolute; inset: 0; background: #000; opacity: var(--cutfade, 1); }
+.cut-wrap .vid-skip { pointer-events: auto; z-index: 2; }
+.cut-cap { position: absolute; left: 0; right: 0; bottom: 70px; text-align: center; font: 600 36px var(--ui); text-shadow: 0 2px 8px #000; z-index: 2; }
