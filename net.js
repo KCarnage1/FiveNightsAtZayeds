@@ -27,6 +27,7 @@
     ani: null, // animatronic key when versus
     playing: false,
     hcd: 0, // animatronic cooldown remaining
+    h: H, // the game's internals, for touch.js
     bind(h) { Object.assign(H, h); },
     // hook stubs, replaced below once a session exists
     i() { return false; },
