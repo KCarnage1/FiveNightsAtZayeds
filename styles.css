@@ -34,7 +34,7 @@ p { margin: 0; }
   overflow: hidden; background: var(--ink);
 }
 #gl { position: absolute; inset: 0; width: 1600px; height: 900px; display: block; }
-#gl.cctv { filter: saturate(.7) contrast(1.15) brightness(1.12) sepia(.12); }
+#gl.cctv { filter: saturate(.42) contrast(1.22) brightness(1.08) sepia(.28) hue-rotate(38deg); } /* washed-out green security-camera tint */
 
 /* ---------- shared pieces ---------- */
 .screen { position: absolute; inset: 0; display: none; padding: 70px 90px; background: var(--ink); }
@@ -248,21 +248,32 @@ input[type=range]:disabled { opacity: .4; cursor: not-allowed; }
 .cam-overlay { position: absolute; inset: 0; display: none; z-index: 2; font-family: var(--osd); } /* a CCTV overlay is monospaced */
 .cam-overlay.on { display: block; }
 #noise { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: screen; pointer-events: none; image-rendering: pixelated; }
-.scan { position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 2px, transparent 2px 4px), radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.75) 100%); }
-.cam-label { position: absolute; left: 50px; top: 36px; font-size: 34px; font-weight: 700; text-shadow: 0 0 6px #000; }
-.cam-sub { display: flex; gap: 22px; align-items: center; font-size: 24px; font-weight: 400; margin-top: 4px; }
+.scan { position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.26) 0 2px, transparent 2px 4px), radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,.8) 100%); }
+.scan::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 90px; background: linear-gradient(transparent, rgba(220, 255, 220, .07), transparent); animation: roll 7s linear infinite; }
+.cam-overlay.on .scan { animation: flick .14s steps(2) infinite; }
+@keyframes roll { from { transform: translateY(-120px); } to { transform: translateY(1000px); } }
+@keyframes flick { 0% { opacity: 1; } 50% { opacity: .9; } }
+@keyframes selblink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .6; } }
+@keyframes recblink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .15; } }
+body.calm .scan, body.calm .cam-overlay.on .scan, body.calm .scan::after, body.calm .rec i { animation: none !important; }
+body.calm #noise { opacity: .05 !important; } /* Settings > Reduce camera flicker: no static flashes when switching */
+@media (prefers-reduced-motion: reduce) { .scan, .scan::after, .rec i { animation: none; } #noise { opacity: .05 !important; } }
+.cam-label { position: absolute; left: 50px; top: 32px; font: 700 42px "Arial Narrow", Arial, sans-serif; letter-spacing: .02em; text-shadow: 0 0 6px #000, 0 2px 0 #000; }
+.cam-sub { display: flex; gap: 22px; align-items: center; font: 700 24px var(--osd); margin-top: 2px; opacity: .9; }
 .rec { display: flex; align-items: center; gap: 8px; }
-.rec i { width: 16px; height: 16px; border-radius: 50%; background: var(--danger); } /* marks a real state: this camera is live */
+.rec i { width: 18px; height: 18px; border-radius: 50%; background: #e5191f; box-shadow: 0 0 8px #e5191f; animation: recblink 1.2s steps(1) infinite; } /* marks a real state: this camera is live */
 .kitchen { position: absolute; inset: 0; background: #000; display: none; flex-direction: column; align-items: center; justify-content: center; font-size: 46px; gap: 12px; text-transform: uppercase; }
 .kitchen.on { display: flex; }
 .clatter { color: var(--paper); font-size: 28px; min-height: 36px; text-transform: none; }
-.map { position: absolute; left: 1110px; top: 440px; width: 460px; height: 420px; background: rgba(0,0,0,.6); border: 2px solid rgba(241,231,208,.4); border-radius: var(--r); }
-.map-btn { position: absolute; padding: 0; text-align: center; font: 700 20px var(--osd); background: #2b2f33; border: 2px solid #ddd; color: #fff; border-radius: 0; }
+.map { position: absolute; left: 1110px; top: 440px; width: 460px; height: 420px; background: rgba(58, 62, 58, .55); border: 3px solid #a4aaa4; border-radius: 2px; }
+.map-btn { position: absolute; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; font: 700 22px "Arial Narrow", Arial, sans-serif; background: rgba(40, 44, 40, .85); border: 3px solid #cfd6cf; color: #fff; border-radius: 0; }
+.map-btn small { font: 700 11px Arial, sans-serif; letter-spacing: .08em; opacity: .85; margin-bottom: 2px; }
 .map-btn::before { content: none; }
-.map-btn:hover, .map-btn:focus-visible { background: #4a5056; color: #fff; }
-.map-btn.sel { background: var(--paper); color: var(--ink); }
-.map-you { position: absolute; background: #5a0f1a; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.map-btn:hover, .map-btn:focus-visible { background: rgba(88, 98, 88, .9); color: #fff; }
+.map-btn.sel { background: #a5e05c; border-color: #e8ffd0; color: #0c1a06; animation: selblink 1.4s steps(1) infinite; }
+body.calm .map-btn.sel { animation: none; }
+.map-you { position: absolute; background: #6b0f1a; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font: 700 22px "Arial Narrow", Arial, sans-serif; }
 .map-lbl { position: absolute; left: 300px; top: 282px; color: var(--paper-dim); font-size: 15px; }
 
 .bubble { position: absolute; transform: translate(-50%, -100%); background: var(--paper); color: var(--paper-ink); font: 700 26px var(--hand);
@@ -369,3 +380,6 @@ body.touch #netChat { bottom: 150px; }
 #touch.cams [data-light] { display: none; }
 #touch.cams .t-left { transform: none; top: calc(50% - 150px); height: 120px; }
 #touch.cams .t-right { transform: none; right: auto; left: 22px; top: calc(50% + 10px); height: 120px; }
+
+/* the call box sits below the camera name while the cameras are up, so it never hides it */
+body.cams .call { top: 128px; }

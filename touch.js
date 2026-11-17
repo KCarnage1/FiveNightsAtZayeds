@@ -34,7 +34,12 @@
 
   // drag the picture to look around (the finger moves the world, like a street-view)
   let last = null;
-  stage.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch' && !e.target.closest('button')) last = e.clientX; });
+  let swipe = null; // on the cameras, a horizontal swipe switches camera
+  stage.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    if (!e.target.closest('#touch')) swipe = e.clientX; // may start on the camera map: a swipe is not a tap
+    if (!e.target.closest('button')) last = e.clientX;
+  });
   stage.addEventListener('pointermove', (e) => {
     const h = H();
     if (e.pointerType !== 'touch' || last === null || !h || h.y.screen !== 'game' || h.y.monitor) return;
@@ -43,7 +48,11 @@
     last = e.clientX;
     h.y.mx = Math.max(0, Math.min(1600, h.y.mx - dx));
   });
-  const stop = () => { last = null; };
+  const stop = (e) => {
+    const h = H();
+    if (e && e.type === 'pointerup' && swipe !== null && h && h.y.monitor && h.cs && Math.abs(e.clientX - swipe) > stage.getBoundingClientRect().width * 0.12) h.cs(e.clientX < swipe ? 1 : -1);
+    last = null; swipe = null;
+  };
   stage.addEventListener('pointerup', stop);
   stage.addEventListener('pointercancel', stop);
 
