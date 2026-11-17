@@ -3,7 +3,7 @@
 set -euo pipefail
 OUT="${1:?output folder}"; VER="${2:-dev}"
 rm -rf "$OUT"; mkdir -p "$OUT"
-cp index.html styles.css audio.js net.js touch.js pwa.js update.js peerjs.min.js game.bundle.js manifest.webmanifest sw.js "$OUT/"
+cp index.html styles.css audio.js net.js touch.js secret.js pwa.js update.js peerjs.min.js game.bundle.js manifest.webmanifest sw.js "$OUT/"
 cp -r assets "$OUT/assets"
 touch "$OUT/.nojekyll"
 sed -i "s/__VERSION__/$VER/" "$OUT/sw.js"
