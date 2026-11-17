@@ -60,6 +60,12 @@ are optional: Settings > **Offline play** > *Download videos*. On phones, the ga
 with touch buttons for doors, lights, cameras and pause, and drag to look around. Online play works from a phone too.
 Build it yourself with `scripts/build-web.sh <folder> <version>` and serve that folder.
 
+## Modes and achievements
+
+- **Nightmare Shamshamumu:** five very hard nights (title menu), unlocked one at a time. Two threats can overlap, doors overheat faster, power drains 30% faster.
+- **Achievements:** ten, with a screen on the title menu and a pop-up when one unlocks.
+- **Balancing:** only one animatronic can threaten you at a time (two in Nightmare), with a short breather between threats. A door held shut for about 8 seconds overheats and needs a few seconds to cool; watching Bonnie or Chica on their corner camera (2B, 4B) for 2 seconds makes them back off.
+
 ## Updates
 
 The desktop app checks GitHub for a newer release a few seconds after launch and shows a banner on the title screen.
