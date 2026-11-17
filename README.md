@@ -51,6 +51,15 @@ uncapped).
 
 **Controls:** `F11` toggles fullscreen.
 
+## Play on a phone or in a browser
+
+The web version is published at **https://kcarnage1.github.io/FiveNightsAtZayeds/** (landscape on phones).
+Open it once online, then **Add to Home Screen** (iPhone: Share > Add to Home Screen; Android: Install app) and it
+works offline like an app. The game itself is about 5 MB and is saved automatically. The three big videos (42 MB)
+are optional: Settings > **Offline play** > *Download videos*. On phones, the game starts on Low graphics at 30 FPS,
+with touch buttons for doors, lights, cameras and pause, and drag to look around. Online play works from a phone too.
+Build it yourself with `scripts/build-web.sh <folder> <version>` and serve that folder.
+
 ## Updates
 
 The desktop app checks GitHub for a newer release a few seconds after launch and shows a banner on the title screen.
