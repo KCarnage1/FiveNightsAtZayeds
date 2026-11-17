@@ -385,3 +385,8 @@ body.touch #netChat { bottom: 150px; }
 
 /* the call box sits below the camera name while the cameras are up, so it never hides it */
 body.cams .call { top: 128px; }
+
+/* phones: subtitles sit above the on-screen buttons and are big enough to read at the small scale */
+body.touch .caption { bottom: 160px; font-size: 40px; z-index: 9; }
+body.touch .caption span { padding: 8px 22px; background: rgba(18, 13, 16, .88); }
+body.touch.cams .caption { bottom: 160px; }
