@@ -277,7 +277,17 @@
   <div id="goldenWrap" class="vid-wrap golden"><video id="goldenVideo" src="assets/FNAZ_.mp4" preload="none" playsinline></video><button type="button" class="vid-skip" data-act="skipGolden">Skip <kbd>Esc</kbd></button></div>
   <div id="opWrap" class="vid-wrap"><video id="opVideo" src="assets/dr-stone-op.mp4" preload="none" playsinline></video><button type="button" class="vid-skip" data-act="skipOp">Skip <kbd>Esc</kbd></button></div>
   <div id="rotate" aria-hidden="true"><p>Turn your phone sideways to play</p></div>
-  <div id="cutWrap" class="cut-wrap"><p id="cutCap" class="cut-cap" aria-live="polite"></p><button type="button" class="vid-skip" data-act="skipCut">Skip <kbd>Esc</kbd></button></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+    <filter id="toon" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="1.55" result="sat"/>
+      <feComponentTransfer in="sat" result="post"><feFuncR type="discrete" tableValues="0 .2 .42 .66 .86 1"/><feFuncG type="discrete" tableValues="0 .2 .42 .66 .86 1"/><feFuncB type="discrete" tableValues="0 .2 .42 .66 .86 1"/></feComponentTransfer>
+      <feColorMatrix in="SourceGraphic" type="matrix" values=".3 .6 .1 0 0  .3 .6 .1 0 0  .3 .6 .1 0 0  0 0 0 1 0" result="lum"/>
+      <feConvolveMatrix in="lum" order="3" kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1" divisor="2" bias="0.5" preserveAlpha="true" result="edge"/>
+      <feComponentTransfer in="edge" result="lines"><feFuncR type="discrete" tableValues="0 1 1 1 1 1 1 1 0"/><feFuncG type="discrete" tableValues="0 1 1 1 1 1 1 1 0"/><feFuncB type="discrete" tableValues="0 1 1 1 1 1 1 1 0"/></feComponentTransfer>
+      <feBlend in="post" in2="lines" mode="multiply"/>
+    </filter>
+  </defs></svg>
+  <div id="cutWrap" class="cut-wrap"><div id="cutLines" class="cut-lines"></div><div id="cutFlash" class="cut-flash"></div><p id="cutSfx" class="cut-sfx"></p><i class="cut-bar top"></i><i class="cut-bar bot"></i><p id="cutCap" class="cut-cap" aria-live="polite"></p><button type="button" class="vid-skip" data-act="skipCut">Skip <kbd>Esc</kbd></button></div>
   <div id="boot" class="boot" role="status"><p id="bootMsg">Building Salem's Candy</p></div>
 </main>
 

@@ -423,3 +423,11 @@ body.touch.cams .caption { bottom: 160px; }
 .cut-wrap::before { content: ""; position: absolute; inset: 0; background: #000; opacity: var(--cutfade, 1); }
 .cut-wrap .vid-skip { pointer-events: auto; z-index: 2; }
 .cut-cap { position: absolute; left: 0; right: 0; bottom: 70px; text-align: center; font: 600 36px var(--ui); text-shadow: 0 2px 8px #000; z-index: 2; }
+
+/* anime treatment: speed lines, flash, onomatopoeia, widescreen bars */
+.cut-lines { position: absolute; inset: 0; opacity: 0; --lc: #fff; background: repeating-conic-gradient(from var(--ang, 0deg) at 50% 50%, var(--lc) 0 .6deg, transparent .6deg 3.4deg); -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 22%, #000 78%); mask-image: radial-gradient(circle at 50% 50%, transparent 22%, #000 78%); }
+.cut-flash { position: absolute; inset: 0; opacity: 0; background: #fff; }
+.cut-sfx { position: absolute; left: 0; top: 0; opacity: 0; font: 400 150px var(--display); color: #fff; -webkit-text-stroke: 10px #111; paint-order: stroke fill; letter-spacing: .02em; white-space: nowrap; text-shadow: 8px 8px 0 #e5191f; transform-origin: 50% 50%; }
+.cut-bar { position: absolute; left: 0; right: 0; height: 8.5%; background: #000; z-index: 3; }
+.cut-bar.top { top: 0; } .cut-bar.bot { bottom: 0; }
+.cut-cap { bottom: 11%; }
