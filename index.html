@@ -63,6 +63,7 @@
         <button type="button" data-act="newgame">New game</button>
         <button type="button" data-act="nights">Time card</button>
         <button type="button" data-act="custom">Custom night</button>
+        <button type="button" data-act="nightmare">Nightmare Shamshamumu</button>
         <button type="button" data-act="extras">Staff and robots</button>
         <button type="button" data-act="help">How to play</button>
         <button type="button" data-act="settings">Settings</button>
@@ -82,6 +83,20 @@
       </header>
       <div id="nightGrid" class="rows"></div>
       <p id="stars" class="stars"></p>
+    </article>
+    <button type="button" class="back" data-act="title">Back</button>
+  </section>
+
+  <!-- NIGHTMARE SHAMSHAMUMU -->
+  <section id="nightmare" class="screen" aria-labelledby="nmH">
+    <article class="paper timecard">
+      <div class="stripe" aria-hidden="true"></div>
+      <header>
+        <h2 id="nmH">Nightmare Shamshamumu</h2>
+        <p>Five nights, every one very hard. Levels: Camel, Cat, Goat, Falcon.</p>
+      </header>
+      <div id="nmGrid" class="rows"></div>
+      <p id="nmNote" class="stars"></p>
     </article>
     <button type="button" class="back" data-act="title">Back</button>
   </section>
@@ -122,7 +137,7 @@
           <tr><th scope="row"><kbd>Mouse</kbd></th><td>Look around. Click the red door button and the white light button beside each doorway.</td></tr>
           <tr><th scope="row"><kbd>A</kbd> <kbd>D</kbd></th><td>West door, east door</td></tr>
           <tr><th scope="row"><kbd>Q</kbd> <kbd>E</kbd></th><td>West light, east light (hold)</td></tr>
-          <tr><th scope="row"><kbd>Space</kbd></th><td>Raise or lower the camera tablet. Hovering the bottom bar also works.</td></tr>
+          <tr><th scope="row"><kbd>Space</kbd></th><td>Raise or lower the camera tablet. Hovering the bottom bar also works. A door overheats if you hold it shut for about eight seconds, then needs a few seconds to cool. Watch Bonnie or Chica on their corner camera (2B, 4B) for two seconds and they back off.</td></tr>
           <tr><th scope="row"><kbd>1</kbd> to <kbd>0</kbd>, <kbd>R</kbd></th><td>Switch camera. Or click the map. <kbd>&larr;</kbd> <kbd>&rarr;</kbd> or the mouse wheel cycles through them (swipe on a phone).</td></tr>
           <tr><th scope="row"><kbd>M</kbd></th><td>Hang up the phone</td></tr>
           <tr><th scope="row"><kbd>Esc</kbd></th><td>Pause</td></tr>
@@ -268,6 +283,7 @@
 <script src="audio.js"></script>
 <script src="peerjs.min.js"></script>
 <script src="net.js"></script>
+<script src="achievements.js"></script>
 <script src="update.js"></script>
 <script src="touch.js"></script>
 <script src="secret.js"></script>

@@ -155,6 +155,7 @@ const Sound = (() => {
     powerOut() { if (!ok()) return; tone(now(), 220, 1.6, 0.25, 'sawtooth', 0, 40); noise(now(), 0.6, 0.3, 300, 0.7); },
     honk() { if (!ok()) return; const t = now(); tone(t, 330, 0.18, 0.3, 'square', 0, 280); tone(t + 0.2, 300, 0.25, 0.3, 'square', 0, 240); },
     clatter(vol = 0.15) { if (!ok()) return; for (let i = 0; i < 6; i++) { const t = now() + Math.random() * 0.8; tone(t, 1500 + Math.random() * 2500, 0.25, vol * 0.5, 'triangle'); noise(t, 0.1, vol, 4000, 2); } },
+    achieve() { if (!ok()) return; const t = now(); tone(t, 660, 0.12, 0.12, 'square'); tone(t + 0.12, 880, 0.12, 0.12, 'square'); tone(t + 0.24, 1320, 0.25, 0.12, 'square'); },
     tick() { if (!ok()) return; tone(now(), 900, 0.05, 0.05, 'square'); },
     ring() { if (!ok()) return; for (let r = 0; r < 2; r++) for (let i = 0; i < 12; i++) tone(now() + r * 0.9 + i * 0.05, i % 2 ? 1300 : 1600, 0.05, 0.06, 'square'); },
     whisper() { if (!ok()) return; noise(now(), 1.8, 0.12, 2400, 4); tone(now(), 90, 1.8, 0.1, 'sine', 0, 70); }
