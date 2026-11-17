@@ -382,3 +382,11 @@ body.cams .call { top: 128px; }
 body.touch .caption { bottom: 160px; font-size: 40px; z-index: 9; }
 body.touch .caption span { padding: 8px 22px; background: rgba(18, 13, 16, .88); }
 body.touch.cams .caption { bottom: 160px; }
+
+/* secret entry box (secret.js) */
+#secretBox { position: absolute; left: 50%; top: 90px; transform: translateX(-50%); z-index: 80; background: rgba(18, 13, 16, .96); border: 3px solid var(--pink); border-radius: var(--r); padding: 26px 34px; min-width: 560px; text-align: center; }
+#secretBox[hidden] { display: none; }
+#secretBox label { display: block; font: 400 40px var(--display); margin-bottom: 14px; }
+#secretIn { width: 100%; font: 600 40px var(--ui); background: var(--ink-2); color: var(--paper); border: 2px solid var(--paper-dim); border-radius: var(--r); padding: 10px 14px; text-align: center; user-select: text; -webkit-user-select: text; }
+#secretMsg { min-height: 34px; margin: 8px 0; font-size: 26px; color: var(--paper-dim); }
+#secretBox button { font-size: 34px; }
