@@ -188,10 +188,13 @@ const Voice = (() => {
     goat:   [['foxy3', "I'm gonna get your ass."], ['bonnie3', '']], // bonnie3 is unclear on the recording, so no caption
     falcon: [['foxy1', 'Here I come, San Francisco!'], ['foxy2', 'Arrrr!']]
   };
-  /* "Authentic Zayed" (Settings): every robot uses these recordings instead of the stock clips. They have
-     no captions, and each plays at random, never the same one twice in a row. */
-  const AUTHENTIC = ['zayed1', 'zayed2', 'zayed3', 'zayed4', 'zayed5', 'zayed6', 'zayed7', 'zayed8'];
-  let authentic = false;
+  /* "Authentic Zayed" (Settings, on by default): every robot uses these recordings instead of the stock clips.
+     Each plays at random, never the same one twice in a row. [file, caption] */
+  const AUTHENTIC = [
+    ['zayed1', 'Yoo-hoo!'], ['zayed2', "I'm gonna get you!"], ['zayed3', "I'm gonna get your ass!"], ['zayed4', 'Geronimo!'],
+    ['zayed5', 'Qerh!'], ['zayed6', 'Open wide!'], ['zayed7', 'Leave no one alive!'], ['zayed8', 'Here I come, San Francisco!']
+  ];
+  let authentic = true;
   const chan = {};   // speaker -> Audio
   const base = {};   // speaker -> clip volume before master
   const last = {};   // speaker -> last line index, so the same line never plays twice in a row
@@ -220,8 +223,8 @@ const Voice = (() => {
         let k = (Math.random() * AUTHENTIC.length) | 0;
         if (k === last[who]) k = (k + 1) % AUTHENTIC.length;
         last[who] = k;
-        play(who, AUTHENTIC[k], 0.9);
-        return '';
+        play(who, AUTHENTIC[k][0], 0.9);
+        return AUTHENTIC[k][1];
       }
       const list = LINES[who];
       let i = idx;
