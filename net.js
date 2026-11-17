@@ -415,7 +415,8 @@
     try {
       const o = m.p === 'V' ? Voice : Sound;
       if (m.p === 'V' && ((H.y.dead || H.y.won))) return;
-      if (typeof o[m.n] === 'function') o[m.n](...(m.a || []));
+      if (m.p === 'V' && m.n === 'say' && H.oi) H.oi(m.a[0], m.a[1]); // shows the subtitle too
+      else if (typeof o[m.n] === 'function') o[m.n](...(m.a || []));
     } catch (e) { /* ignore */ }
   }
 
