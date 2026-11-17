@@ -191,7 +191,7 @@ const Voice = (() => {
   /* "Authentic Zayed" (Settings, on by default): every robot uses these recordings instead of the stock clips.
      Each plays at random, never the same one twice in a row. [file, caption] */
   const AUTHENTIC = [
-    ['zayed1', 'Yoo-hoo!'], ['zayed2', "I'm gonna get you!"], ['zayed3', "I'm gonna get your ass!"], ['zayed4', 'Geronimo!'],
+    ['zayed1', 'Yoo-hoo!'], ['zayed2', "I'm gonna get you!"], ['zayed3', "I'm gonna get your ass!"], ['zayed4', 'Jerona!'],
     ['zayed5', 'Qerh!'], ['zayed6', 'Open wide!'], ['zayed7', 'Leave no one alive!'], ['zayed8', 'Here I come, San Francisco!']
   ];
   let authentic = true;
