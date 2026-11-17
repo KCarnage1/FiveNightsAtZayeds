@@ -193,7 +193,15 @@
     let fx, gx, fy = stageY, fRoll = 0, fTilt = 0;
     let fArmL = 0, fArmR = 0, gArmL = 0, gArmR = 0, fHead = 0, gHead = 0, fJaw = 0;
     let gYaw = -Math.PI / 2;
-    const hit = (key, snd, spark, shake) => sfx(c, key, () => { if (snd) S.bang(); sparks = spark; c.shake = shake; });
+    // a hit: sound, sparks, shake, and the anime beat: freeze the action, flash two impact frames, punch the camera in, pop a sound word
+    const hit = (key, snd, spark, shake, freeze, word, big) => sfx(c, key, () => {
+      if (snd) S.bang();
+      sparks = spark; c.shake = shake;
+      c.freeze = c.fz = freeze; c.fe = 0; c.pe = 1; c.big = !!big;
+      c.tilt = (Math.random() < 0.5 ? -1 : 1) * (big ? 0.1 : 0.06);
+      c.word = word; c.wordAt = 0; c.wx = 0.2 + Math.random() * 0.5; c.wy = 0.2 + Math.random() * 0.25; c.wr = (Math.random() - 0.5) * 0.3;
+      c.ang = Math.random() * 360;
+    });
 
     if (t < 4.8) { // Abdulla walks on from the right, then they square up
       fx = -3.3;
@@ -206,7 +214,7 @@
       const v = seg(t, 4.8, 5.5);
       fx = lerp(-3.3, 0.9, ease(v)); gx = 3.0 - 0.3 * ease(v);
       fArmL = fArmR = -1.4 * v; gArmL = gArmR = lerp(-0.4, -1.4, v); fTilt = 0.2;
-      sfx(c, 4.8, () => S.run());
+      sfx(c, 4.8, () => { S.run(); c.rush = 1; });
     } else if (t < 8.4) { // the grapple: shoving back and forth
       const g = t - 5.5, v = ease(seg(t, 5.5, 8.4));
       fx = lerp(0.9, f0, v) + Math.sin(g * 3.4) * 0.35 * (1 - v);
@@ -215,7 +223,7 @@
       gArmL = -1.5 + Math.cos(g * 8) * 0.9; gArmR = -1.5 + Math.sin(g * 8) * 0.9;
       fHead = Math.sin(g * 11) * 0.22; gHead = Math.cos(g * 10) * 0.22;
       fJaw = Math.max(0, Math.sin(g * 14)) * 0.5; fTilt = 0.15;
-      hit(5.5, true, 0.6, 0.5); hit(6.3, true, 0.4, 0.35); hit(7.2, true, 0.4, 0.35); hit(7.9, true, 0.5, 0.4);
+      hit(5.5, true, 0.6, 0.5, 0.13, 'WHAM!'); hit(6.3, true, 0.4, 0.35, 0.08, 'THUD!'); hit(7.2, true, 0.4, 0.35, 0.08, 'KRAK!'); hit(7.9, true, 0.5, 0.4, 0.12, 'BAM!');
     } else if (t < 10.2) { // Abdulla winds up and hits; the Falcon is thrown across the stage
       const wind = seg(t, 8.4, 8.9), swing = ease(seg(t, 8.9, 9.2)), fly = seg(t, 9.0, 10.2);
       fx = lerp(f0, -3.4, ease(fly));
@@ -224,7 +232,7 @@
       fy = stageY + Math.sin(fly * Math.PI) * 1.2;
       fRoll = -ease(fly) * (Math.PI / 2) * 0.96; // knocked flat on his back
       fArmL = fArmR = lerp(-1.2, -2.2, fly); fJaw = 0.7;
-      hit(9.1, true, 0.9, 0.8);
+      hit(9.1, true, 0.9, 0.8, 0.28, 'DOOOON!!', true);
     } else { // the Falcon twitches on the floor; Abdulla walks over and stands above him
       const flop = seg(t, 10.2, 12.6), walk = ease(seg(t, 10.4, 12.8));
       fx = -3.4; fy = stageY + 0.12;
@@ -236,7 +244,7 @@
       gx = lerp(g0 - 0.6, -1.7, walk);
       gArmL = gArmR = Math.sin(t * 6) * 0.3 * (walk < 1 ? 1 : 0);
       if (t >= 12.8) gArmR = lerp(0, -1.0, ease(seg(t, 12.8, 13.6)));
-      sfx(c, 10.2, () => { S.bang(); c.shake = 0.6; });
+      hit(10.2, true, 0.3, 0.6, 0.15, 'CRASH!');
       sfx(c, 12.7, () => S.powerOut());
     }
 
@@ -275,13 +283,26 @@
       const v = ease(seg(t, 15, LEN));
       p = [lerp(-1.4, -0.9, v), 1.9, lerp(-25.2, -25.9, v)]; l = [gx, 1.9, Z];
     }
+    const c = H.y.cut, pe = c.pe || 0;
     cam.position.set(p[0] + sx, p[1] + sy, p[2]);
     cam.lookAt(l[0], l[1], l[2]);
+    const rush = t > 4.8 && t < 5.5 ? seg(t, 4.8, 5.5) * 0.35 : 0;
+    cam.fov = 42 - pe * (c.big ? 16 : 11) - rush * 6;
+    cam.updateProjectionMatrix();
+    cam.rotateZ((c.tilt || 0) * pe + (t > 2.6 && t < 4.8 ? 0.035 : 0));
   }
 
   FNAZ5.cutStep = function (dt) {
     const c = H.y.cut;
     if (!c) return;
+    c.pe = Math.max(0, (c.pe || 0) - dt * 2.4);
+    c.wordAt = (c.wordAt || 0) + dt;
+    if (c.freeze > 0) { // hit-stop: the picture holds while the impact frames play
+      c.fe = c.fz - c.freeze + dt;
+      c.freeze = Math.max(0, c.freeze - dt);
+      return;
+    }
+    c.fe = 99;
     c.t += dt;
     c.shake = Math.max(0, (c.shake || 0) - dt * 2.2);
     sparks = Math.max(0, sparks - dt * 2);
@@ -293,7 +314,8 @@
     if (!c) return;
     const We = H.We, Rt = H.Rt;
     const t = c.t;
-    const { fx, gx } = pose(t);
+    const tp = Math.floor(t * 12 + 1e-6) / 12; // poses are drawn "on twos" (12 per second), like hand-drawn animation
+    const { fx, gx } = pose(tp);
     camFor(t, fx, gx);
     // captions
     caption(t > 0.8 && t < 2.6 ? 'Zayed the Falcon: Special delivery.' : t > 3.0 && t < 5.0 ? 'Abdulla: Your order is ready.' : t > 13.0 && t < 15.5 ? 'Abdulla: Your order is ready.' : '');
@@ -314,6 +336,30 @@
     H.X.cutWrap.style.setProperty('--cutfade', String(Math.max(1 - clamp01(t / 0.8), clamp01((t - (LEN - 1.2)) / 1.2))));
     Rt.shadowMap.needsUpdate = true;
     Rt.render(We.scene, cam);
+    // ---- the anime layers
+    const X = H.X, fe = c.fe === undefined ? 99 : c.fe, inFreeze = c.freeze > 0 || fe < (c.fz || 0) + 1e-6;
+    const frame = Math.floor(fe * 24 + 1e-6);
+    const toon = H.ce.quality !== 'low';
+    let look = toon ? 'url(#toon)' : 'contrast(1.2) saturate(1.5)';
+    let lines = 0, lc = '#fff', flash = 0;
+    if (inFreeze && c.fz && frame < (c.big ? 3 : 2)) { // impact frames: stark black and white, then the negative
+      look = frame % 2 === 0 ? 'grayscale(1) contrast(7) brightness(1.5)' : 'grayscale(1) contrast(7) brightness(1.5) invert(1)';
+      lines = 1; lc = frame % 2 === 0 ? '#fff' : '#000';
+    } else if (c.pe > 0.05) { lines = 0.55 * c.pe; flash = 0.5 * c.pe; }
+    if (t > 4.8 && t < 5.5) lines = Math.max(lines, 0.35 * seg(t, 4.8, 5.4)); // focus lines as he charges
+    X.gl.style.filter = look;
+    const LN = X.cutLines;
+    LN.style.opacity = String(lines); LN.style.setProperty('--lc', lc); LN.style.setProperty('--ang', ((c.ang || 0) + frame * 7) + 'deg');
+    X.cutFlash.style.opacity = String(Math.min(0.9, flash));
+    // the sound word pops in, then fades
+    const sw = X.cutSfx, age = c.wordAt || 0;
+    if (c.word && age < 0.7) {
+      const pop = age < 0.12 ? 1.5 - 0.5 * (age / 0.12) : 1;
+      sw.textContent = c.word;
+      sw.style.opacity = String(age < 0.5 ? 1 : 1 - (age - 0.5) / 0.2);
+      sw.style.transform = 'translate(' + Math.round(c.wx * 100) + 'vw,' + Math.round(c.wy * 100) + 'vh) rotate(' + c.wr + 'rad) scale(' + pop + ')';
+      sw.style.fontSize = (c.big ? 20 : 11) + 'vw';
+    } else sw.style.opacity = '0';
   };
 
   FNAZ5.endCut = function () {
@@ -328,6 +374,9 @@
     We.hemi.intensity = 0.18;
     X.cutWrap.classList.remove('on');
     X.cutCap.textContent = '';
+    X.gl.style.filter = '';
+    X.cutLines.style.opacity = '0'; X.cutFlash.style.opacity = '0'; X.cutSfx.style.opacity = '0';
+    cam.fov = 42; cam.updateProjectionMatrix();
     delete H.ar.view;
     H.xn('win');
   };
