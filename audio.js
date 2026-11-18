@@ -239,7 +239,7 @@ const Voice = (() => {
       play(who, list[i][0], 0.9);
       return list[i][1];
     },
-    // Tapping a robot's picture: a fresh copy each time, so quick taps pile up and overlap instead of cutting each other off.
+    // Pressing the cupcake on the desk: a fresh copy each time, so quick taps pile up and overlap instead of cutting each other off.
     poke() { const a = new Audio(V + 'tap1.mp3'); a.volume = Math.min(1, 0.95 * vol); const p = a.play(); if (p && p.catch) p.catch(() => {}); },
     phone(n) { return play('phone', 'phone' + n, 1); },
     phone2(n) { return play('phone2', 'phone' + n, 1); }, // a second line on the same call (Night 5's replacement phone guy)
@@ -250,5 +250,3 @@ const Voice = (() => {
   };
 })();
 
-// Staff and robots: pressing a robot's photo plays his recording (overlapping, as often as you like)
-document.addEventListener('pointerdown', (e) => { if (e.target && e.target.closest && e.target.closest('#castPhoto')) Voice.poke(); });
