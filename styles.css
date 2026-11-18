@@ -498,7 +498,8 @@ input[type=range]:hover { filter: brightness(1.15); }
 .cast-bio h3 { animation-delay: .05s; } .cast-role { animation-delay: .1s !important; } #castBio { animation-delay: .15s !important; }
 
 /* in the game */
-.hud.on { animation: fadeAny .5s ease both; }
+/* no fill-mode here: a finished animation that keeps its end state holds the HUD in its own layer, and the camera overlay then covers the touch buttons */
+.hud.on { animation: fadeAny .5s ease; }
 .hud-time, .hud-power { animation: scrIn .6s var(--ease) both .2s; }
 #power { transition: color .3s; }
 #power.low { animation: lowPulse 1s ease-in-out infinite; }

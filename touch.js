@@ -32,9 +32,10 @@
   const LOOK_SPEED = 1.8; // bigger = a short swipe turns further
   let last = null;
   let swipe = null; // on the cameras, a horizontal swipe switches camera
+  let swipeY = null; // and a swipe down puts the tablet away
   stage.addEventListener('pointerdown', (e) => {
     if (e.pointerType !== 'touch') return;
-    if (!e.target.closest('#touch')) swipe = e.clientX; // may start on the camera map: a swipe is not a tap
+    if (!e.target.closest('#touch')) { swipe = e.clientX; swipeY = e.clientY; } // may start on the camera map: a swipe is not a tap
     if (!e.target.closest('button')) last = e.clientX;
   });
   stage.addEventListener('pointermove', (e) => {
@@ -47,8 +48,12 @@
   });
   const stop = (e) => {
     const h = H();
-    if (e && e.type === 'pointerup' && swipe !== null && h && h.y.monitor && h.cs && Math.abs(e.clientX - swipe) > stage.getBoundingClientRect().width * 0.12) h.cs(e.clientX < swipe ? 1 : -1);
-    last = null; swipe = null;
+    if (e && e.type === 'pointerup' && swipe !== null && h && h.y.monitor) {
+      const r = stage.getBoundingClientRect(), dx = e.clientX - swipe, dy = e.clientY - (swipeY === null ? e.clientY : swipeY);
+      if (dy > r.height * 0.25 && Math.abs(dx) < r.width * 0.12) h.nr(false);                 // swipe down: tablet away
+      else if (Math.abs(dx) > r.width * 0.12 && h.cs) h.cs(dx < 0 ? 1 : -1);                    // swipe sideways: next camera
+    }
+    last = null; swipe = null; swipeY = null;
   };
   stage.addEventListener('pointerup', stop);
   stage.addEventListener('pointercancel', stop);
