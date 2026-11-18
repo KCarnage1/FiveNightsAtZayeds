@@ -6,6 +6,53 @@ const { createUpdater, isNewer } = require('./updater');
 const fs = require('fs');
 const path = require('path');
 
+/* ---------- a newer build in the game's data folder (engine updates) ----------
+   When an update brings a different Electron, the updater unpacks the whole new build into <user data>/updates and writes
+   engine.json. From then on this (older) program just starts that build and quits, so the old shortcut keeps working.
+   If the new build never gets as far as opening a window twice in a row, the pointer is put aside and the game runs from here. */
+const UPDATES = path.join(app.getPath('userData'), 'updates');
+function engineExe() {
+  if (!app.isPackaged || process.env.FNZ_NO_OVERLAY || process.env.FNAZ_ENGINE_CHILD) return null;
+  const ofs = require('original-fs');
+  const pointer = path.join(UPDATES, 'engine.json');
+  try {
+    const cur = JSON.parse(ofs.readFileSync(pointer, 'utf8'));
+    const exe = path.join(UPDATES, path.basename(String(cur.dir)), String(cur.exe));
+    if (!isNewer(cur.version, app.getVersion()) || cur.electron === process.versions.electron || !ofs.existsSync(exe)) return null;
+    let ok = false;
+    try { ok = String(ofs.readFileSync(path.join(UPDATES, 'engine.ok'), 'utf8')).trim() === String(cur.version); } catch (e) { /* not started yet */ }
+    if (!ok && (cur.tries || 0) >= 2) { ofs.renameSync(pointer, path.join(UPDATES, 'engine.bad.json')); return null; }
+    if (!ok) ofs.writeFileSync(pointer, JSON.stringify(Object.assign(cur, { tries: (cur.tries || 0) + 1 })));
+    return exe;
+  } catch (e) { return null; }
+}
+function launchEngine(exe) {
+  const child = require('child_process').spawn(exe, process.argv.slice(1), { detached: true, stdio: 'ignore', env: Object.assign({}, process.env, { FNAZ_ENGINE_CHILD: '1' }) });
+  child.on('error', () => {});
+  child.unref();
+}
+const engine = engineExe();
+if (engine) {
+  try { launchEngine(engine); app.exit(0); return; } catch (e) { /* could not start it: carry on from here */ }
+}
+if (process.env.FNAZ_ENGINE_CHILD) { // this is the unpacked newer build: tell the old program it started
+  app.whenReady().then(() => { try { require('original-fs').writeFileSync(path.join(UPDATES, 'engine.ok'), app.getVersion()); } catch (e) { /* not important */ } });
+}
+// unpacking the downloaded build: tar ships with Windows 10 and later, ditto with macOS
+function extractZip(zip, dest) {
+  const { execFile } = require('child_process');
+  const run = (cmd, args) => new Promise((resolve, reject) => execFile(cmd, args, { windowsHide: true }, (err) => (err ? reject(err) : resolve())));
+  if (process.platform === 'win32') {
+    const sys = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32');
+    return run(path.join(sys, 'tar.exe'), ['-xf', zip, '-C', dest]).catch(() => run(path.join(sys, 'WindowsPowerShell', 'v1.0', 'powershell.exe'), ['-NoProfile', '-Command', `Expand-Archive -LiteralPath '${zip.replace(/'/g, "''")}' -DestinationPath '${dest.replace(/'/g, "''")}' -Force`]));
+  }
+  if (process.platform === 'darwin') return run('ditto', ['-x', '-k', zip, dest]);
+  return run('unzip', ['-q', zip, '-d', dest]);
+}
+const ENGINE_ZIP = process.platform === 'win32' ? 'FiveNightsAtZayeds-win32-x64.zip' : process.platform === 'darwin' ? `FiveNightsAtZayeds-mac-${process.arch === 'arm64' ? 'arm64' : 'x64'}.zip` : '';
+const ENGINE_EXE = process.platform === 'win32' ? 'FiveNightsAtZayeds-win32-x64/FiveNightsAtZayeds.exe'
+  : process.platform === 'darwin' ? 'FiveNightsAtZayeds.app/Contents/MacOS/FiveNightsAtZayeds' : 'FiveNightsAtZayeds';
+
 /* ---------- updates are loaded from the game's data folder ----------
    The in-game updater saves a newer app.asar in <user data>/updates (always writable, no admin rights needed) and points
    current.json at it. If that file is newer than the installed one, this file hands over to the copy inside it. If it
@@ -14,7 +61,7 @@ function updateOverlay() {
   if (!app.isPackaged || process.env.FNZ_NO_OVERLAY || global.__fnazOverlay) return null;
   try {
     const ofs = require('original-fs');
-    const dir = path.join(app.getPath('userData'), 'updates');
+    const dir = UPDATES;
     const cur = JSON.parse(ofs.readFileSync(path.join(dir, 'current.json'), 'utf8'));
     const file = path.join(dir, path.basename(String(cur.file)));
     if (!/\.asar$/.test(file) || !isNewer(cur.version, app.getVersion()) || !ofs.existsSync(file) || ofs.statSync(file).size !== cur.size) return null;
@@ -120,7 +167,12 @@ function startUpdater(win) {
     enabled,
     fs: require('original-fs'), // plain fs: the patched one treats app.asar as read-only
     version: VERSION,
-    updatesDir: path.join(app.getPath('userData'), 'updates'),
+    updatesDir: UPDATES,
+    electron: process.versions.electron,
+    engineZip: process.env.FNZ_ENGINE_ZIP || ENGINE_ZIP,
+    engineExe: process.env.FNZ_ENGINE_EXE || ENGINE_EXE,
+    extract: extractZip,
+    launchEngine: (exe) => { launchEngine(exe); app.exit(0); },
     asarPath: path.join(process.resourcesPath || '', 'app.asar'),
     platform: process.platform,
     execPath: process.execPath,

@@ -52,15 +52,19 @@ jobs:
       - name: Copy app.asar
         run: cp dist/FiveNightsAtZayeds-win32-x64/resources/app.asar dist/app.asar
 
+      # says which Electron this release was built with, so the in-game updater knows when the whole build must be replaced
+      - name: Note the Electron version
+        run: echo "$ELECTRON_VERSION" > dist/electron.txt
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip dist/app.asar --clobber
+            gh release upload "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip dist/app.asar dist/electron.txt --clobber
           else
-            gh release create "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip dist/app.asar \
+            gh release create "$TAG" dist/FiveNightsAtZayeds-win32-x64.zip dist/app.asar dist/electron.txt \
               --target "$GITHUB_SHA" --title "Five Nights at Zayed's ${TAG#v}" --generate-notes
           fi
 
