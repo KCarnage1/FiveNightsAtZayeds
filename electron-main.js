@@ -156,6 +156,7 @@ ipcMain.on('fnaz:fps', (e, v) => {
   try { fs.mkdirSync(path.dirname(LAUNCH_FILE), { recursive: true }); fs.writeFileSync(LAUNCH_FILE, JSON.stringify({ fps })); } catch (err) {}
 });
 ipcMain.on('fnaz:relaunch', () => { app.relaunch(); app.exit(0); });
+ipcMain.on('fnaz:open', (e, url) => { if (typeof url === 'string' && /^https:\/\/[^\s]+$/i.test(url) && url.length < 400) shell.openExternal(url); });
 
 /* ---------- updates ----------
    Checks GitHub for a newer release a few seconds after launch (set FNZ_NO_UPDATE=1 to turn that off).

@@ -40,6 +40,7 @@
   function safeGame(g) {
     g = g || {};
     const o = { night: int(g.night, 1, 5, 1), unlocked: int(g.unlocked, 1, 5, 1), nmUnlocked: int(g.nmUnlocked, 1, 5, 1), stars: {}, custom: [5, 5, 5, 5] };
+    if (g.secret6) o.secret6 = true;
     for (const k of Object.keys(g.stars || {}).slice(0, 16)) if (/^[a-z0-9]{1,12}$/i.test(k) && g.stars[k]) o.stars[k] = 1;
     if (Array.isArray(g.custom)) o.custom = [0, 1, 2, 3].map((i) => int(g.custom[i], 0, 20, 5));
     for (const k of SETTINGS) if (g[k] !== undefined && ['number', 'string', 'boolean'].includes(typeof g[k])) o[k] = g[k];
@@ -100,14 +101,14 @@
       const game = Object.assign({}, g, {
         night: Math.max(g.night, inc.game.night), unlocked: Math.max(g.unlocked, inc.game.unlocked), nmUnlocked: Math.max(g.nmUnlocked, inc.game.nmUnlocked),
         stars: Object.assign({}, g.stars, inc.game.stars)
-      });
+      }, g.secret6 || inc.game.secret6 ? { secret6: true } : {});
       return addSettings({
         game,
         ach: Object.assign({}, cur.ach, inc.ach),
         mods: { coins: Math.max(cur.mods.coins, inc.mods.coins), inv: Object.fromEntries(ITEMS.map((k) => [k, Math.max(cur.mods.inv[k], inc.mods.inv[k])])) }
       }, withSettings, inc);
     }
-    const game = Object.assign({}, g, { night: inc.game.night, unlocked: inc.game.unlocked, nmUnlocked: inc.game.nmUnlocked, stars: inc.game.stars, custom: inc.game.custom });
+    const game = Object.assign({}, g, { night: inc.game.night, unlocked: inc.game.unlocked, nmUnlocked: inc.game.nmUnlocked, stars: inc.game.stars, custom: inc.game.custom }, inc.game.secret6 ? { secret6: true } : {});
     return addSettings({ game, ach: inc.ach, mods: inc.mods }, withSettings, inc);
   }
 

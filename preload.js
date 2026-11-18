@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('fnaz', {
   setFps: (v) => ipcRenderer.send('fnaz:fps', v),          // 'auto' or a number; read again at the next launch
   presence: (p) => ipcRenderer.send('fnaz:presence', p),   // Discord status text
   relaunch: () => ipcRenderer.send('fnaz:relaunch'),
+  open: (url) => ipcRenderer.send('fnaz:open', url),       // an https link, in the player's browser
   update: {                                                // in-game updater, see updater.js
     state: () => ipcRenderer.invoke('fnaz:update-state'),
     check: () => ipcRenderer.send('fnaz:update-check'),

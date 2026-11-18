@@ -281,6 +281,31 @@
     requestAnimationFrame(loop);
   })(last);
 
+  /* ---------- the sixth night: a secret way in ----------
+     Type  yousef  on any menu, or tap the little "at" in the title six times. It stays unlocked (it is part of the save). */
+  function unlockSecret() {
+    const h = H();
+    if (!h || online()) return;
+    if (h.ce.secret6) { toast('The sixth night is already on the Time card.'); return; }
+    h.ce.secret6 = true;
+    try { const g = JSON.parse(store('fnaz_save_v1') || '{}'); g.secret6 = true; localStorage.setItem('fnaz_save_v1', JSON.stringify(g)); } catch (e) { /* kept in memory, saved with the next save */ }
+    sound('chime'); sound('laugh', 0.1, 0.5);
+    toast('A sixth night has been scheduled. Check the Time card.');
+  }
+  const store = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  let word = '';
+  window.addEventListener('keydown', (e) => {
+    const h = H();
+    if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || !h || h.y.screen === 'game' || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) { word = ''; return; }
+    word = (word + e.key.toLowerCase()).slice(-6);
+    if (word === 'yousef') { word = ''; unlockSecret(); }
+  }, true);
+  const at = document.querySelector('#title .fn-l2');
+  if (at) {
+    let taps = 0, timer = 0;
+    at.addEventListener('click', () => { clearTimeout(timer); timer = setTimeout(() => { taps = 0; }, 4000); if (++taps >= 6) { taps = 0; unlockSecret(); } });
+  }
+
   window.FNAZMOD = { flags, won, toggle, mod, wear(sec) { maskT = sec; }, save: () => save, reset() { maskT = 0; sprayT = 0; } };
   refreshShop();
 })();
