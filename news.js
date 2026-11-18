@@ -9,6 +9,9 @@
  *   message  the text (up to 600 characters; line breaks are kept)
  *   link     optional https address, and linkText the button label ("Read more")
  *   until    optional date, YYYY-MM-DD: the announcement stops showing after that day
+ *   gift     optional {"coins": 700}: shop coins handed out once to each player who receives the announcement
+ *   giftUntil  optional UTC time, e.g. 2026-11-19T00:00:00Z: only players who get it before then receive the gift (the player's own clock, since
+ *              GitHub's file server does not share its time with web pages). The gift needs version 1.6.1 or newer; older versions only show the text.
  * The admin menu (type the admin word) has an Announcement section that writes this file's text for you to paste in.
  * Only plain text is ever shown, and a link must start with https://. Optional "type": "warn" makes the banner red. */
 (() => {
@@ -26,13 +29,20 @@
   if (!stage) return;
 
   const seen = () => { try { const a = JSON.parse(localStorage.getItem(SEEN) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+  // gifts are remembered separately: a gift is claimed the moment it is handed over, even if the card is never dismissed
+  const CLAIMED = 'fnaz_gift_v1';
+  const claimed = () => { try { const a = JSON.parse(localStorage.getItem(CLAIMED) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+  const claim = (id) => { try { localStorage.setItem(CLAIMED, JSON.stringify([id, ...claimed().filter((x) => x !== id)].slice(0, 50))); } catch (e) { /* private mode */ } };
   const markSeen = (id) => { try { localStorage.setItem(SEEN, JSON.stringify([id, ...seen().filter((x) => x !== id)].slice(0, 30))); } catch (e) { /* private mode: shown again next time */ } };
 
   // plain text only, with limits, from anything the file contains
   function clean(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max) : '');
-    const a = { id: str(raw.id, 60), title: str(raw.title, 80), message: str(raw.message, 600), link: str(raw.link, 300), linkText: str(raw.linkText, 40), until: str(raw.until, 10), type: raw.type === 'warn' ? 'warn' : 'info' };
+    const a = { id: str(raw.id, 60), title: str(raw.title, 80), message: str(raw.message, 600), link: str(raw.link, 300), linkText: str(raw.linkText, 40), until: str(raw.until, 10), type: raw.type === 'warn' ? 'warn' : 'info', gift: 0, giftUntil: '' };
+    const g = raw.gift && typeof raw.gift === 'object' ? Math.round(Number(raw.gift.coins)) : 0;
+    if (Number.isFinite(g) && g > 0) a.gift = Math.min(g, 5000);
+    if (a.gift && typeof raw.giftUntil === 'string' && !Number.isNaN(Date.parse(raw.giftUntil))) a.giftUntil = raw.giftUntil.slice(0, 40);
     if (!a.id || !(a.title || a.message)) return null;
     if (!/^https:\/\/[^\s]+$/i.test(a.link)) a.link = '';
     if (a.until && /^\d{4}-\d{2}-\d{2}$/.test(a.until) && new Date(a.until + 'T23:59:59').getTime() < Date.now()) return null;
@@ -96,7 +106,7 @@
       try {
         const res = await fetch(src.url + (src.url.includes('?') ? '&' : '?') + 't=' + Math.floor(Date.now() / 60000), { cache: 'no-store' });
         if (!res.ok) { lastError = src.url.split('/')[2] + ' answered ' + res.status; continue; }
-        return { data: await src.read(res), from: src.url.split('/')[2] };
+        return { data: await src.read(res), from: src.url.split('/')[2], serverTime: Date.parse(res.headers.get('date') || '') || Date.now() };
       } catch (e) { lastError = src.url.split('/')[2] + ': ' + (e && e.message ? e.message : 'blocked'); }
     }
     throw new Error(lastError);
@@ -111,6 +121,12 @@
       if (!a) { status.result = 'no announcement right now'; return; }
       if (seen().includes(a.id) && !force) { status.result = 'already shown (' + a.id + ')'; return; }
       status.result = 'showing ' + a.id;
+      // a gift is handed out once, and only while GitHub's clock says the offer is still open
+      if (a.gift && !claimed().includes(a.id) && window.FNAZMOD && FNAZMOD.give && (!a.giftUntil || got.serverTime <= Date.parse(a.giftUntil))) {
+        claim(a.id); // first, so nothing can hand it out twice
+        const n = FNAZMOD.give(a.gift);
+        if (n) { a.message = (a.message ? a.message + '\n\n' : '') + '+' + n + ' coins added to your shop balance.'; status.result += ' (+' + n + ' coins)'; }
+      }
       if (where() === 'title' && !(NET && NET.role) && card.hidden) show(a); // the title screen: a card
       else if (where() && where() !== 'title') banner(a);                     // anywhere else, including a night: a banner
     } catch (e) { status.last = Date.now(); status.result = 'could not check: ' + (e && e.message ? e.message : 'offline'); }
@@ -134,6 +150,7 @@
       <input type="text" id="anT" maxlength="80" placeholder="Title" aria-label="Announcement title">
       <textarea id="anM" rows="3" maxlength="600" placeholder="Message" aria-label="Announcement message"></textarea>
       <input type="text" id="anL" maxlength="300" placeholder="Link (optional, https://...)" aria-label="Announcement link">
+      <div class="mm-row"><span>Gift coins</span><input type="text" id="anG" maxlength="4" placeholder="0" style="width:90px" aria-label="Gift coins"><span>for</span><input type="text" id="anW" maxlength="4" placeholder="60" style="width:80px" aria-label="Minutes the gift stays open"><span>min</span></div>
       <div class="mm-btns"><button type="button" id="anP">Preview</button><button type="button" id="anC">Copy announce.json</button></div>
       <p class="mm-note" id="anH">Paste the copy into announce.json on GitHub and commit it. Players see it within minutes, no update needed.</p>
       <div class="mm-btns"><button type="button" id="anK">Check now</button><button type="button" id="anR">Show it again</button></div>
@@ -145,6 +162,8 @@
       const a = { id: `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}`,
         title: sec.querySelector('#anT').value.trim(), message: sec.querySelector('#anM').value.trim(), link: sec.querySelector('#anL').value.trim(),
         linkText: sec.querySelector('#anL').value.trim() ? 'Read more' : '', until: '' };
+      const coins = Math.round(Number(sec.querySelector('#anG').value)) || 0, mins = Math.round(Number(sec.querySelector('#anW').value)) || 60;
+      if (coins > 0) { a.gift = { coins: Math.min(coins, 5000) }; a.giftUntil = new Date(Date.now() + mins * 60000).toISOString().replace(/\.\d+Z$/, 'Z'); }
       return a;
     };
     sec.querySelector('#anP').addEventListener('click', () => { const a = clean(build()); if (!a) { sec.querySelector('#anH').textContent = 'Add a title or a message first.'; return; } show(a, true); });

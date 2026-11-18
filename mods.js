@@ -306,6 +306,9 @@
     at.addEventListener('click', () => { clearTimeout(timer); timer = setTimeout(() => { taps = 0; }, 4000); if (++taps >= 6) { taps = 0; unlockSecret(); } });
   }
 
-  window.FNAZMOD = { flags, won, toggle, mod, wear(sec) { maskT = sec; }, save: () => save, reset() { maskT = 0; sprayT = 0; } };
+  // a gift of coins (from an announcement); the amount is capped so a typo cannot hand out millions
+  function give(n) { n = Math.max(0, Math.min(5000, Math.round(Number(n) || 0))); if (!n) return 0; save.coins += n; persist(); refreshShop(); return n; }
+
+  window.FNAZMOD = { flags, won, toggle, mod, give, wear(sec) { maskT = sec; }, save: () => save, reset() { maskT = 0; sprayT = 0; } };
   refreshShop();
 })();
