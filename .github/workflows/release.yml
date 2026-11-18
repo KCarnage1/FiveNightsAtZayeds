@@ -40,6 +40,9 @@ jobs:
           --electron-version=$ELECTRON_VERSION
           --ignore="^/verity-song-dub \(1\)\.mp4$"
           --ignore="^/\.github"
+          --ignore="^/rust"
+          --ignore="^/tests"
+          --ignore="^/scripts"
           --out=dist
 
       - name: Zip
@@ -89,6 +92,9 @@ jobs:
           --electron-version=$ELECTRON_VERSION
           --ignore="^/verity-song-dub \(1\)\.mp4$"
           --ignore="^/\.github"
+          --ignore="^/rust"
+          --ignore="^/tests"
+          --ignore="^/scripts"
           --out=dist
 
       # Apple Silicon refuses to start an app whose signature is missing or broken, so sign it ad hoc.
