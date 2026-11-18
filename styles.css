@@ -432,3 +432,100 @@ body.touch.cams .caption { bottom: 160px; }
 .cut-bar.top { top: 0; } .cut-bar.bot { bottom: 0; }
 .cut-cap { bottom: 11%; }
 
+
+/* ---------- motion: everything eases in and out ----------
+   Plain CSS, so it costs next to nothing. The reduced-motion rule above switches all of it off. */
+:root { --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.3, 1.45, .5, 1); }
+@keyframes fadeAny { from { opacity: 0; } }
+@keyframes scrIn { from { opacity: 0; transform: translateY(18px); } }
+@keyframes slideR { from { opacity: 0; transform: translateX(-26px); } }
+@keyframes slideL { from { opacity: 0; transform: translateX(28px); } }
+@keyframes popIn { from { opacity: 0; transform: scale(.92) translateY(8px); } }
+@keyframes growX { from { transform: scaleX(0); } }
+@keyframes logoPop { 0% { opacity: 0; transform: translateY(40px) scale(.85) rotate(-3deg); } 100% { opacity: 1; } }
+@keyframes toastDown { from { opacity: 0; transform: translateX(-50%) translateY(-26px) scale(.9); } }
+@keyframes toastUp { from { opacity: 0; transform: translateX(-50%) translateY(24px); } }
+@keyframes bubbleIn { from { opacity: 0; transform: translate(-50%, -88%) scale(.6); } }
+@keyframes lowPulse { 50% { opacity: .45; } }
+@keyframes barUp { from { transform: scaleY(0); } }
+@keyframes shine { to { background-position: -200% 0; } }
+
+/* every screen fades up; the menus and lists below stagger in one item at a time */
+.screen.active { animation: scrIn .4s var(--ease) both; }
+.screen.overlay.active { animation: fadeAny .25s ease both; }
+#loading.active, #win.active, #over.active { animation-duration: .3s; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(1) { --i: 0; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(2) { --i: 1; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(3) { --i: 2; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(4) { --i: 3; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(5) { --i: 4; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(6) { --i: 5; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(7) { --i: 6; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(8) { --i: 7; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(9) { --i: 8; }
+:is(.menu, .rows, .ach-grid, .custom-grid, .settings, .help-cols) > :nth-child(n+10) { --i: 9; }
+.screen.active :is(.menu, .rows) > * { animation: slideR .45s var(--ease) both; animation-delay: calc(var(--base, .12s) + var(--i, 0) * .045s); }
+.screen.active :is(.ach-grid, .custom-grid) > * { animation: popIn .45s var(--ease) both; animation-delay: calc(.1s + var(--i, 0) * .04s); }
+.screen.active .settings > * { animation: slideR .4s var(--ease) both; animation-delay: calc(.08s + var(--i, 0) * .035s); }
+.screen.active .help-cols > * { animation: popIn .5s var(--ease) both; animation-delay: calc(.1s + var(--i, 0) * .1s); }
+.screen.active .back { animation: slideR .4s var(--ease) both .3s; }
+
+/* title: the logo drops in, the candy stripe draws itself, then the menu follows */
+#title.active { --base: .55s; }
+#title.active .logo-small { animation: slideR .6s var(--ease) both .05s; }
+#title.active .logo-big { animation: logoPop .85s var(--spring) both .15s; }
+#title.active .stripe { transform-origin: left; animation: growX .7s var(--ease) both .4s; }
+#title.active .tag { animation: scrIn .6s var(--ease) both .5s; }
+#title.active .ver { animation: scrIn .6s ease both 1.1s; }
+
+/* buttons: the marker pops in and the label nudges toward you */
+button { transition: color .15s, background-color .15s, border-color .15s, opacity .15s; }
+button::before { transition: opacity .15s, transform .25s var(--spring); transform: scale(.3); }
+button:hover::before, button:focus-visible::before { transform: scale(1); }
+.menu button, .rows button { transition: color .15s, transform .2s var(--ease), background-color .15s; }
+.menu button:hover, .menu button:focus-visible, .rows button:not(:disabled):hover, .rows button:not(:disabled):focus-visible { transform: translateX(8px); }
+.menu button:active, .rows button:not(:disabled):active { transform: translateX(8px) scale(.97); }
+.bar { transition: background-color .15s, transform .15s var(--ease); }
+.bar:active { transform: scale(.98); }
+.rows button { transition: color .15s, background-color .2s, transform .2s var(--ease); }
+.rows button:not(:disabled):hover { background-color: rgba(255, 77, 141, .09); }
+.cn, .ach { transition: transform .25s var(--ease), border-color .25s, background-color .25s, opacity .25s; }
+.cn:hover, .ach.got:hover { transform: translateY(-4px); }
+
+/* settings controls */
+.seg span { transition: background-color .2s, border-color .2s, color .2s, transform .15s var(--ease); }
+.seg label:active span { transform: scale(.95); }
+.seg input:checked + span { animation: popIn .25s var(--spring); }
+input[type=checkbox], input[type=range] { transition: transform .15s var(--ease), filter .2s; }
+input[type=checkbox]:active { transform: scale(.85); }
+input[type=range]:hover { filter: brightness(1.15); }
+
+/* staff and robots: a new photo pops in whenever you pick someone */
+.cast-photo img { animation: popIn .4s var(--ease) both; }
+.cast-bio h3, .cast-bio p { animation: slideL .4s var(--ease) both; }
+.cast-bio h3 { animation-delay: .05s; } .cast-role { animation-delay: .1s !important; } #castBio { animation-delay: .15s !important; }
+
+/* in the game */
+.hud.on { animation: fadeAny .5s ease both; }
+.hud-time, .hud-power { animation: scrIn .6s var(--ease) both .2s; }
+#power { transition: color .3s; }
+#power.low { animation: lowPulse 1s ease-in-out infinite; }
+#usage i { transform-origin: bottom; animation: barUp .25s var(--ease) both; }
+.doors span { transition: color .25s; }
+.call.on { animation: slideR .4s var(--ease) both; }
+.caption.on span { display: inline-block; animation: scrIn .3s var(--ease) both; }
+.keys.on { animation: fadeAny .5s ease both; }
+.bubble.on { animation: bubbleIn .3s var(--spring) both; }
+.map-btn { transition: background-color .15s, border-color .15s, color .15s, transform .15s var(--ease); }
+.map-btn:hover { transform: scale(1.04); }
+.ol-msg { animation: slideR .3s var(--ease) both; }
+
+/* banners and toasts slide in */
+#upBanner:not([hidden]), #webBanner:not([hidden]) { animation: slideL .5s var(--ease) both; }
+#achToast:not([hidden]) { animation: toastDown .5s var(--spring) both; }
+#netToast:not([hidden]) { animation: toastDown .4s var(--ease) both; }
+.cheat-toast { animation: toastUp .4s var(--spring) both; }
+#secretBox:not([hidden]) { animation: toastDown .35s var(--ease) both; }
+
+/* the loading newspaper and the end screens */
+#over.active h2, #win.active #winTitle { animation: logoPop .8s var(--spring) both .15s; }
