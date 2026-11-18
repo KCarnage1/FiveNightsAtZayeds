@@ -61,6 +61,31 @@
     document.getElementById('tChat').hidden = !(NET && NET.role);
   }, 100);
 
+  /* Full screen: the first touch takes the whole screen (and locks the phone to landscape), so the address bar and
+     buttons stop eating the picture. iPhones only allow this for the installed app (Add to Home Screen), which is already full screen. */
+  const root = document.documentElement;
+  const fsOn = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const installed = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
+  let fsTried = 0;
+  function goFull() {
+    if (fsOn() || installed() || Date.now() - fsTried < 1500) return;
+    const req = root.requestFullscreen || root.webkitRequestFullscreen;
+    if (!req) return;
+    fsTried = Date.now();
+    try {
+      const r = req.call(root, { navigationUI: 'hide' });
+      const lock = () => { try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* not allowed here */ } };
+      if (r && r.then) r.then(lock).catch(() => {}); else lock();
+    } catch (e) { /* refused: the game still works in the browser */ }
+  }
+  document.addEventListener('pointerup', (e) => { if (e.pointerType === 'touch') goFull(); }, true);
+  // the picture re-fits whenever the visible area changes (address bar hides, fullscreen, rotation)
+  const refit = () => window.dispatchEvent(new Event('resize'));
+  document.addEventListener('fullscreenchange', refit);
+  document.addEventListener('webkitfullscreenchange', refit);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', refit);
+  window.addEventListener('orientationchange', () => setTimeout(refit, 250));
+
   // leaving the app mid-night pauses it
   document.addEventListener('visibilitychange', () => {
     const h = H();
