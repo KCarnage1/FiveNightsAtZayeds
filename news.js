@@ -13,7 +13,13 @@
  * Only plain text is ever shown, and a link must start with https://. Optional "type": "warn" makes the banner red. */
 (() => {
   'use strict';
-  const SOURCE = 'https://raw.githubusercontent.com/KCarnage1/FiveNightsAtZayeds/main/announce.json';
+  // the same file from three places, tried in this order: the repository's raw file (fastest to update), then GitHub's API, then a CDN
+  const SOURCES = [
+    { url: 'https://raw.githubusercontent.com/KCarnage1/FiveNightsAtZayeds/main/announce.json', read: (res) => res.json() },
+    { url: 'https://api.github.com/repos/KCarnage1/FiveNightsAtZayeds/contents/announce.json', read: async (res) => JSON.parse(decodeURIComponent(escape(atob(String((await res.json()).content || '').replace(/\s/g, ''))))) },
+    { url: 'https://cdn.jsdelivr.net/gh/KCarnage1/FiveNightsAtZayeds@main/announce.json', read: (res) => res.json() }
+  ];
+  const status = { last: 0, source: '', result: 'not checked yet', id: '' };
   const SEEN = 'fnaz_news_seen_v1';
   const NET = window.FNAZNET;
   const stage = document.getElementById('stage');
@@ -84,22 +90,40 @@
   /* ---------- looking for one ---------- */
   const where = () => { const h = NET && NET.h; return h && h.y ? h.y.screen : ''; };
   let busy = false;
-  async function check() {
-    if (busy || document.hidden) return;
+  async function fetchOne() {
+    let lastError = 'no answer';
+    for (const src of SOURCES) {
+      try {
+        const res = await fetch(src.url + (src.url.includes('?') ? '&' : '?') + 't=' + Math.floor(Date.now() / 60000), { cache: 'no-store' });
+        if (!res.ok) { lastError = src.url.split('/')[2] + ' answered ' + res.status; continue; }
+        return { data: await src.read(res), from: src.url.split('/')[2] };
+      } catch (e) { lastError = src.url.split('/')[2] + ': ' + (e && e.message ? e.message : 'blocked'); }
+    }
+    throw new Error(lastError);
+  }
+  async function check(force) {
+    if (busy || (document.hidden && !force)) return;
     busy = true;
     try {
-      const res = await fetch(SOURCE + '?t=' + Math.floor(Date.now() / 60000), { cache: 'no-store' });
-      if (!res.ok) return;
-      const a = clean(await res.json());
-      if (!a || seen().includes(a.id)) return;
+      const got = await fetchOne();
+      const a = clean(got.data);
+      status.last = Date.now(); status.source = got.from; status.id = a ? a.id : '';
+      if (!a) { status.result = 'no announcement right now'; return; }
+      if (seen().includes(a.id) && !force) { status.result = 'already shown (' + a.id + ')'; return; }
+      status.result = 'showing ' + a.id;
       if (where() === 'title' && !(NET && NET.role) && card.hidden) show(a); // the title screen: a card
       else if (where() && where() !== 'title') banner(a);                     // anywhere else, including a night: a banner
-    } catch (e) { /* offline or blocked: no news is fine */ }
-    finally { busy = false; }
+    } catch (e) { status.last = Date.now(); status.result = 'could not check: ' + (e && e.message ? e.message : 'offline'); }
+    finally { busy = false; renderStatus(); }
   }
-  setTimeout(check, 5000);
+  setTimeout(check, 4000);
   setInterval(check, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  window.addEventListener('focus', () => check());
+  window.addEventListener('online', () => check());
+  // coming back to the title screen (after a night or a menu) looks again, at most every 20 seconds
+  let prev = '', stamp = 0;
+  setInterval(() => { const w = where(); if (w === 'title' && prev !== 'title' && Date.now() - stamp > 20000) { stamp = Date.now(); check(); } prev = w; }, 1500);
 
   /* ---------- writing one (admin menu) ---------- */
   const panel = document.getElementById('modMenu');
@@ -111,7 +135,9 @@
       <textarea id="anM" rows="3" maxlength="600" placeholder="Message" aria-label="Announcement message"></textarea>
       <input type="text" id="anL" maxlength="300" placeholder="Link (optional, https://...)" aria-label="Announcement link">
       <div class="mm-btns"><button type="button" id="anP">Preview</button><button type="button" id="anC">Copy announce.json</button></div>
-      <p class="mm-note" id="anH">Paste the copy into announce.json on GitHub and commit it. Players see it within minutes, no update needed.</p>`;
+      <p class="mm-note" id="anH">Paste the copy into announce.json on GitHub and commit it. Players see it within minutes, no update needed.</p>
+      <div class="mm-btns"><button type="button" id="anK">Check now</button><button type="button" id="anR">Show it again</button></div>
+      <p class="mm-note" id="anS"></p>`;
     const foot = panel.querySelector('.mm-foot');
     panel.insertBefore(sec, foot);
     const build = () => {
@@ -129,5 +155,15 @@
     });
     sec.addEventListener('keydown', (e) => e.stopPropagation());
   }
-  window.FNAZNEWS = { clean, show, banner, check };
+  function renderStatus() {
+    const el = document.getElementById('anS');
+    if (!el) return;
+    const t = status.last ? new Date(status.last).toLocaleTimeString() : '';
+    el.textContent = 'This device (version ' + ((document.getElementById('upVer') || {}).textContent || '?') + '): ' + status.result + (t ? ' · checked ' + t + (status.source ? ' via ' + status.source : '') : '');
+  }
+  const k = document.getElementById('anK'), rr = document.getElementById('anR');
+  if (k) k.addEventListener('click', () => { status.result = 'checking…'; renderStatus(); check(true).then(renderStatus); });
+  if (rr) rr.addEventListener('click', () => { try { localStorage.removeItem(SEEN); } catch (e) { /* nothing */ } status.result = 'will show it again'; renderStatus(); check(true); });
+  if (panel) new MutationObserver(renderStatus).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
+  window.FNAZNEWS = { clean, show, banner, check, status };
 })();
