@@ -142,7 +142,7 @@
     <section class="mm-sec"><h3>Powers</h3>${TOGGLES.map(([k, n]) => `<label class="mm-row"><span>${n}</span><input type="checkbox" data-mod="${k}"><i class="sw"></i></label>`).join('')}</section>
     <section class="mm-sec"><h3>Night</h3>
       <div class="mm-btns"><button type="button" data-do="skip">Skip to 6 AM</button><button type="button" data-do="away">Send them all away</button><button type="button" data-do="power">Full power</button></div>
-      <label class="mm-row"><span>Start night</span><select id="modNight">${[1, 2, 3, 4, 5, 6, 7].map((n) => `<option value="${n}">${n === 6 ? '4/20 mode' : n === 7 ? 'Custom' : 'Night ' + n}</option>`).join('')}</select><button type="button" data-do="start">Go</button></label>
+      <label class="mm-row"><span>Start night</span><select id="modNight">${[1, 2, 3, 4, 5, 6, 7, 13].map((n) => `<option value="${n}">${n === 6 ? '4/20 mode' : n === 7 ? 'Custom' : n === 13 ? 'Secret night' : 'Night ' + n}</option>`).join('')}</select><button type="button" data-do="start">Go</button></label>
     </section>
     <section class="mm-sec"><h3>AI levels (this night)</h3>${BOTS.map(([k, n]) => `<label class="mm-row"><span>${n}</span><input type="range" min="0" max="20" step="1" value="0" data-ai="${k}"><output>0</output></label>`).join('')}</section>
     <section class="mm-sec"><h3>Coins <b id="modCoins"></b></h3>
