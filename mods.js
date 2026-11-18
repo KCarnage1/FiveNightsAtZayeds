@@ -105,11 +105,28 @@
   }
   bar.addEventListener('pointerdown', (e) => { const b = e.target.closest('[data-use]'); if (b) { e.preventDefault(); e.stopPropagation(); useItem(b.dataset.use); } });
 
-  /* the mask on screen */
+  /* the mask on screen: like the mask in the second game, you see the room through its eye holes and the inside of the mask
+     frames everything. It flips up from the bottom and back down when it runs out. */
   const mask = document.createElement('div');
   mask.id = 'maskView';
-  mask.innerHTML = '<img alt="" src="assets/faces/zayed.png"><span id="maskT"></span>';
+  mask.innerHTML = `<svg viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <pattern id="maskHatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="9" height="9" fill="#08070b"/><line x1="0" y1="0" x2="0" y2="9" stroke="#14121a" stroke-width="3"/></pattern>
+      <radialGradient id="maskShade" cx="50%" cy="48%" r="75%"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".85"/></radialGradient>
+    </defs>
+    <path fill="url(#maskHatch)" fill-rule="evenodd" d="M0 0H1600V900H0Z M 469 100 C 766 88 799 320 788 474 C 779 673 568 766 403 728 C 200 678 117 485 167 320 C 200 194 316 109 469 100Z M 1131 100 C 834 88 801 320 812 474 C 821 673 1032 766 1197 728 C 1400 678 1483 485 1433 320 C 1400 194 1284 109 1131 100Z"/>
+    <path fill="url(#maskShade)" d="M0 0H1600V900H0Z"/>
+    <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+      <path class="rim" d="M 469 100 C 766 88 799 320 788 474 C 779 673 568 766 403 728 C 200 678 117 485 167 320 C 200 194 316 109 469 100Z"/>
+      <path class="rim" d="M 1131 100 C 834 88 801 320 812 474 C 821 673 1032 766 1197 728 C 1400 678 1483 485 1433 320 C 1400 194 1284 109 1131 100Z"/>
+      <path class="edge" d="M60 880 C20 600 40 300 120 120 C160 40 330 0 520 0"/>
+      <path class="edge" d="M1540 880 C1580 600 1560 300 1480 120 C1440 40 1270 0 1080 0"/>
+      <circle class="edge" cx="150" cy="120" r="170"/><circle class="edge" cx="1450" cy="120" r="170"/>
+      <path class="edge" d="M640 900 C690 790 760 745 800 742 C840 745 910 790 960 900"/>
+      <path class="edge" d="M720 842 C760 862 840 862 880 842"/>
+    </g></svg><span id="maskT"></span>`;
   stage.appendChild(mask);
+  let maskShown = false, maskHide = 0;
 
   /* ---------- the admin menu ---------- */
   const panel = document.createElement('aside');
@@ -251,8 +268,9 @@
     const h = H();
     if (h && h.ai() && !online()) { if (maskT > 0) maskT = Math.max(0, maskT - dt); if (sprayT > 0) sprayT = Math.max(0, sprayT - dt); }
     else if (!h || !h.y.running) { maskT = 0; sprayT = 0; }
-    mask.classList.toggle('on', maskT > 0);
-    if (maskT > 0) $('#maskT').textContent = Math.ceil(maskT);
+    if (maskT > 0 && !maskShown) { maskShown = true; clearTimeout(maskHide); mask.classList.remove('down'); mask.classList.add('on'); }
+    else if (maskT <= 0 && maskShown) { maskShown = false; mask.classList.add('down'); maskHide = setTimeout(() => mask.classList.remove('on', 'down'), 260); }
+    if (maskT > 0) { $('#maskT').textContent = Math.ceil(maskT); mask.classList.toggle('last', maskT < 2); }
     const bits = [];
     if (maskT > 0) bits.push('Mask ' + Math.ceil(maskT) + 's');
     if (sprayT > 0 && !mod.noheat) bits.push('Cooled ' + Math.ceil(sprayT) + 's');
@@ -263,6 +281,6 @@
     requestAnimationFrame(loop);
   })(last);
 
-  window.FNAZMOD = { flags, won, toggle, mod, save: () => save, reset() { maskT = 0; sprayT = 0; } };
+  window.FNAZMOD = { flags, won, toggle, mod, wear(sec) { maskT = sec; }, save: () => save, reset() { maskT = 0; sprayT = 0; } };
   refreshShop();
 })();

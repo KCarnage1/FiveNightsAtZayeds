@@ -649,12 +649,19 @@ body.calm .fn-roll, body.calm #title.active .title-block h1 { animation: none; }
 #modChips { width: 100%; font-size: 20px; color: #ffe066; text-shadow: 0 2px 6px #000; min-height: 0; }
 #modChips:empty { display: none; }
 
-/* the mask */
+/* the mask: the inside of a mask with eye holes, like the second game's */
+@keyframes maskFlip { from { transform: translateY(100%); } 70% { transform: translateY(-1.5%); } to { transform: translateY(0); } }
+@keyframes maskDrop { to { transform: translateY(100%); } }
+@keyframes maskBreathe { 50% { transform: scale(1.012); } }
+@keyframes maskWarn { 50% { opacity: .35; } }
 #maskView { position: absolute; inset: 0; z-index: 30; display: none; pointer-events: none; overflow: hidden; }
-#maskView.on { display: block; }
-#maskView img { position: absolute; left: 50%; bottom: -8%; height: 112%; transform: translateX(-50%); filter: contrast(1.1) brightness(.75); opacity: .86; animation: maskUp .45s var(--ease) both; -webkit-mask-image: radial-gradient(ellipse 46% 56% at 50% 52%, #000 58%, transparent 74%); mask-image: radial-gradient(ellipse 46% 56% at 50% 52%, #000 58%, transparent 74%); }
-#maskView::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 34%, rgba(0, 0, 0, .8) 100%); }
-#maskT { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); font: 400 64px var(--display); color: #ffe066; text-shadow: 0 0 18px rgba(255, 224, 102, .6), 3px 3px 0 #000; }
+#maskView.on { display: block; animation: maskFlip .22s cubic-bezier(.2, .9, .3, 1) both; }
+#maskView.on.down { animation: maskDrop .24s ease-in both; }
+#maskView svg { position: absolute; inset: 0; width: 100%; height: 100%; transform-origin: 50% 60%; animation: maskBreathe 2.6s ease-in-out infinite; }
+#maskView .rim { stroke: #aab0bf; stroke-width: 7; opacity: .75; filter: drop-shadow(0 0 6px rgba(170, 176, 191, .4)); }
+#maskView .edge { stroke: #7e8494; stroke-width: 5; opacity: .45; }
+#maskT { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); font: 400 58px var(--display); color: #e7e9f2; text-shadow: 0 0 16px rgba(170, 176, 191, .5), 3px 3px 0 #000; }
+#maskView.last #maskT { color: #ff6a6a; animation: maskWarn .5s steps(2) infinite; }
 
 /* the shop */
 #shop.screen { padding-top: 44px; }
