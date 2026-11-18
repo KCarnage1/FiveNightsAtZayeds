@@ -143,6 +143,10 @@ pub struct Env {
     pub online: bool,
     pub guest: bool,
     pub reduced: bool,
+    pub invuln: bool,
+    pub freeze: bool,
+    pub infinite: bool,
+    pub noheat: bool,
 }
 
 type Events = Vec<Value>;
@@ -195,6 +199,38 @@ impl Brain<'_> {
         }
     }
 
+    /// An attacker is sent away instead of killing the guard (mask or admin powers).
+    fn eject(&mut self, who: &str) {
+        match who {
+            "sherbet" => {
+                let f = &mut self.s.ai.sherbet;
+                f.running = false;
+                f.stage = 0.0;
+                f.t = 0.0;
+                f.cd = 3.0;
+            }
+            "golden" => {
+                self.s.golden_in = false;
+                self.s.golden_armed = false;
+                self.s.poster = false;
+            }
+            _ => {
+                let blackout_camel = self.s.blackout && who == "zayed";
+                let a = self.walker_mut(who);
+                a.office = false;
+                a.office_t = 0.0;
+                a.armed = false;
+                a.t = 0.0;
+                a.dw = 0.0;
+                a.room = "dining".to_string();
+                if blackout_camel {
+                    self.s.b_t = 0.0;
+                }
+            }
+        }
+        self.fx(json!(["eject", who]));
+    }
+
     /// The jumpscare. When the night is nearly over the guard wins instead.
     fn kill(&mut self, who: &str) {
         let walking = who == "zayed" || who == "bubbles" || who == "taffy";
@@ -207,6 +243,10 @@ impl Brain<'_> {
         if self.s.time >= NIGHT_LEN - GRACE {
             self.s.time = NIGHT_LEN;
             self.fx(json!(["nightEnd"]));
+            return;
+        }
+        if self.env.invuln {
+            self.eject(who);
             return;
         }
         self.s.dead = true;
@@ -272,7 +312,7 @@ impl Brain<'_> {
         }
     }
     fn doors(&mut self, dt: f64) {
-        if self.env.online || self.night8() {
+        if self.env.online || self.env.noheat || self.night8() {
             self.s.heat_l = 0.0;
             self.s.heat_r = 0.0;
             self.s.cool_l = 0.0;
@@ -696,9 +736,15 @@ impl Brain<'_> {
             return;
         }
         self.s.power -= DRAIN * self.usage() * dt * if self.night8() { 1.3 } else { 1.0 };
+        if self.env.infinite {
+            self.s.power = 100.0;
+        }
         if self.s.power <= 0.0 {
             self.s.power = 0.0;
             self.power_out();
+            return;
+        }
+        if self.env.freeze {
             return;
         }
         self.camel_dwell(dt);
