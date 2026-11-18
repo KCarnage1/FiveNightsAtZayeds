@@ -2,9 +2,39 @@
 // Self-test: set FNZ_SELFTEST=1 to load the game hidden, check that every sound and
 // video file decodes from inside the packaged app, print the result and exit (0 = ok).
 const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
-const { createUpdater } = require('./updater');
+const { createUpdater, isNewer } = require('./updater');
 const fs = require('fs');
 const path = require('path');
+
+/* ---------- updates are loaded from the game's data folder ----------
+   The in-game updater saves a newer app.asar in <user data>/updates (always writable, no admin rights needed) and points
+   current.json at it. If that file is newer than the installed one, this file hands over to the copy inside it. If it
+   fails to start, the pointer is put aside and the installed version runs on the next launch. */
+function updateOverlay() {
+  if (!app.isPackaged || process.env.FNZ_NO_OVERLAY || global.__fnazOverlay) return null;
+  try {
+    const ofs = require('original-fs');
+    const dir = path.join(app.getPath('userData'), 'updates');
+    const cur = JSON.parse(ofs.readFileSync(path.join(dir, 'current.json'), 'utf8'));
+    const file = path.join(dir, path.basename(String(cur.file)));
+    if (!/\.asar$/.test(file) || !isNewer(cur.version, app.getVersion()) || !ofs.existsSync(file) || ofs.statSync(file).size !== cur.size) return null;
+    return { dir, file, version: String(cur.version) };
+  } catch (e) { return null; }
+}
+const overlay = updateOverlay();
+if (overlay) {
+  global.__fnazOverlay = overlay;
+  try {
+    require(path.join(overlay.file, 'electron-main.js'));
+    return; // the updated copy runs the game from here on
+  } catch (e) {
+    console.error('The update could not start; going back to the installed version.', e);
+    try { const ofs = require('original-fs'); ofs.renameSync(path.join(overlay.dir, 'current.json'), path.join(overlay.dir, 'current.bad.json')); } catch (x) { /* nothing to put aside */ }
+    app.relaunch(); app.exit(0);
+    return;
+  }
+}
+const VERSION = global.__fnazOverlay ? global.__fnazOverlay.version : app.getVersion();
 
 const SELFTEST = !!process.env.FNZ_SELFTEST;
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -89,7 +119,8 @@ function startUpdater(win) {
   updater = createUpdater({
     enabled,
     fs: require('original-fs'), // plain fs: the patched one treats app.asar as read-only
-    version: app.getVersion(),
+    version: VERSION,
+    updatesDir: path.join(app.getPath('userData'), 'updates'),
     asarPath: path.join(process.resourcesPath || '', 'app.asar'),
     platform: process.platform,
     execPath: process.execPath,

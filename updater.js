@@ -4,8 +4,11 @@
  * latest release, and if it is newer than the running version it can download that app.asar, check its SHA-256,
  * swap it in and restart, so a player never has to download and unzip the full 150 MB again.
  *
+ * The new app.asar is saved in the game's own data folder (opt.updatesDir, which is always writable) and the game loads it
+ * from there at the next start (see electron-main.js), so an update never needs admin rights or a write to the install folder.
  * Electron itself is not updated this way (it only changes when the game's Electron version does).
- * If the install folder is not writable, or a release has no app.asar, the "update" opens the download page instead.
+ * Without opt.updatesDir the file is swapped into the install folder instead; if that is not possible, or a release has no
+ * app.asar, the "update" opens the download page.
  * Nothing here touches Electron, so it can be tested in plain Node (see createUpdater's options). */
 'use strict';
 const nodeFs = require('fs');
@@ -33,6 +36,7 @@ function createUpdater(opt) {
   const allowPrefix = opt.allowUrlPrefix || `https://github.com/${REPO}/releases/download/`;
   const webBase = opt.webBase || 'https://github.com';
   const doFetch = opt.fetch || globalThis.fetch;
+  const updatesDir = opt.updatesDir || '';
   let asset = null; // { url, size, sha256 } of the release's app.asar
   let busy = false;
   const st = { status: 'idle', current: opt.version, latest: null, size: 0, progress: 0, page: '', canInstall: false, error: null };
@@ -74,7 +78,7 @@ function createUpdater(opt) {
       const found = (rel.assets || []).find((a) => a.name === 'app.asar');
       if (!isNewer(rel.tag_name, opt.version)) { asset = null; return set({ status: 'uptodate', latest: String(rel.tag_name || '').replace(/^v/, '') }); }
       asset = found ? { url: found.browser_download_url, size: found.size || 0, sha256: /^sha256:([0-9a-f]{64})$/i.test(found.digest || '') ? found.digest.slice(7).toLowerCase() : '' } : null;
-      set({ status: 'available', latest: String(rel.tag_name).replace(/^v/, ''), size: asset ? asset.size : 0, page: rel.html_url || `https://github.com/${REPO}/releases/latest`, canInstall: !!asset && writable() });
+      set({ status: 'available', latest: String(rel.tag_name).replace(/^v/, ''), size: asset ? asset.size : 0, page: rel.html_url || `https://github.com/${REPO}/releases/latest`, canInstall: !!asset && (updatesDir ? true : writable()) });
     } catch (e) {
       asset = null;
       // a quiet check on launch stays silent (offline is normal); a manual one reports the problem
@@ -82,33 +86,53 @@ function createUpdater(opt) {
     }
   }
 
+  // downloads the release's app.asar to `part`, checks its size and checksum
+  async function download(part) {
+    const res = await doFetch(asset.url, { headers: { 'User-Agent': 'FiveNightsAtZayeds-updater' } });
+    if (!res.ok || !res.body) throw new Error('Download failed (' + res.status + ')');
+    const total = Number(res.headers.get('content-length')) || asset.size || 0;
+    const hash = crypto.createHash('sha256');
+    const out = fs.createWriteStream(part);
+    let got = 0, lastPct = -1;
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      hash.update(value);
+      if (!out.write(value)) await new Promise((r) => out.once('drain', r));
+      got += value.length;
+      const pct = total ? Math.floor((got / total) * 100) : 0;
+      if (pct !== lastPct) { lastPct = pct; set({ progress: pct }); }
+    }
+    await new Promise((resolve, reject) => { out.end((err) => (err ? reject(err) : resolve())); });
+    if ((asset.size && got !== asset.size) || (total && got !== total)) throw new Error('The download was incomplete');
+    if (asset.sha256 && hash.digest('hex') !== asset.sha256) throw new Error('The download did not match its checksum');
+    return got;
+  }
+
   async function install() {
     if (busy || st.status !== 'available') return;
     if (!st.canInstall || !asset) { if (opt.openExternal) opt.openExternal(st.page); return; }
     if (!asset.url.startsWith(allowPrefix)) return set({ status: 'error', error: 'Unexpected download address' });
     busy = true;
-    const part = opt.asarPath + '.part', ready = opt.asarPath + '.new';
+    const part = (updatesDir ? path.join(updatesDir, 'download') : opt.asarPath) + '.part';
     try {
       set({ status: 'downloading', progress: 0, error: null });
-      const res = await doFetch(asset.url, { headers: { 'User-Agent': 'FiveNightsAtZayeds-updater' } });
-      if (!res.ok || !res.body) throw new Error('Download failed (' + res.status + ')');
-      const total = Number(res.headers.get('content-length')) || asset.size || 0;
-      const hash = crypto.createHash('sha256');
-      const out = fs.createWriteStream(part);
-      let got = 0, lastPct = -1;
-      const reader = res.body.getReader();
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        hash.update(value);
-        if (!out.write(value)) await new Promise((r) => out.once('drain', r));
-        got += value.length;
-        const pct = total ? Math.floor((got / total) * 100) : 0;
-        if (pct !== lastPct) { lastPct = pct; set({ progress: pct }); }
+      if (updatesDir) fs.mkdirSync(updatesDir, { recursive: true });
+      const size = await download(part);
+      if (updatesDir) {
+        // keep the new file next to a small pointer; the game loads it at the next start and deletes older ones
+        const name = 'app-' + st.latest + '.asar';
+        fs.renameSync(part, path.join(updatesDir, name));
+        const pointer = path.join(updatesDir, 'current.json');
+        fs.writeFileSync(pointer + '.tmp', JSON.stringify({ version: st.latest, file: name, size }));
+        fs.renameSync(pointer + '.tmp', pointer);
+        for (const f of fs.readdirSync(updatesDir)) if (/^app-.*\.asar$/.test(f) && f !== name) { try { fs.unlinkSync(path.join(updatesDir, f)); } catch (e) { /* in use: next time */ } }
+        set({ status: 'ready', progress: 100 });
+        setTimeout(() => opt.relaunch && opt.relaunch(), 300);
+        return;
       }
-      await new Promise((resolve, reject) => { out.end((err) => (err ? reject(err) : resolve())); });
-      if ((asset.size && got !== asset.size) || (total && got !== total)) throw new Error('The download was incomplete');
-      if (asset.sha256 && hash.digest('hex') !== asset.sha256) throw new Error('The download did not match its checksum');
+      const ready = opt.asarPath + '.new';
       fs.renameSync(part, ready);
       set({ status: 'ready', progress: 100 });
       apply(ready);
