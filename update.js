@@ -33,7 +33,7 @@
     else if (s.status === 'error') msg.textContent = 'Could not update: ' + s.error;
     else if (s.status === 'available') {
       msg.textContent = 'Version ' + s.latest + ' is available.';
-      text.textContent = 'Version ' + s.latest + ' is available' + (s.canInstall && s.size ? ' (' + mb(s.size) + ')' : '') + '.';
+      text.textContent = 'Version ' + s.latest + ' is available' + (s.canInstall && s.size ? ' (' + mb(s.size) + (s.engine ? ', includes a new game engine' : '') + ')' : '') + '.';
       go.textContent = s.canInstall ? 'Update now' : 'Open download page';
       go.hidden = later.hidden = false;
       show = !dismissed;
