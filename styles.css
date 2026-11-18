@@ -431,3 +431,5 @@ body.touch.cams .caption { bottom: 160px; }
 .cut-bar { position: absolute; left: 0; right: 0; height: 8.5%; background: #000; z-index: 3; }
 .cut-bar.top { top: 0; } .cut-bar.bot { bottom: 0; }
 .cut-cap { bottom: 11%; }
+
+.cast-photo img { cursor: pointer; -webkit-user-drag: none; user-select: none; -webkit-tap-highlight-color: transparent; }

@@ -196,6 +196,8 @@ const Voice = (() => {
     ['zayed1', 'Yoo-hoo!'], ['zayed2', "I'm gonna get you!"], ['zayed3', "I'm gonna get your ass!"], ['zayed4', 'Jerona!'],
     ['zayed5', 'Qerh!'], ['zayed6', 'Open wide!'], ['zayed7', 'Leave no one alive!'], ['zayed8', 'Here I come, San Francisco!']
   ];
+  // Lines that belong to one robot only. The Falcon sometimes greets you with this one, on top of whatever else he says.
+  const OWN = { falcon: [['falcon_guard', 'It be the night guard!']] };
   let authentic = true;
   const chan = {};   // speaker -> Audio
   const base = {};   // speaker -> clip volume before master
@@ -221,6 +223,8 @@ const Voice = (() => {
     // Returns the caption text, or null if the robot was already talking.
     say(who, idx) {
       if (talking(who)) return null;
+      const own = OWN[who];
+      if (own && idx === undefined && Math.random() < 0.4) { const o = own[(Math.random() * own.length) | 0]; play(who, o[0], 1); return o[1]; }
       if (authentic) {
         let k = (Math.random() * AUTHENTIC.length) | 0;
         if (k === last[who]) k = (k + 1) % AUTHENTIC.length;
@@ -235,6 +239,8 @@ const Voice = (() => {
       play(who, list[i][0], 0.9);
       return list[i][1];
     },
+    // Tapping a robot's picture: a fresh copy each time, so quick taps pile up and overlap instead of cutting each other off.
+    poke() { const a = new Audio(V + 'tap1.mp3'); a.volume = Math.min(1, 0.95 * vol); const p = a.play(); if (p && p.catch) p.catch(() => {}); },
     phone(n) { return play('phone', 'phone' + n, 1); },
     phone2(n) { return play('phone2', 'phone' + n, 1); }, // a second line on the same call (Night 5's replacement phone guy)
     setAuthentic(on) { authentic = !!on; },
@@ -243,3 +249,6 @@ const Voice = (() => {
     setVolume(v) { vol = v; Object.keys(chan).forEach(k => { if (chan[k]) chan[k].volume = base[k] * v; }); }
   };
 })();
+
+// Staff and robots: pressing a robot's photo plays his recording (overlapping, as often as you like)
+document.addEventListener('pointerdown', (e) => { if (e.target && e.target.closest && e.target.closest('#castPhoto')) Voice.poke(); });
