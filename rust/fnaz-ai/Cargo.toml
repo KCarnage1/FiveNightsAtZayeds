@@ -1,0 +1,20 @@
+[package]
+name = "fnaz-ai"
+version = "0.1.0"
+edition = "2021"
+description = "The animatronics' brain for Five Nights at Zayed's: a line-by-line port of ai.js"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
