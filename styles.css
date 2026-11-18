@@ -689,3 +689,29 @@ body.calm .fn-roll, body.calm #title.active .title-block h1 { animation: none; }
 .shop-msg { margin-top: 16px; font-size: 24px; color: #ffe066; min-height: 32px; }
 .screen.active .shop-card { animation: cardIn .45s var(--ease) both; }
 .screen.active .shop-card:nth-child(2) { animation-delay: .07s; } .screen.active .shop-card:nth-child(3) { animation-delay: .14s; } .screen.active .shop-card:nth-child(4) { animation-delay: .21s; }
+
+/* ---------- save transfer ---------- */
+@keyframes svIn { from { opacity: 0; transform: translate(-50%, -46%) scale(.96); } }
+#saveBox { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 97; width: 900px; max-height: 840px; overflow-y: auto; padding: 28px 36px 24px; background: rgba(12, 9, 16, .97); border: 3px solid var(--pink); border-radius: var(--r); box-shadow: 0 0 50px rgba(0, 0, 0, .8); animation: svIn .28s var(--ease) both; text-align: left; }
+#saveBox[hidden] { display: none; }
+#saveBox.out { animation: modOut .2s ease both; }
+#saveBox h3 { font: 400 44px var(--display); margin: 0 0 6px; }
+#saveBox h4 { font: 400 28px var(--display); margin: 0 0 8px; color: var(--pink); }
+.sv-lead { font-size: 22px; color: var(--paper-dim); margin-bottom: 14px; }
+.sv-sec { border-top: 1px solid rgba(241, 231, 208, .2); padding: 12px 0 10px; }
+.sv-btns { display: flex; gap: 14px; flex-wrap: wrap; margin: 6px 0; }
+#saveBox button, .sv-pick { font: 600 24px var(--ui); padding: 10px 20px; border: 2px solid var(--paper-dim); border-radius: var(--r); background: rgba(255, 255, 255, .04); color: var(--paper); text-align: center; cursor: pointer; transition: background-color .15s, border-color .15s, transform .15s var(--ease); }
+#saveBox button::before { content: none; }
+#saveBox button:not(:disabled):hover, .sv-pick:hover { background: rgba(255, 77, 141, .18); border-color: var(--pink); transform: translateY(-2px); }
+#saveBox button:disabled { opacity: .4; cursor: not-allowed; }
+.sv-pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.sv-pick:focus-within { outline: 3px solid #fff; outline-offset: 3px; }
+#saveBox textarea { width: 100%; margin: 8px 0; padding: 10px 12px; font: 500 20px var(--osd); background: #1b1620; color: var(--paper); border: 2px solid rgba(241, 231, 208, .35); border-radius: var(--r); resize: none; user-select: text; }
+#saveBox textarea:focus { outline: none; border-color: var(--pink); }
+.sv-sum { font-size: 24px; color: #ffe066; min-height: 32px; margin: 4px 0; }
+#svOpts { display: grid; gap: 8px; font-size: 24px; margin: 8px 0; }
+#svOpts label { display: flex; gap: 12px; align-items: center; cursor: pointer; }
+#svOpts input { width: 24px; height: 24px; accent-color: var(--pink); }
+.sv-msg { font-size: 24px; min-height: 34px; color: #8ee69b; margin: 6px 0; }
+.sv-msg.bad { color: #ff7a7a; }
+.sv-close { margin-top: 6px; }
