@@ -529,3 +529,45 @@ input[type=range]:hover { filter: brightness(1.15); }
 
 /* the loading newspaper and the end screens */
 #over.active h2, #win.active #winTitle { animation: logoPop .8s var(--spring) both .15s; }
+
+/* ---------- more motion ---------- */
+@keyframes tick { 40% { transform: scale(1.18); color: var(--pink); } }
+@keyframes stampIn { 0% { opacity: 0; transform: rotate(-12deg) scale(2.6); } 60% { opacity: 1; transform: rotate(-12deg) scale(.92); } 100% { transform: rotate(-12deg) scale(1); } }
+@keyframes floatY { 50% { transform: translateY(-6px); } }
+@keyframes breathe { 50% { box-shadow: 0 0 0 6px rgba(255, 77, 141, .18); } }
+@keyframes glowPulse { 50% { box-shadow: 0 0 22px rgba(255, 224, 102, .55); } }
+@keyframes lineIn { from { opacity: 0; transform: translateX(-14px); } }
+.tick { animation: tick .45s var(--ease); display: inline-block; }
+#clock.tick { transform-origin: right center; }
+
+/* title logo breathes once it has landed */
+#title.active .logo-big { animation: logoPop .85s var(--spring) both .15s, floatY 5s ease-in-out 1.2s infinite; }
+
+/* the newspaper's start button breathes so you know where to go */
+.start { animation: breathe 1.8s ease-in-out infinite; transition: color .15s, transform .2s var(--ease); }
+.start:hover { transform: translateX(6px); }
+
+/* incident report: lines type in, the stamp slams down last */
+#over.active dl > * { animation: lineIn .35s var(--ease) both; }
+#over.active dt:nth-of-type(1), #over.active dd:nth-of-type(1) { animation-delay: .35s; }
+#over.active dt:nth-of-type(2), #over.active dd:nth-of-type(2) { animation-delay: .5s; }
+#over.active dt:nth-of-type(3), #over.active dd:nth-of-type(3) { animation-delay: .65s; }
+#over.active dt:nth-of-type(4), #over.active dd:nth-of-type(4) { animation-delay: .8s; }
+#over.active blockquote { animation: lineIn .5s var(--ease) both 1s; }
+#over.active .tip { animation: lineIn .5s var(--ease) both 1.2s; }
+#over.active .stamp { animation: stampIn .5s var(--ease) both 1.5s; }
+#over.active .over-menu { --base: 1.7s; }
+
+/* win screen menu waits for the clock roll */
+#win.active .win-menu { --base: 3s; }
+
+/* pause: the title slides, the menu follows */
+#pause.active h2 { animation: slideR .35s var(--ease) both; }
+
+/* achievements: unlocked ones glow a little, the toast pulses */
+.ach.got .ach-mark { animation: glowPulse 2.4s ease-in-out infinite; border-radius: 50%; }
+#achToast:not([hidden]) { animation: toastDown .5s var(--spring) both, glowPulse 1.2s ease-in-out .5s 2; }
+
+/* camera name and label swap with a quick fade */
+.cam-label { animation: fadeAny .3s ease both; }
+.map-you { animation: breathe 2s ease-in-out infinite; }
