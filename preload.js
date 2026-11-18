@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('fnaz', {
   presence: (p) => ipcRenderer.send('fnaz:presence', p),   // Discord status text
   relaunch: () => ipcRenderer.send('fnaz:relaunch'),
   open: (url) => ipcRenderer.send('fnaz:open', url),       // an https link, in the player's browser
+  secret: {                                                // the admin's publishing key, encrypted with the operating system's keychain
+    save: (t) => ipcRenderer.invoke('fnaz:secret-save', t),
+    load: () => ipcRenderer.invoke('fnaz:secret-load')
+  },
   update: {                                                // in-game updater, see updater.js
     state: () => ipcRenderer.invoke('fnaz:update-state'),
     check: () => ipcRenderer.send('fnaz:update-check'),

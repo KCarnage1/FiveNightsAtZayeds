@@ -307,7 +307,19 @@
   }
 
   // a gift of coins (from an announcement); the amount is capped so a typo cannot hand out millions
-  function give(n) { n = Math.max(0, Math.min(5000, Math.round(Number(n) || 0))); if (!n) return 0; save.coins += n; persist(); refreshShop(); return n; }
+  // Takes a number of coins or { coins, mask, battery, spray, wrap }. Returns a short description of what was handed over ('' for nothing).
+  function give(g) {
+    if (typeof g !== 'object' || !g) g = { coins: g };
+    const parts = [], num = (v, max) => Math.max(0, Math.min(max, Math.round(Number(v) || 0)));
+    const coins = num(g.coins, 5000);
+    if (coins) { save.coins += coins; parts.push(coins + ' coins'); }
+    for (const it of ITEMS) {
+      const n = num(g[it.id], 20);
+      if (n) { save.inv[it.id] = Math.min(999, save.inv[it.id] + n); parts.push(n + ' × ' + it.name); }
+    }
+    if (parts.length) { persist(); refreshShop(); renderBar(); }
+    return parts.join(', ');
+  }
 
   window.FNAZMOD = { flags, won, toggle, mod, give, wear(sec) { maskT = sec; }, save: () => save, reset() { maskT = 0; sprayT = 0; } };
   refreshShop();

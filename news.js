@@ -40,8 +40,12 @@
     if (!raw || typeof raw !== 'object') return null;
     const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max) : '');
     const a = { id: str(raw.id, 60), title: str(raw.title, 80), message: str(raw.message, 600), link: str(raw.link, 300), linkText: str(raw.linkText, 40), until: str(raw.until, 10), type: raw.type === 'warn' ? 'warn' : 'info', gift: 0, giftUntil: '' };
-    const g = raw.gift && typeof raw.gift === 'object' ? Math.round(Number(raw.gift.coins)) : 0;
-    if (Number.isFinite(g) && g > 0) a.gift = Math.min(g, 5000);
+    if (raw.gift && typeof raw.gift === 'object') {
+      const g = {}, n = (v, max) => { v = Math.round(Number(v)); return Number.isFinite(v) && v > 0 ? Math.min(v, max) : 0; };
+      if (n(raw.gift.coins, 5000)) g.coins = n(raw.gift.coins, 5000);
+      for (const k of ['mask', 'battery', 'spray', 'wrap']) if (n(raw.gift[k], 20)) g[k] = n(raw.gift[k], 20);
+      if (Object.keys(g).length) a.gift = g;
+    }
     if (a.gift && typeof raw.giftUntil === 'string' && !Number.isNaN(Date.parse(raw.giftUntil))) a.giftUntil = raw.giftUntil.slice(0, 40);
     if (!a.id || !(a.title || a.message)) return null;
     if (!/^https:\/\/[^\s]+$/i.test(a.link)) a.link = '';
@@ -124,8 +128,8 @@
       // a gift is handed out once, and only while GitHub's clock says the offer is still open
       if (a.gift && !claimed().includes(a.id) && window.FNAZMOD && FNAZMOD.give && (!a.giftUntil || got.serverTime <= Date.parse(a.giftUntil))) {
         claim(a.id); // first, so nothing can hand it out twice
-        const n = FNAZMOD.give(a.gift);
-        if (n) { a.message = (a.message ? a.message + '\n\n' : '') + '+' + n + ' coins added to your shop balance.'; status.result += ' (+' + n + ' coins)'; }
+        const got2 = FNAZMOD.give(a.gift);
+        if (got2) { a.message = (a.message ? a.message + '\n\n' : '') + 'You received: ' + got2 + '.'; status.result += ' (gift: ' + got2 + ')'; }
       }
       if (where() === 'title' && !(NET && NET.role) && card.hidden) show(a); // the title screen: a card
       else if (where() && where() !== 'title') banner(a);                     // anywhere else, including a night: a banner
@@ -141,38 +145,120 @@
   let prev = '', stamp = 0;
   setInterval(() => { const w = where(); if (w === 'title' && prev !== 'title' && Date.now() - stamp > 20000) { stamp = Date.now(); check(); } prev = w; }, 1500);
 
-  /* ---------- writing one (admin menu) ---------- */
+  /* ---------- writing one (admin menu) ----------
+     Publishing writes announce.json straight to the repository through GitHub's API, using a personal access token that only
+     lives on the admin's own computer (encrypted by the operating system in the desktop app). No commits to make by hand. */
+  const REPO = 'KCarnage1/FiveNightsAtZayeds', API = 'https://api.github.com/repos/' + REPO + '/contents/announce.json';
   const panel = document.getElementById('modMenu');
+  const TOKEN = 'fnaz_admin_token_v1', RECENT = 'fnaz_announce_recent_v1';
+  const nativeKey = window.fnaz && window.fnaz.secret;
+  const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } }, del: (k) => { try { localStorage.removeItem(k); } catch (e) { /* nothing */ } } };
+  let token = '';
+  const loadToken = async () => { token = (nativeKey ? await nativeKey.load().catch(() => '') : '') || ls.get(TOKEN) || ''; };
+  const saveToken = async (t) => { if (nativeKey && await nativeKey.save(t).catch(() => false)) { ls.del(TOKEN); } else if (t) ls.set(TOKEN, t); else ls.del(TOKEN); token = t; };
+  const recent = () => { try { const a = JSON.parse(ls.get(RECENT) || '[]'); return Array.isArray(a) ? a.slice(0, 6) : []; } catch (e) { return []; } };
+  const pushRecent = (f) => ls.set(RECENT, JSON.stringify([f, ...recent().filter((x) => x.title !== f.title || x.message !== f.message)].slice(0, 6)));
+
   if (panel) {
     const sec = document.createElement('section');
-    sec.className = 'mm-sec';
-    sec.innerHTML = `<h3>Announcement</h3>
+    sec.className = 'mm-sec ann';
+    sec.innerHTML = `<h3>Announce to everyone</h3>
+      <p class="mm-note" id="anK2"></p>
+      <div class="mm-btns ann-presets"><button type="button" data-preset="gift">🎁 Gift</button><button type="button" data-preset="update">🆕 Update out</button><button type="button" data-preset="warn">⚠️ Warning</button></div>
       <input type="text" id="anT" maxlength="80" placeholder="Title" aria-label="Announcement title">
       <textarea id="anM" rows="3" maxlength="600" placeholder="Message" aria-label="Announcement message"></textarea>
       <input type="text" id="anL" maxlength="300" placeholder="Link (optional, https://...)" aria-label="Announcement link">
-      <div class="mm-row"><span>Gift coins</span><input type="text" id="anG" maxlength="4" placeholder="0" style="width:90px" aria-label="Gift coins"><span>for</span><input type="text" id="anW" maxlength="4" placeholder="60" style="width:80px" aria-label="Minutes the gift stays open"><span>min</span></div>
-      <div class="mm-btns"><button type="button" id="anP">Preview</button><button type="button" id="anC">Copy announce.json</button></div>
-      <p class="mm-note" id="anH">Paste the copy into announce.json on GitHub and commit it. Players see it within minutes, no update needed.</p>
-      <div class="mm-btns"><button type="button" id="anK">Check now</button><button type="button" id="anR">Show it again</button></div>
-      <p class="mm-note" id="anS"></p>`;
-    const foot = panel.querySelector('.mm-foot');
-    panel.insertBefore(sec, foot);
-    const build = () => {
+      <div class="ann-gift"><span>Give away</span>
+        <label>coins <input type="text" inputmode="numeric" id="anG" maxlength="4" placeholder="0"></label>
+        <label>🎭 <input type="text" inputmode="numeric" id="anG1" maxlength="2" placeholder="0"></label>
+        <label>🔋 <input type="text" inputmode="numeric" id="anG2" maxlength="2" placeholder="0"></label>
+        <label>🧴 <input type="text" inputmode="numeric" id="anG3" maxlength="2" placeholder="0"></label>
+        <label>🌯 <input type="text" inputmode="numeric" id="anG4" maxlength="2" placeholder="0"></label>
+        <label>open for <input type="text" inputmode="numeric" id="anW" maxlength="4" placeholder="60"> min</label></div>
+      <label class="ann-warn"><input type="checkbox" id="anY"> Red warning banner</label>
+      <div class="mm-btns"><button type="button" id="anP">Preview</button><button type="button" id="anPub" class="ann-go">Publish to everyone</button><button type="button" id="anX">Take it down</button></div>
+      <p class="mm-note" id="anH"></p>
+      <p class="mm-note" id="anS"></p>
+      <details class="ann-setup" id="anSetup"><summary>Publishing key</summary>
+        <p class="mm-note">One time only. On GitHub: Settings → Developer settings → Fine-grained tokens → Generate new token. Repository access: only <b>FiveNightsAtZayeds</b>. Permissions: <b>Contents → Read and write</b>. Paste it here.</p>
+        <div class="mm-btns"><button type="button" id="anOpen">Open the GitHub page</button></div>
+        <input type="password" id="anTok" autocomplete="off" placeholder="github_pat_…" aria-label="GitHub token">
+        <div class="mm-btns"><button type="button" id="anTokSave">Save key</button><button type="button" id="anTokDel">Remove key</button><button type="button" id="anC">Copy announce.json instead</button></div></details>
+      <div class="ann-recent" id="anRecent"></div>
+      <div class="mm-btns"><button type="button" id="anCheck">Check now</button><button type="button" id="anAgain">Show it again</button></div>`;
+    panel.insertBefore(sec, panel.querySelector('.mm-foot'));
+    const $a = (s) => sec.querySelector(s);
+    const hint = (t, bad) => { const h = $a('#anH'); h.textContent = t || ''; h.style.color = bad ? '#ff8a8a' : ''; };
+    const num = (id, max) => Math.max(0, Math.min(max, Math.round(Number($a(id).value)) || 0));
+    const form = () => ({ title: $a('#anT').value.trim(), message: $a('#anM').value.trim(), link: $a('#anL').value.trim(), warn: $a('#anY').checked,
+      coins: num('#anG', 5000), mask: num('#anG1', 20), battery: num('#anG2', 20), spray: num('#anG3', 20), wrap: num('#anG4', 20), mins: Math.round(Number($a('#anW').value)) || 60 });
+    const fill = (f) => { $a('#anT').value = f.title || ''; $a('#anM').value = f.message || ''; $a('#anL').value = f.link || ''; $a('#anY').checked = !!f.warn;
+      $a('#anG').value = f.coins || ''; ['mask', 'battery', 'spray', 'wrap'].forEach((k, i) => { $a('#anG' + (i + 1)).value = f[k] || ''; }); $a('#anW').value = f.mins && f.mins !== 60 ? f.mins : ''; };
+    const toJson = (f) => {
       const now = new Date(), p = (n) => String(n).padStart(2, '0');
-      const a = { id: `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}`,
-        title: sec.querySelector('#anT').value.trim(), message: sec.querySelector('#anM').value.trim(), link: sec.querySelector('#anL').value.trim(),
-        linkText: sec.querySelector('#anL').value.trim() ? 'Read more' : '', until: '' };
-      const coins = Math.round(Number(sec.querySelector('#anG').value)) || 0, mins = Math.round(Number(sec.querySelector('#anW').value)) || 60;
-      if (coins > 0) { a.gift = { coins: Math.min(coins, 5000) }; a.giftUntil = new Date(Date.now() + mins * 60000).toISOString().replace(/\.\d+Z$/, 'Z'); }
+      const a = { id: `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}`, title: f.title, message: f.message, link: f.link, linkText: f.link ? 'Read more' : '', until: '' };
+      if (f.warn) a.type = 'warn';
+      const gift = {};
+      if (f.coins) gift.coins = f.coins;
+      for (const k of ['mask', 'battery', 'spray', 'wrap']) if (f[k]) gift[k] = f[k];
+      if (Object.keys(gift).length) { a.gift = gift; a.giftUntil = new Date(Date.now() + f.mins * 60000).toISOString().replace(/\.\d+Z$/, 'Z'); }
       return a;
     };
-    sec.querySelector('#anP').addEventListener('click', () => { const a = clean(build()); if (!a) { sec.querySelector('#anH').textContent = 'Add a title or a message first.'; return; } show(a, true); });
-    sec.querySelector('#anC').addEventListener('click', async () => {
-      const a = build(), text = JSON.stringify(a, null, 2) + '\n', h = sec.querySelector('#anH');
-      if (!clean(a)) { h.textContent = 'Add a title or a message first.'; return; }
-      try { await navigator.clipboard.writeText(text); h.textContent = 'Copied. Paste it over announce.json on GitHub and commit.'; } catch (e) { h.textContent = 'Could not copy. Here it is:\n' + text; }
+    const PRESETS = {
+      gift: { title: 'A gift for you!', message: 'Thanks for playing. Everyone who is online right now gets a present. Open the Shop to use it.', coins: 700, mins: 120 },
+      update: { title: 'New update out', message: 'A new version of the game is available. Update it from the title screen (desktop) or reload the page (phone).', warn: false },
+      warn: { title: 'Heads up', message: 'We are about to make a change. Save your progress and come back in a few minutes.', warn: true }
+    };
+    sec.querySelectorAll('[data-preset]').forEach((b) => b.addEventListener('click', () => { fill(Object.assign({ coins: 0, mask: 0, battery: 0, spray: 0, wrap: 0 }, PRESETS[b.dataset.preset])); hint('Edit the text if you like, then Preview or Publish.'); }));
+    const renderRecent = () => {
+      const box = $a('#anRecent'), list = recent();
+      box.innerHTML = list.length ? '<small>Recent</small>' : '';
+      list.forEach((f) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = f.title || f.message.slice(0, 24); b.title = 'Load this one again'; b.addEventListener('click', () => { fill(f); hint('Loaded. Publish to send it again.'); }); box.appendChild(b); });
+    };
+    const keyState = () => { $a('#anK2').textContent = token ? 'Publishing is set up on this device: the Publish button sends it live in seconds.' : 'To publish from here, add your publishing key below (one time).'; if (!token) $a('#anSetup').open = true; };
+    loadToken().then(() => { keyState(); renderRecent(); });
+
+    $a('#anP').addEventListener('click', () => { const f = form(); const a = clean(toJson(f)); if (!a) { hint('Add a title or a message first.', true); return; } show(a, true); });
+    $a('#anOpen').addEventListener('click', () => { const u = 'https://github.com/settings/personal-access-tokens/new'; if (window.fnaz && window.fnaz.open) window.fnaz.open(u); else window.open(u, '_blank', 'noopener'); });
+    $a('#anTokSave').addEventListener('click', async () => { const t = $a('#anTok').value.trim(); if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(t)) { hint('That does not look like a GitHub token.', true); return; } await saveToken(t); $a('#anTok').value = ''; keyState(); hint('Key saved on this device.'); $a('#anSetup').open = false; });
+    $a('#anTokDel').addEventListener('click', async () => { await saveToken(''); keyState(); hint('Key removed from this device.'); });
+    $a('#anC').addEventListener('click', async () => { const f = form(); if (!clean(toJson(f))) { hint('Add a title or a message first.', true); return; } const text = JSON.stringify(toJson(f), null, 2) + '\n'; try { await navigator.clipboard.writeText(text); hint('Copied. Paste it over announce.json on GitHub and commit.'); } catch (e) { hint('Could not copy:\n' + text, true); } });
+
+    // write announce.json through the API: read its current version (needed to replace it), then put the new text
+    async function publish(obj, label) {
+      if (!token) { $a('#anSetup').open = true; hint('Add your publishing key first (below).', true); return; }
+      const head = { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+      const text = JSON.stringify(obj, null, 2) + '\n', content = btoa(unescape(encodeURIComponent(text)));
+      hint('Publishing…'); $a('#anPub').disabled = true;
+      try {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const cur = await fetch(API + '?ref=main&t=' + Date.now(), { headers: head, cache: 'no-store' });
+          if (cur.status === 401 || cur.status === 403) throw new Error('GitHub refused the key. Make a new one with Contents: Read and write.');
+          if (cur.status === 404) throw new Error('The key cannot see ' + REPO + '. Choose that repository when making it.');
+          const sha = cur.ok ? (await cur.json()).sha : undefined;
+          const res = await fetch(API, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, head), body: JSON.stringify({ message: 'Update', content, sha, branch: 'main' }) });
+          if (res.status === 409 || res.status === 422) { if (attempt === 0) continue; throw new Error('Someone changed the file at the same moment. Try again.'); }
+          if (res.status === 401 || res.status === 403) throw new Error('GitHub refused the key. It needs Contents: Read and write on ' + REPO + '.');
+          if (!res.ok) throw new Error('GitHub answered ' + res.status + '.');
+          break;
+        }
+        hint(label + ' Live now: players see it within about a minute.');
+        status.result = 'published ' + (obj.id || '(empty)'); renderStatus();
+        setTimeout(() => check(true), 1500);
+      } catch (e) { hint(e && e.message ? e.message : 'Could not publish.', true); }
+      finally { $a('#anPub').disabled = false; }
+    }
+    $a('#anPub').addEventListener('click', () => {
+      const f = form(), obj = toJson(f);
+      if (!clean(obj)) { hint('Add a title or a message first.', true); return; }
+      pushRecent(f); renderRecent();
+      publish(obj, obj.gift ? 'Published with a gift, open for ' + f.mins + ' minutes.' : 'Published.');
     });
+    $a('#anX').addEventListener('click', () => publish({ id: '', title: '', message: '', link: '', linkText: '', until: '' }, 'Taken down.'));
+    $a('#anCheck').addEventListener('click', () => { status.result = 'checking…'; renderStatus(); check(true).then(renderStatus); });
+    $a('#anAgain').addEventListener('click', () => { try { localStorage.removeItem(SEEN); localStorage.removeItem(CLAIMED); } catch (e) { /* nothing */ } status.result = 'will show it again'; renderStatus(); check(true); });
     sec.addEventListener('keydown', (e) => e.stopPropagation());
+    window.FNAZNEWS_publish = publish; // for tests
   }
   function renderStatus() {
     const el = document.getElementById('anS');
@@ -180,9 +266,6 @@
     const t = status.last ? new Date(status.last).toLocaleTimeString() : '';
     el.textContent = 'This device (version ' + ((document.getElementById('upVer') || {}).textContent || '?') + '): ' + status.result + (t ? ' · checked ' + t + (status.source ? ' via ' + status.source : '') : '');
   }
-  const k = document.getElementById('anK'), rr = document.getElementById('anR');
-  if (k) k.addEventListener('click', () => { status.result = 'checking…'; renderStatus(); check(true).then(renderStatus); });
-  if (rr) rr.addEventListener('click', () => { try { localStorage.removeItem(SEEN); } catch (e) { /* nothing */ } status.result = 'will show it again'; renderStatus(); check(true); });
   if (panel) new MutationObserver(renderStatus).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
   window.FNAZNEWS = { clean, show, banner, check, status };
 })();

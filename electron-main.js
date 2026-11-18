@@ -156,6 +156,20 @@ ipcMain.on('fnaz:fps', (e, v) => {
   try { fs.mkdirSync(path.dirname(LAUNCH_FILE), { recursive: true }); fs.writeFileSync(LAUNCH_FILE, JSON.stringify({ fps })); } catch (err) {}
 });
 ipcMain.on('fnaz:relaunch', () => { app.relaunch(); app.exit(0); });
+// the admin's publishing key lives in a file only this computer's user account can decrypt (Electron safeStorage)
+const KEY_FILE = path.join(app.getPath('userData'), 'admin.key');
+ipcMain.handle('fnaz:secret-save', (e, t) => {
+  const { safeStorage } = require('electron');
+  try {
+    if (!t) { fs.rmSync(KEY_FILE, { force: true }); return true; }
+    if (typeof t !== 'string' || t.length > 400 || !safeStorage.isEncryptionAvailable()) return false;
+    fs.writeFileSync(KEY_FILE, safeStorage.encryptString(t)); return true;
+  } catch (err) { return false; }
+});
+ipcMain.handle('fnaz:secret-load', () => {
+  const { safeStorage } = require('electron');
+  try { return safeStorage.isEncryptionAvailable() && fs.existsSync(KEY_FILE) ? safeStorage.decryptString(fs.readFileSync(KEY_FILE)) : ''; } catch (err) { return ''; }
+});
 ipcMain.on('fnaz:open', (e, url) => { if (typeof url === 'string' && /^https:\/\/[^\s]+$/i.test(url) && url.length < 400) shell.openExternal(url); });
 
 /* ---------- updates ----------

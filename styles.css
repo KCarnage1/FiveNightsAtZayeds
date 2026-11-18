@@ -743,3 +743,18 @@ body.calm .fn-roll, body.calm #title.active .title-block h1 { animation: none; }
 #newsBarM { font-size: 24px; color: var(--paper-dim); }
 @keyframes barDown { from { opacity: 0; transform: translate(-50%, -40px); } }
 @keyframes barUp2 { to { opacity: 0; transform: translate(-50%, -40px); } }
+
+/* announcing from inside the game */
+#modMenu .ann input[type=text], #modMenu .ann input[type=password], #modMenu .ann textarea { width: 100%; margin: 4px 0; padding: 8px 10px; font: 500 20px var(--ui); background: #1b1620; color: var(--paper); border: 2px solid rgba(241, 231, 208, .3); border-radius: var(--r); resize: none; user-select: text; }
+.ann-presets button { font-size: 20px !important; padding: 6px 12px !important; }
+.ann-gift { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 20px; margin: 6px 0; padding: 8px 10px; background: rgba(255, 224, 102, .07); border: 1px dashed rgba(255, 224, 102, .4); border-radius: var(--r); }
+.ann-gift > span { color: #ffe066; font-weight: 700; }
+.ann-gift label { display: flex; align-items: center; gap: 6px; }
+#modMenu .ann-gift input[type=text] { width: 62px; margin: 0; padding: 4px 6px; text-align: center; }
+.ann-warn { display: flex; align-items: center; gap: 10px; font-size: 20px; margin: 4px 0; cursor: pointer; }
+#modMenu .ann-go { background: var(--pink) !important; color: var(--ink) !important; border-color: var(--pink) !important; }
+.ann-setup { margin: 8px 0; font-size: 20px; }
+.ann-setup summary { cursor: pointer; color: var(--paper-dim); }
+.ann-recent { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+.ann-recent small { color: var(--paper-dim); font-size: 16px; }
+#modMenu .ann-recent button { font-size: 16px !important; padding: 3px 10px !important; }
