@@ -5,8 +5,9 @@
  *     The night does not start, and nothing moves, until the call ends. Power is unlimited until then.
  *  2. When the night is survived, an animated fight plays in the 3D engine: Abdulla (the gold camel) against the Falcon. The Falcon loses.
  *
- * Voice lines: put phone5a.mp3 (first guy) and phone5b.mp3 (replacement) in assets/voice and set CALL.voiced = true.
- * Until then the call runs as timed subtitles only. Everything here reaches the game through the hooks in game.bundle.js (FNAZ5.*). */
+ * Voice lines: assets/voice/phone5a.mp3 (the first phone guy, both of his messages joined) and phone5b.mp3 (the replacement).
+ * CALL.at / CALL.bt hold what is said and when, in seconds into each recording. The plain text in CALL.a / CALL.b is only
+ * used if the recordings cannot be loaded. Everything here reaches the game through the hooks in game.bundle.js (FNAZ5.*). */
 (() => {
   'use strict';
   const NET = window.FNAZNET;
@@ -15,10 +16,41 @@
 
   /* ------------------------------------------------------------------ the call */
   const CALL = {
-    voiced: false, // flip to true once phone5a.mp3 and phone5b.mp3 exist
+    voiced: true,
     audioA: '5a',
     audioB: '5b',
-    overlap: 3, // seconds the replacement starts before the first phone guy's line ends
+    overlap: 2, // seconds the replacement starts before the first phone guy's recording ends
+    // what the recordings say, and when (seconds into each file)
+    at: [
+      [0.9, 'Hello? Hello! Yoo-hoo!'],
+      [4.0, "Yes, it's me. The phone guy. I know I said last night was the final night. I was wrong."],
+      [9.6, "You've earned the whole story, so listen,"],
+      [11.6, "because I'm only going to say this once."],
+      [13.7, "Abdulla's Cafeteria had one phone line. Delivery orders. When the cafeteria closed, that number went to Salem's Candy. Same line, same ring."],
+      [21.7, "That's why the Falcon delivers. That's why the gold camel picks up whenever you call anyone."],
+      [26.3, "It's still his phone. And the Zayeds?"],
+      [29.0, "One soul, four bodies. It didn't fit, so it split."],
+      [32.7, 'The Camel is the patience. The Cat is the nerve. The Goat is the memory. The Falcon is the hunger.'],
+      [39.2, "Now here's the part you won't like, Rashid."],
+      [42.4, "At Qerh Cooperations, I'm the one who handled the cafeteria's file. I read the police report. I read yours. And tonight, I reopened it."],
+      [50.9, "The police will be waiting outside at six, and they're not coming for... Wait. Do you hear that?"],
+      [56.6, "That's skates on my office floor."],
+      [58.8, "No, no, wait, wait, wait. I'm a claims adjuster. I just do the paperwork!"]
+    ],
+    bt: [
+      [0.8, 'Hello? Hello?'],
+      [3.2, "Yoo-hoo! Apologies for the interruption. I'm the replacement phone guy."],
+      [8.5, 'Qerh Cooperations thanks the previous phone guy for his service, which has now concluded.'],
+      [14.0, "I'll be brief, because I've seen how this goes."],
+      [17.5, "The police are real. They're outside, and they come in at six. The Zayeds know it too, and they won't wait politely."],
+      [25.4, 'At six, the doors open.'],
+      [28.4, 'After that, this stops being a game of doors and cameras. It becomes a fight. The axe is under the desk. You always knew you needed it, Rashid.'],
+      [38.9, "Someone left me a note about a cupcake. I don't know what it means."],
+      [42.6, 'Do not eat it.'],
+      [44.7, "Good luck. I'd say goodbye, but I don't think I'll be here either. Goodbye."]
+    ],
+    // sounds under the first phone guy's last words: three knocks (skates), then a crash
+    cues: [[57.7, 'knock', -0.4], [57.95, 'knock', 0.4], [58.2, 'knock', -0.4], [63.2, 'bang']],
     whoA: 'Phone guy, Qerh Cooperations',
     whoB: 'Replacement phone guy, Qerh Cooperations',
     // [text, who]  who: undefined = first phone guy, 'f' = the Falcon, 'sfx' = line noise
@@ -62,16 +94,11 @@
     return { lines, sb, end: t + 1.5 };
   }
 
-  // timeline from the two recordings' real lengths
+  // timeline from the two recordings: what is said, and when, comes from CALL.at / CALL.bt
   function audioTimeline(dA, dB) {
-    const lines = [];
-    const wA = CALL.a.reduce((n, [t]) => n + t.length + 8, 0);
-    let acc = 0;
-    CALL.a.forEach(([txt, who]) => { lines.push([(acc / wA) * dA, txt, who || 'a']); acc += txt.length + 8; });
+    const lines = CALL.at.map(([t, txt]) => [t, txt, 'a']);
     const sb = Math.max(0, dA - CALL.overlap);
-    const wB = CALL.b.reduce((n, [t]) => n + t.length + 8, 0);
-    acc = 0;
-    CALL.b.forEach(([txt]) => { lines.push([sb + (acc / wB) * dB, txt, 'b']); acc += txt.length + 8; });
+    CALL.bt.forEach(([t, txt]) => lines.push([sb + t, txt, 'b']));
     return { lines, sb, end: sb + dB + 0.6 };
   }
 
@@ -98,6 +125,14 @@
     X.callText.textContent = e.parts.voiced && !ce.subs && type !== 'sfx' ? 'Call in progress (subtitles are off).' : txt;
   }
 
+  // the knocks and the crash under the first phone guy's last words
+  function playCues(k, t) {
+    k.cues = k.cues || {};
+    CALL.cues.forEach(([at, name, arg], n) => {
+      if (!k.cues[n] && t >= at) { k.cues[n] = true; try { Sound[name](arg); } catch (e) { /* no audio */ } }
+    });
+  }
+
   FNAZ5.callStep = function (e, dt) {
     const k = e.parts, V = Voice;
     const t0 = e.t;
@@ -122,9 +157,11 @@
         }
       } else if (!k.Bstarted) {
         if (k.A && !k.A.ended && k.A.currentTime > 0) e.t = k.A.currentTime;
+        playCues(k, e.t);
         if (e.t >= k.sb) { k.B = V.phone2(CALL.audioB); k.Bstarted = true; }
       } else if (k.B && !k.B.ended && k.B.currentTime > 0) {
         e.t = k.sb + k.B.currentTime;
+        playCues(k, e.t);
       }
     }
     if (e.t < 0) return;
