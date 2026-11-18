@@ -1,8 +1,12 @@
 {
-  "id": "2026-11-18-211126",
-  "title": "Fooooc",
-  "message": "Quysfoooc",
+  "id": "2026-11-18-211141",
+  "title": "A gift for you!",
+  "message": "Thanks for playing. Everyone who is online right now gets a present. Open the Shop to use it.",
   "link": "",
   "linkText": "",
-  "until": ""
+  "until": "",
+  "gift": {
+    "coins": 700
+  },
+  "giftUntil": "2026-11-18T19:11:41Z"
 }
