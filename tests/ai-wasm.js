@@ -50,7 +50,7 @@ function run(n) {
   const online = r() < 0.15, reduced = r() < 0.2, humanBots = r() < 0.2;
   const a = makeState(night, levels, seed, odds), b = makeState(night, levels, seed, odds);
   if (humanBots) for (const y of [a, b]) { y.ai.zayed.human = true; y.ai.taffy.human = r() < 2; } // exercise the human-controlled paths
-  const env = { online, guest: false, reduced };
+  const mods = r() < 0.4, env = { online, guest: false, reduced, invuln: mods && r() < 0.5, freeze: mods && r() < 0.3, infinite: mods && r() < 0.5, noheat: mods && r() < 0.5 };
   const steps = 6000 + Math.floor(r() * 9000);
   let events = 0, deaths = 0;
   for (let i = 0; i < steps; i++) {

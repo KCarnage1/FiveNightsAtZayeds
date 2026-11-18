@@ -8,7 +8,8 @@
  * state fields used: night time hour power pre blackout bT pvid dead won who calmT zPrev heatL heatR coolL coolR
  *   doorL doorR lightL lightR monitor monA cam wbubbles wtaffy clatterT halluc goldenArmed goldenIn goldenT goldenOdds
  *   poster shake usedCams rng ai{zayed,bubbles,taffy,sherbet}
- * env: { online: bool, guest: bool, reduced: bool }   (online: in a multiplayer room; reduced: reduced-motion)
+ * env: { online, guest, reduced, invuln, freeze, infinite, noheat }  (online: in a multiplayer room; reduced: reduced-motion;
+ *   the last four are the mod menu and shop powers: cannot die, animatronics frozen, unlimited power, doors never overheat)
  */
 'use strict';
 (function (root) {
@@ -39,11 +40,20 @@
     const ai = s.ai;
     const maxHeat = () => (s.night >= 8 ? 6 : 8);
 
+    // an attacker is sent away instead of killing the guard (mask or admin powers)
+    function eject(who) {
+      if (who === 'sherbet') { const f = ai.sherbet; f.running = false; f.stage = 0; f.t = 0; f.cd = 3; }
+      else if (who === 'golden') { s.goldenIn = false; s.goldenArmed = false; s.poster = false; }
+      else { const a = ai[who]; a.office = false; a.officeT = 0; a.armed = false; a.t = 0; a.dw = 0; a.room = 'dining'; if (s.blackout && who === 'zayed') s.bT = 0; }
+      fx('eject', who);
+    }
+
     // the jumpscare. When the night is nearly over the guard wins instead.
     function kill(who) {
       if (!env.guest && (who === 'zayed' || who === 'bubbles' || who === 'taffy') && !s.blackout && !ai[who].office) return;
       if (s.dead || s.won) return;
       if (s.time >= NIGHT_LEN - GRACE) { s.time = NIGHT_LEN; fx('nightEnd'); return; }
+      if (env.invuln) { eject(who); return; }
       s.dead = true; s.who = who;
       s.pvid = false; s.monitor = false; s.monA = 0;      // the tablet drops and the power video stops, as part of dying
       fx('kill', who);
@@ -67,7 +77,7 @@
     }
 
     function doors(dt) {
-      if (env.online || s.night >= 8) { s.heatL = s.heatR = s.coolL = s.coolR = 0; return; }
+      if (env.online || env.noheat || s.night >= 8) { s.heatL = s.heatR = s.coolL = s.coolR = 0; return; }
       for (const side of ['L', 'R']) {
         const d = 'door' + side, h = 'heat' + side, c = 'cool' + side;
         if (s[d]) {
@@ -263,7 +273,9 @@
       if (s.blackout) { blackoutStep(dt); return; }
       if (s.pre) return;
       s.power -= DRAIN * usage() * dt * (s.night >= 8 ? 1.3 : 1);
+      if (env.infinite) s.power = 100;
       if (s.power <= 0) { s.power = 0; powerOut(); return; }
+      if (env.freeze) return;
       camelDwell(dt); watch(dt); calm(dt); camel(dt);
       side('bubbles', dt); side('taffy', dt);
       falcon(dt); golden(dt);
@@ -275,7 +287,7 @@
       else if (!env.reduced && !s.monitor && rnd(s) < dt / 900) { s.halluc = 0.2; fx('whisper'); }
     }
 
-    return { ev, step, monitorDown, cameraChanged, kill, usage };
+    return { ev, step, monitorDown, cameraChanged, kill, eject, usage };
   }
 
   const API = {
@@ -284,6 +296,7 @@
     monitorDown(state, env) { const b = Brain(state, env || {}); b.monitorDown(); return b.ev; },
     cameraChanged(state, env) { const b = Brain(state, env || {}); b.cameraChanged(); return b.ev; },
     kill(state, who, env) { const b = Brain(state, env || {}); b.kill(who); return b.ev; },
+    eject(state, who, env) { const b = Brain(state, env || {}); b.eject(who); return b.ev; },
     usage(state) { return clamp(1 + state.doorL + state.doorR + state.lightL + state.lightR + state.monitor, 1, 5); },
     rnd
   };

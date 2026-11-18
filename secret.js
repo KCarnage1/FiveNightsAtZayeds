@@ -18,7 +18,9 @@
   box.querySelector('#secretNo').addEventListener('click', close);
   box.querySelector('form').addEventListener('submit', (e) => {
     e.preventDefault();
-    if (input.value.trim().toLowerCase() === 'shawarma' && window.FNAZ_unlock) { close(); window.FNAZ_unlock(); }
+    const word = input.value.trim().toLowerCase();
+    if (word === 'shawarma' && window.FNAZ_unlock) { close(); window.FNAZ_unlock(); }
+    else if (word === 'lebidoof' && window.FNAZMOD) { close(); window.FNAZMOD.toggle(true); }
     else { msg.textContent = 'Nothing happens.'; input.select(); }
   });
   input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape') close(); });
