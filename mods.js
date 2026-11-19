@@ -31,6 +31,11 @@
   let save = { coins: 0, inv: { mask: 0, battery: 0, spray: 0, wrap: 0 }, daily: { last: '', streak: 0 } };
   try { const s = JSON.parse(localStorage.getItem(KEY) || '{}'); if (s && typeof s === 'object') save = { coins: Math.max(0, +s.coins || 0), inv: Object.assign(save.inv, s.inv || {}), daily: { last: /^\d{4}-\d\d-\d\d$/.test((s.daily || {}).last) ? s.daily.last : '', streak: Math.max(0, Math.min(999, +(s.daily || {}).streak || 0)) } }; } catch (e) { /* first time */ }
   const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* private mode: lasts until you close the page */ } };
+  // two tabs of the game share one balance: when the other one changes it, take its numbers instead of overwriting them later
+  window.addEventListener('storage', (e) => {
+    if (e.key !== KEY || !e.newValue) return;
+    try { const n = JSON.parse(e.newValue); save.coins = Math.max(0, +n.coins || 0); Object.assign(save.inv, n.inv || {}); if (n.daily) save.daily = { last: /^\d{4}-\d\d-\d\d$/.test(n.daily.last) ? n.daily.last : '', streak: Math.max(0, Math.min(999, +n.daily.streak || 0)) }; if (typeof refreshShop === 'function') refreshShop(); } catch (err) { /* keep ours */ }
+  });
   const toast = (text) => {
     const d = document.createElement('div');
     d.className = 'cheat-toast'; d.textContent = text; stage.appendChild(d);

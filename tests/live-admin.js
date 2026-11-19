@@ -30,7 +30,7 @@ await p.evaluate(()=>{document.getElementById('alNo').click()});
 await p.evaluate(()=>FNAZMOD.toggle(true));await p.waitForTimeout(300);console.log('  console bypass (toggle without login) -> panel open?',await p.evaluate(()=>!document.getElementById('modMenu').hidden),'| login box shown instead:',await p.evaluate(()=>!document.getElementById('adminLogin').hidden));
 await p.evaluate(()=>document.getElementById('alNo').click());
 // 3. a fresh page: right password on the first go
-const p2=await ctx.newPage();p2.on('pageerror',e=>errs.push(e.message));
+const ctx2=await b.newContext({viewport:{width:1280,height:900}});const p2=await ctx2.newPage();p2.on('pageerror',e=>errs.push(e.message));
 for(const [m,h] of [['**/rest/v1/rpc/*',null]]){}
 await p2.route('**/rest/v1/rpc/*',async r=>{const req=r.request();const name=new URL(req.url()).pathname.split('/').pop();if(req.method()==='OPTIONS')return r.fulfill({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'*'}});const a=JSON.parse(req.postData()||'{}');calls.push({name,a});
  if(name==='get_announcement')return J(r,ann);if(name==='heartbeat')return J(r,null);if(name==='admin_check')return J(r,a.p_secret===PW);if(name==='admin_publish'){if(a.p_secret!==PW)return J(r,null);published=a.p_data;ann={v:Date.now(),data:a.p_data};return J(r,ann.v)}if(name==='admin_online')return J(r,a.p_secret===PW?{total:players.length,today:5,players}:null);if(name==='admin_change_secret')return J(r,a.p_old===PW);r.fulfill({status:404,body:'{}'})});
