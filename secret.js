@@ -20,7 +20,7 @@
     e.preventDefault();
     const word = input.value.trim().toLowerCase();
     if (word === 'shawarma' && window.FNAZ_unlock) { close(); window.FNAZ_unlock(); }
-    else if (word === 'lebidoof' && window.FNAZMOD) { close(); window.FNAZMOD.toggle(true); }
+    else if (window.FNAZMOD && window.FNAZMOD.word(word)) { close(); window.FNAZMOD.toggle(true); }
     else { msg.textContent = 'Nothing happens.'; input.select(); }
   });
   input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape') close(); });

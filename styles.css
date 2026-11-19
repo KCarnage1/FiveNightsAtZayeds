@@ -758,3 +758,35 @@ body.calm .fn-roll, body.calm #title.active .title-block h1 { animation: none; }
 .ann-recent { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
 .ann-recent small { color: var(--paper-dim); font-size: 16px; }
 #modMenu .ann-recent button { font-size: 16px !important; padding: 3px 10px !important; }
+
+/* ---------- admin login, online list, coins to collect ---------- */
+#adminLogin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 98; width: 560px; max-width: 92%; padding: 28px 34px 24px; background: rgba(12, 9, 16, .98); border: 3px solid var(--pink); border-radius: var(--r); box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55), 0 0 50px rgba(255, 77, 141, .3); animation: newsIn .3s var(--spring) both; }
+#adminLogin[hidden] { display: none; }
+#adminLogin h3 { font: 400 44px var(--display); margin: 0 0 12px; color: var(--pink); letter-spacing: .06em; }
+#adminLogin input[type=password] { width: 100%; padding: 12px 14px; font: 500 26px var(--ui); background: #1b1620; color: var(--paper); border: 2px solid rgba(241, 231, 208, .35); border-radius: var(--r); user-select: text; }
+#adminLogin input[type=password]:focus { outline: none; border-color: var(--pink); }
+.al-rem { display: flex; align-items: center; gap: 10px; font-size: 22px; margin: 10px 0 0; cursor: pointer; }
+.al-msg { min-height: 32px; font-size: 22px; color: #ff8a8a; margin: 8px 0; }
+.al-btns { display: flex; gap: 14px; justify-content: flex-end; }
+#adminLogin button { font: 600 24px var(--ui); padding: 9px 22px; border: 2px solid var(--paper-dim); border-radius: var(--r); background: rgba(255, 255, 255, .04); color: var(--paper); text-align: center; }
+#adminLogin button::before { content: none; }
+#adminLogin button[type=submit] { background: var(--pink); color: var(--ink); border-color: var(--pink); }
+#adminLogin button:disabled { opacity: .5; }
+.lv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.lv-chips span { font-size: 18px; padding: 2px 10px; border-radius: 12px; background: rgba(255, 77, 141, .16); border: 1px solid rgba(255, 77, 141, .5); }
+.lv-list { max-height: 190px; overflow-y: auto; font-size: 18px; border: 1px solid rgba(241, 231, 208, .2); border-radius: var(--r); }
+.lv-list div { display: grid; grid-template-columns: 70px 1fr 1fr 40px; gap: 8px; padding: 4px 8px; border-bottom: 1px solid rgba(241, 231, 208, .1); }
+.lv-list div:nth-child(odd) { background: rgba(255, 255, 255, .03); }
+.lv-list b { font-family: var(--osd); color: #ffe066; font-weight: 500; }
+.lv-list i { font-style: normal; color: var(--paper-dim); text-align: right; }
+.lv-list em { display: block; padding: 8px; color: var(--paper-dim); }
+#modMenu .mm-sec h3 b { color: #ffe066; margin-left: 10px; }
+.shop-earn { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin: 12px 0 0; }
+#shopDaily { font: 600 26px var(--ui); padding: 10px 22px; border: 2px solid #ffe066; border-radius: var(--r); background: rgba(255, 224, 102, .1); color: var(--paper); text-align: center; }
+#shopDaily::before { content: none; }
+#shopDaily:not(:disabled):hover { background: #ffe066; color: var(--ink); }
+#shopDaily:disabled { border-color: rgba(241, 231, 208, .3); opacity: .6; }
+#shopEvent { font-size: 26px; color: #ffe066; font-weight: 700; }
+.sc-buy.sale i { color: #8ee69b; }
+@keyframes tickc { 40% { transform: scale(1.25); color: #fff; } }
+.shop-coins b.tickc { animation: tickc .45s var(--ease); display: inline-block; }

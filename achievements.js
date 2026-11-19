@@ -42,6 +42,7 @@
     save();
     queue.push(LIST.find((a) => a.id === id));
     pump();
+    try { if (window.FNAZMOD && FNAZMOD.earn) FNAZMOD.earn(25, 'achievement'); } catch (e) { /* the coins are a bonus */ }
     if (document.getElementById('achievements').classList.contains('active')) render();
   }
 

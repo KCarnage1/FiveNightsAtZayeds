@@ -53,7 +53,7 @@
   }
   function safeMods(m) {
     m = m || {};
-    const o = { coins: int(m.coins, 0, 1e9, 0), inv: {} };
+    const o = { coins: int(m.coins, 0, 1e9, 0), inv: {}, daily: { last: /^\d{4}-\d\d-\d\d$/.test((m.daily || {}).last) ? m.daily.last : '', streak: int((m.daily || {}).streak, 0, 999, 0) } };
     for (const k of ITEMS) o.inv[k] = int((m.inv || {})[k], 0, 999, 0);
     return o;
   }

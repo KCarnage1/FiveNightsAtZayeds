@@ -1,7 +1,8 @@
 /* Announcements: a message that shows up on players' screens without releasing a new version.
  *
- * The game reads announce.json from the repository (main branch) a few seconds after it starts and then every minute, on any
- * screen, so everyone who is playing sees a new announcement within a minute or two of it being committed. On the title screen it
+ * The game asks the live server (live.js) for the current announcement a few seconds after it starts and then every 5 seconds, so
+ * everyone who is playing sees a new one within about five seconds (if the server cannot be reached it falls back to announce.json
+ * in the repository, at most once a minute). On the title screen it
  * is a card; in a night, in an online room or on any other screen it is a banner at the top that does not block anything and
  * fades after a while. "Got it" (or the banner showing once) remembers the id so the same announcement is not shown twice. An empty id means no announcement. Fields:
  *   id       anything unique, for example 2026-11-20-1 (change it to show a new message)
@@ -104,8 +105,17 @@
   /* ---------- looking for one ---------- */
   const where = () => { const h = NET && NET.h; return h && h.y ? h.y.screen : ''; };
   let busy = false;
+  let lastFallback = 0, lastV = null;
   async function fetchOne() {
     let lastError = 'no answer';
+    if (window.FNAZLIVE) {
+      try {
+        const r = await FNAZLIVE.rpc('get_announcement', {}, 6000);
+        if (r && typeof r === 'object') return { data: r.data || {}, from: 'live server', serverTime: Date.now(), v: r.v };
+      } catch (e) { lastError = 'live server: ' + (e && e.message ? e.message : 'unreachable'); }
+      if (Date.now() - lastFallback < 60000) throw new Error(lastError); // the backups are only for when the live server is down, and gently
+      lastFallback = Date.now();
+    }
     for (const src of SOURCES) {
       try {
         const res = await fetch(src.url + (src.url.includes('?') ? '&' : '?') + 't=' + Math.floor(Date.now() / 60000), { cache: 'no-store' });
@@ -120,6 +130,9 @@
     busy = true;
     try {
       const got = await fetchOne();
+      if (window.FNAZMOD && FNAZMOD.setEvent) FNAZMOD.setEvent(got.data && got.data.event);
+      if (got.v !== undefined && got.v === lastV && !force) { status.last = Date.now(); status.source = got.from; return; } // nothing new since the last look
+      lastV = got.v;
       const a = clean(got.data);
       status.last = Date.now(); status.source = got.from; status.id = a ? a.id : '';
       if (!a) { status.result = 'no announcement right now'; return; }
@@ -136,8 +149,8 @@
     } catch (e) { status.last = Date.now(); status.result = 'could not check: ' + (e && e.message ? e.message : 'offline'); }
     finally { busy = false; renderStatus(); }
   }
-  setTimeout(check, 4000);
-  setInterval(check, 60000);
+  setTimeout(check, 2500);
+  setInterval(check, 5000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
   window.addEventListener('focus', () => check());
   window.addEventListener('online', () => check());
@@ -146,16 +159,11 @@
   setInterval(() => { const w = where(); if (w === 'title' && prev !== 'title' && Date.now() - stamp > 20000) { stamp = Date.now(); check(); } prev = w; }, 1500);
 
   /* ---------- writing one (admin menu) ----------
-     Publishing writes announce.json straight to the repository through GitHub's API, using a personal access token that only
-     lives on the admin's own computer (encrypted by the operating system in the desktop app). No commits to make by hand. */
-  const REPO = 'KCarnage1/FiveNightsAtZayeds', API = 'https://api.github.com/repos/' + REPO + '/contents/announce.json';
+     Publishing sends the announcement to the live server with the admin password, and everyone online has it within about five
+     seconds. Nothing is committed anywhere. */
   const panel = document.getElementById('modMenu');
-  const TOKEN = 'fnaz_admin_token_v1', RECENT = 'fnaz_announce_recent_v1';
-  const nativeKey = window.fnaz && window.fnaz.secret;
-  const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } }, del: (k) => { try { localStorage.removeItem(k); } catch (e) { /* nothing */ } } };
-  let token = '';
-  const loadToken = async () => { token = (nativeKey ? await nativeKey.load().catch(() => '') : '') || ls.get(TOKEN) || ''; };
-  const saveToken = async (t) => { if (nativeKey && await nativeKey.save(t).catch(() => false)) { ls.del(TOKEN); } else if (t) ls.set(TOKEN, t); else ls.del(TOKEN); token = t; };
+  const RECENT = 'fnaz_announce_recent_v1';
+  const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
   const recent = () => { try { const a = JSON.parse(ls.get(RECENT) || '[]'); return Array.isArray(a) ? a.slice(0, 6) : []; } catch (e) { return []; } };
   const pushRecent = (f) => ls.set(RECENT, JSON.stringify([f, ...recent().filter((x) => x.title !== f.title || x.message !== f.message)].slice(0, 6)));
 
@@ -163,8 +171,7 @@
     const sec = document.createElement('section');
     sec.className = 'mm-sec ann';
     sec.innerHTML = `<h3>Announce to everyone</h3>
-      <p class="mm-note" id="anK2"></p>
-      <div class="mm-btns ann-presets"><button type="button" data-preset="gift">🎁 Gift</button><button type="button" data-preset="update">🆕 Update out</button><button type="button" data-preset="warn">⚠️ Warning</button></div>
+      <div class="mm-btns ann-presets"><button type="button" data-preset="gift">🎁 Gift</button><button type="button" data-preset="double">⚡ 2× coins</button><button type="button" data-preset="sale">🏷️ Shop sale</button><button type="button" data-preset="update">🆕 Update out</button><button type="button" data-preset="warn">⚠️ Warning</button></div>
       <input type="text" id="anT" maxlength="80" placeholder="Title" aria-label="Announcement title">
       <textarea id="anM" rows="3" maxlength="600" placeholder="Message" aria-label="Announcement message"></textarea>
       <input type="text" id="anL" maxlength="300" placeholder="Link (optional, https://...)" aria-label="Announcement link">
@@ -175,26 +182,26 @@
         <label>🧴 <input type="text" inputmode="numeric" id="anG3" maxlength="2" placeholder="0"></label>
         <label>🌯 <input type="text" inputmode="numeric" id="anG4" maxlength="2" placeholder="0"></label>
         <label>open for <input type="text" inputmode="numeric" id="anW" maxlength="4" placeholder="60"> min</label></div>
+      <div class="ann-gift"><span>Event</span>
+        <select id="anE" aria-label="Live event"><option value="">none</option><option value="double">⚡ Double coins</option><option value="sale">🏷️ Shop half price</option></select>
+        <label>for <input type="text" inputmode="numeric" id="anEM" maxlength="4" placeholder="60"> min</label></div>
       <label class="ann-warn"><input type="checkbox" id="anY"> Red warning banner</label>
       <div class="mm-btns"><button type="button" id="anP">Preview</button><button type="button" id="anPub" class="ann-go">Publish to everyone</button><button type="button" id="anX">Take it down</button></div>
       <p class="mm-note" id="anH"></p>
       <p class="mm-note" id="anS"></p>
-      <details class="ann-setup" id="anSetup"><summary>Publishing key</summary>
-        <p class="mm-note">One time only. On GitHub: Settings → Developer settings → Fine-grained tokens → Generate new token. Repository access: only <b>FiveNightsAtZayeds</b>. Permissions: <b>Contents → Read and write</b>. Paste it here.</p>
-        <div class="mm-btns"><button type="button" id="anOpen">Open the GitHub page</button></div>
-        <input type="password" id="anTok" autocomplete="off" placeholder="github_pat_…" aria-label="GitHub token">
-        <div class="mm-btns"><button type="button" id="anTokSave">Save key</button><button type="button" id="anTokDel">Remove key</button><button type="button" id="anC">Copy announce.json instead</button></div></details>
       <div class="ann-recent" id="anRecent"></div>
-      <div class="mm-btns"><button type="button" id="anCheck">Check now</button><button type="button" id="anAgain">Show it again</button></div>`;
+      <div class="mm-btns"><button type="button" id="anCheck">Check now</button><button type="button" id="anAgain">Show it again</button><button type="button" id="anC">Copy as JSON</button></div>`;
     panel.insertBefore(sec, panel.querySelector('.mm-foot'));
-    const $a = (s) => sec.querySelector(s);
+    const $a = (s2) => sec.querySelector(s2);
     const hint = (t, bad) => { const h = $a('#anH'); h.textContent = t || ''; h.style.color = bad ? '#ff8a8a' : ''; };
     const num = (id, max) => Math.max(0, Math.min(max, Math.round(Number($a(id).value)) || 0));
     const form = () => ({ title: $a('#anT').value.trim(), message: $a('#anM').value.trim(), link: $a('#anL').value.trim(), warn: $a('#anY').checked,
-      coins: num('#anG', 5000), mask: num('#anG1', 20), battery: num('#anG2', 20), spray: num('#anG3', 20), wrap: num('#anG4', 20), mins: Math.round(Number($a('#anW').value)) || 60 });
+      coins: num('#anG', 5000), mask: num('#anG1', 20), battery: num('#anG2', 20), spray: num('#anG3', 20), wrap: num('#anG4', 20), mins: Math.round(Number($a('#anW').value)) || 60,
+      event: $a('#anE').value, eventMins: Math.round(Number($a('#anEM').value)) || 60 });
     const fill = (f) => { $a('#anT').value = f.title || ''; $a('#anM').value = f.message || ''; $a('#anL').value = f.link || ''; $a('#anY').checked = !!f.warn;
-      $a('#anG').value = f.coins || ''; ['mask', 'battery', 'spray', 'wrap'].forEach((k, i) => { $a('#anG' + (i + 1)).value = f[k] || ''; }); $a('#anW').value = f.mins && f.mins !== 60 ? f.mins : ''; };
-    const toJson = (f) => {
+      $a('#anG').value = f.coins || ''; ['mask', 'battery', 'spray', 'wrap'].forEach((k, i) => { $a('#anG' + (i + 1)).value = f[k] || ''; }); $a('#anW').value = f.mins && f.mins !== 60 ? f.mins : '';
+      $a('#anE').value = f.event || ''; $a('#anEM').value = f.eventMins && f.eventMins !== 60 ? f.eventMins : ''; };
+    const toData = (f) => {
       const now = new Date(), p = (n) => String(n).padStart(2, '0');
       const a = { id: `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}`, title: f.title, message: f.message, link: f.link, linkText: f.link ? 'Read more' : '', until: '' };
       if (f.warn) a.type = 'warn';
@@ -202,64 +209,56 @@
       if (f.coins) gift.coins = f.coins;
       for (const k of ['mask', 'battery', 'spray', 'wrap']) if (f[k]) gift[k] = f[k];
       if (Object.keys(gift).length) { a.gift = gift; a.giftUntil = new Date(Date.now() + f.mins * 60000).toISOString().replace(/\.\d+Z$/, 'Z'); }
+      if (f.event) a.event = { type: f.event, until: new Date(Date.now() + f.eventMins * 60000).toISOString().replace(/\.\d+Z$/, 'Z') };
       return a;
     };
+    const BLANK = { coins: 0, mask: 0, battery: 0, spray: 0, wrap: 0, event: '', eventMins: 60, warn: false, link: '' };
     const PRESETS = {
       gift: { title: 'A gift for you!', message: 'Thanks for playing. Everyone who is online right now gets a present. Open the Shop to use it.', coins: 700, mins: 120 },
-      update: { title: 'New update out', message: 'A new version of the game is available. Update it from the title screen (desktop) or reload the page (phone).', warn: false },
+      double: { title: 'Double coins!', message: 'Every coin you earn counts double for a while. Go survive some nights.', event: 'double', eventMins: 60 },
+      sale: { title: 'Shop sale', message: 'Everything in the Shop is half price for a while.', event: 'sale', eventMins: 60 },
+      update: { title: 'New update out', message: 'A new version of the game is available. Update it from the title screen (desktop) or reload the page (phone).' },
       warn: { title: 'Heads up', message: 'We are about to make a change. Save your progress and come back in a few minutes.', warn: true }
     };
-    sec.querySelectorAll('[data-preset]').forEach((b) => b.addEventListener('click', () => { fill(Object.assign({ coins: 0, mask: 0, battery: 0, spray: 0, wrap: 0 }, PRESETS[b.dataset.preset])); hint('Edit the text if you like, then Preview or Publish.'); }));
+    sec.querySelectorAll('[data-preset]').forEach((b) => b.addEventListener('click', () => { fill(Object.assign({}, BLANK, PRESETS[b.dataset.preset])); hint('Edit the text if you like, then Preview or Publish.'); }));
     const renderRecent = () => {
       const box = $a('#anRecent'), list = recent();
       box.innerHTML = list.length ? '<small>Recent</small>' : '';
-      list.forEach((f) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = f.title || f.message.slice(0, 24); b.title = 'Load this one again'; b.addEventListener('click', () => { fill(f); hint('Loaded. Publish to send it again.'); }); box.appendChild(b); });
+      list.forEach((f) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = f.title || (f.event ? f.event : (f.message || '').slice(0, 24)); b.title = 'Load this one again'; b.addEventListener('click', () => { fill(Object.assign({}, BLANK, f)); hint('Loaded. Publish to send it again.'); }); box.appendChild(b); });
     };
-    const keyState = () => { $a('#anK2').textContent = token ? 'Publishing is set up on this device: the Publish button sends it live in seconds.' : 'To publish from here, add your publishing key below (one time).'; if (!token) $a('#anSetup').open = true; };
-    loadToken().then(() => { keyState(); renderRecent(); });
+    renderRecent();
+    const valid = (f) => !!(f.title || f.message || f.event);
+    $a('#anP').addEventListener('click', () => { const f = form(); const a = clean(toData(f)); if (!a) { hint('Add a title or a message first.', true); return; } show(a, true); });
+    $a('#anC').addEventListener('click', async () => { const f = form(); if (!valid(f)) { hint('Add a title or a message first.', true); return; } const text = JSON.stringify(toData(f), null, 2) + '\n'; try { await navigator.clipboard.writeText(text); hint('Copied.'); } catch (e) { hint('Could not copy:\n' + text, true); } });
 
-    $a('#anP').addEventListener('click', () => { const f = form(); const a = clean(toJson(f)); if (!a) { hint('Add a title or a message first.', true); return; } show(a, true); });
-    $a('#anOpen').addEventListener('click', () => { const u = 'https://github.com/settings/personal-access-tokens/new'; if (window.fnaz && window.fnaz.open) window.fnaz.open(u); else window.open(u, '_blank', 'noopener'); });
-    $a('#anTokSave').addEventListener('click', async () => { const t = $a('#anTok').value.trim(); if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(t)) { hint('That does not look like a GitHub token.', true); return; } await saveToken(t); $a('#anTok').value = ''; keyState(); hint('Key saved on this device.'); $a('#anSetup').open = false; });
-    $a('#anTokDel').addEventListener('click', async () => { await saveToken(''); keyState(); hint('Key removed from this device.'); });
-    $a('#anC').addEventListener('click', async () => { const f = form(); if (!clean(toJson(f))) { hint('Add a title or a message first.', true); return; } const text = JSON.stringify(toJson(f), null, 2) + '\n'; try { await navigator.clipboard.writeText(text); hint('Copied. Paste it over announce.json on GitHub and commit.'); } catch (e) { hint('Could not copy:\n' + text, true); } });
-
-    // write announce.json through the API: read its current version (needed to replace it), then put the new text
+    // send it to the server with the admin password; the server checks the password again itself
     async function publish(obj, label) {
-      if (!token) { $a('#anSetup').open = true; hint('Add your publishing key first (below).', true); return; }
-      const head = { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
-      const text = JSON.stringify(obj, null, 2) + '\n', content = btoa(unescape(encodeURIComponent(text)));
+      const pw = window.FNAZMOD && FNAZMOD.admin.get();
+      if (!pw) { hint('Log in to the admin menu first.', true); return; }
       hint('Publishing…'); $a('#anPub').disabled = true;
+      const t0 = performance.now();
       try {
-        for (let attempt = 0; attempt < 2; attempt++) {
-          const cur = await fetch(API + '?ref=main&t=' + Date.now(), { headers: head, cache: 'no-store' });
-          if (cur.status === 401 || cur.status === 403) throw new Error('GitHub refused the key. Make a new one with Contents: Read and write.');
-          if (cur.status === 404) throw new Error('The key cannot see ' + REPO + '. Choose that repository when making it.');
-          const sha = cur.ok ? (await cur.json()).sha : undefined;
-          const res = await fetch(API, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, head), body: JSON.stringify({ message: 'Update', content, sha, branch: 'main' }) });
-          if (res.status === 409 || res.status === 422) { if (attempt === 0) continue; throw new Error('Someone changed the file at the same moment. Try again.'); }
-          if (res.status === 401 || res.status === 403) throw new Error('GitHub refused the key. It needs Contents: Read and write on ' + REPO + '.');
-          if (!res.ok) throw new Error('GitHub answered ' + res.status + '.');
-          break;
-        }
-        hint(label + ' Live now: players see it within about a minute.');
+        const v = await FNAZLIVE.rpc('admin_publish', { p_secret: pw, p_data: obj }, 8000);
+        if (!v) throw new Error('The server did not accept it. The password may have changed or the message is too long.');
+        hint(label + ' Live in ' + Math.round(performance.now() - t0) + ' ms. Players see it within about 5 seconds.');
         status.result = 'published ' + (obj.id || '(empty)'); renderStatus();
-        setTimeout(() => check(true), 1500);
-      } catch (e) { hint(e && e.message ? e.message : 'Could not publish.', true); }
+        setTimeout(() => check(true), 700);
+      } catch (e) { hint(e && e.message ? (e.name === 'AbortError' ? 'The server took too long. Try again.' : e.message) : 'Could not publish.', true); }
       finally { $a('#anPub').disabled = false; }
     }
     $a('#anPub').addEventListener('click', () => {
-      const f = form(), obj = toJson(f);
-      if (!clean(obj)) { hint('Add a title or a message first.', true); return; }
+      const f = form(), obj = toData(f);
+      if (!valid(f)) { hint('Add a title or a message first.', true); return; }
       pushRecent(f); renderRecent();
-      publish(obj, obj.gift ? 'Published with a gift, open for ' + f.mins + ' minutes.' : 'Published.');
+      publish(obj, obj.gift ? 'Published with a gift, open for ' + f.mins + ' minutes.' : obj.event ? 'Event started.' : 'Published.');
     });
-    $a('#anX').addEventListener('click', () => publish({ id: '', title: '', message: '', link: '', linkText: '', until: '' }, 'Taken down.'));
+    $a('#anX').addEventListener('click', () => publish({}, 'Taken down.'));
     $a('#anCheck').addEventListener('click', () => { status.result = 'checking…'; renderStatus(); check(true).then(renderStatus); });
-    $a('#anAgain').addEventListener('click', () => { try { localStorage.removeItem(SEEN); localStorage.removeItem(CLAIMED); } catch (e) { /* nothing */ } status.result = 'will show it again'; renderStatus(); check(true); });
+    $a('#anAgain').addEventListener('click', () => { try { localStorage.removeItem(SEEN); localStorage.removeItem(CLAIMED); } catch (e) { /* nothing */ } lastV = null; status.result = 'will show it again'; renderStatus(); check(true); });
     sec.addEventListener('keydown', (e) => e.stopPropagation());
     window.FNAZNEWS_publish = publish; // for tests
   }
+
   function renderStatus() {
     const el = document.getElementById('anS');
     if (!el) return;
