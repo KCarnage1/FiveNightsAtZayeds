@@ -1,0 +1,67 @@
+{
+  "schema": "rust-anything/bridge@1",
+  "root": "/home/user/FiveNightsAtZayeds/fnaz2",
+  "unit": "src/ai.js",
+  "language": "ts",
+  "kind": "wasm",
+  "crate_name": "ai-rs",
+  "exports": [
+    {
+      "name": "stepJson",
+      "file": "src/ai.js",
+      "line": 148,
+      "params": [
+        {
+          "name": "S",
+          "ts_type": "unknown",
+          "optional": false,
+          "rest": false
+        },
+        {
+          "name": "dt",
+          "ts_type": "unknown",
+          "optional": false,
+          "rest": false
+        },
+        {
+          "name": "input",
+          "ts_type": "unknown",
+          "optional": false,
+          "rest": false
+        }
+      ],
+      "returns": "unknown",
+      "is_async": false,
+      "is_generator": false,
+      "type_params": [],
+      "uses_instanceof": false
+    }
+  ],
+  "classes": [],
+  "js_only": [
+    {
+      "name": "rand",
+      "file": "src/ai.js",
+      "line": 44,
+      "reason": "kept on request"
+    },
+    {
+      "name": "newNight",
+      "file": "src/ai.js",
+      "line": 46,
+      "reason": "kept on request"
+    },
+    {
+      "name": "toward",
+      "file": "src/ai.js",
+      "line": 65,
+      "reason": "kept on request"
+    },
+    {
+      "name": "step",
+      "file": "src/ai.js",
+      "line": 75,
+      "reason": "kept on request"
+    }
+  ]
+}

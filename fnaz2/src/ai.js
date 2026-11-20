@@ -40,13 +40,14 @@ export const LEVELS = {
 };
 export const HOUR_SEC = 80;
 
-export function rngFrom(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+/* The random numbers (mulberry32). The generator's state is the number S.rs, so the whole night is plain data. */
+export function rand(S) { S.rs = (S.rs + 0x6D2B79F5) >>> 0; let t = S.rs; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
 
 export function newNight(night, seed = 1, opts = {}) {
   const lv = {}; WHO.forEach((w) => { lv[w] = opts.levels ? opts.levels[w] || 0 : LEVELS[w][Math.min(night, 6) - 1]; });
-  const S = { night, rng: rngFrom(seed), t: 0, hour: 0, lv, pos: {}, acc: {}, since: {}, hold: {}, box: 100, boxOut: 0, battery: 100, flashDead: 0, flashOn: false, aimedAt: null, aimT: 0,
+  const S = { night, rs: seed >>> 0, t: 0, hour: 0, lv, pos: {}, acc: {}, since: {}, hold: {}, box: 100, boxOut: 0, battery: 100, flashDead: 0, flashOn: false, aimedAt: null, aimT: 0,
     mods: Object.assign({ drain: 1, charge: 1, box: 1, revive: 0, maskSpeed: 7 }, opts.mods || {}), mask: 0, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
-  WHO.forEach((w) => { S.pos[w] = CAST[w].home; S.acc[w] = S.rng() * CAST[w].every; S.since[w] = 0; });
+  WHO.forEach((w) => { S.pos[w] = CAST[w].home; S.acc[w] = rand(S) * CAST[w].every; S.since[w] = 0; });
   return S;
 }
 
@@ -67,7 +68,7 @@ export function toward(w, at, S) {
   let target = ent[0]; if (ent.length > 1) target = ent[(w.length + Math.floor(S.t / 30)) % ent.length];
   const best = Math.min(...ns.map((n) => dist(w, n, target)));
   const good = ns.filter((n) => dist(w, n, target) === best);
-  return S.rng() < 0.62 ? good[Math.floor(S.rng() * good.length)] : ns[Math.floor(S.rng() * ns.length)];
+  return rand(S) < 0.62 ? good[Math.floor(rand(S) * good.length)] : ns[Math.floor(rand(S) * ns.length)];
 }
 
 /* input: {mask:boolean, flash:boolean, aim:'hall'|'ventL'|'ventR'|null, cam:node|null, wind:boolean} */
@@ -95,16 +96,16 @@ export function step(S, dt, input) {
     if (at === 'office') { // inside the office: they strike unless you are masked
       S.offT[w] = (S.offT[w] || 0) + dt;
       if (def.kind === 'nuisance') { S.flashDead = Math.max(S.flashDead, 1.5); if (masked && S.offT[w] > 1.2) leave(S, w, fx, 'main'); else if (S.offT[w] > 14) leave(S, w, fx, 'hall'); continue; }
-      if (masked) { if (S.offT[w] > 1.0 + S.rng() * 1.2) leave(S, w, fx, def.kind === 'crawler' ? 'ceiling' : 'main'); }
+      if (masked) { if (S.offT[w] > 1.0 + rand(S) * 1.2) leave(S, w, fx, def.kind === 'crawler' ? 'ceiling' : 'main'); }
       else if (S.offT[w] > 3.4 - Math.min(1.2, lvl * 0.06)) { if (!S.inv) { if (revive(S, w, fx)) continue; S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
       continue;
     }
     S.acc[w] += dt;
     if (S.acc[w] < def.every) continue;
     S.acc[w] = 0;
-    if (S.rng() * 20 >= lvl) continue;
+    if (rand(S) * 20 >= lvl) continue;
     if (def.entry.includes(at)) { // at the door of the office: try to come in
-      if (S.aimedAt === at && S.rng() < 0.7) { leave(S, w, fx, nexts(w, at)[0], true); continue; } // the light pushes them back
+      if (S.aimedAt === at && rand(S) < 0.7) { leave(S, w, fx, nexts(w, at)[0], true); continue; } // the light pushes them back
       S.pos[w] = 'office'; S.offT[w] = 0; fx.push({ type: 'enter', who: w, from: at }); continue;
     }
     const n = toward(w, at, S); if (n) { S.pos[w] = n; fx.push({ type: 'move', who: w, from: at, to: n }); }
@@ -124,7 +125,7 @@ function runner(S, w, dt, lvl, input, fx) { // wSherbet: runs the hallway; the f
     return;
   }
   S.acc[w] += dt; if (S.acc[w] < CAST[w].every) return; S.acc[w] = 0;
-  if (S.rng() * 20 < lvl) { S.pos[w] = 'hall'; S.runT[w] = 0; fx.push({ type: 'run', who: w }); }
+  if (rand(S) * 20 < lvl) { S.pos[w] = 'hall'; S.runT[w] = 0; fx.push({ type: 'run', who: w }); }
 }
 
 function puppet(S, dt, lvl, fx) { // Ibrahim: the music box has to be wound, or he comes
@@ -142,3 +143,9 @@ function puppet(S, dt, lvl, fx) { // Ibrahim: the music box has to be wound, or 
 
 /* Lucky Charm (from the shop): the first would-be kill of a night is turned away instead. */
 function revive(S, w, fx) { if (S.mods.revive > 0) { S.mods.revive--; if (S.pos[w] === 'office') { S.pos[w] = 'main'; S.offT[w] = 0; S.acc[w] = -6; } fx.push({ type: 'revived', who: w }); return true; } return false; }
+
+/* A pure version of step for the Rust port and for tests: the night goes in as plain data, the next night and the effects come out. */
+export function stepJson(S, dt, input) {
+  const next = JSON.parse(JSON.stringify(S)); const fx = step(next, dt, input || {});
+  return { S: next, fx };
+}
