@@ -1,1 +1,15 @@
-{"name":"fnaz2","version":"0.1.0","private":true,"scripts":{"build":"esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js --minify","dev":"esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js"},"devDependencies":{"esbuild":"0.28.2","three":"0.187.0"}}
+{
+ "name": "fnaz2",
+ "version": "0.2.0",
+ "private": true,
+ "scripts": {
+  "build": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js --minify",
+  "dev": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js",
+  "test": "node tests/ai.test.mjs"
+ },
+ "devDependencies": {
+  "esbuild": "0.28.2",
+  "three": "0.187.0"
+ },
+ "type": "module"
+}
