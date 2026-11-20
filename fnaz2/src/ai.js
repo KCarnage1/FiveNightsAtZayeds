@@ -45,7 +45,7 @@ export function rngFrom(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D
 export function newNight(night, seed = 1, opts = {}) {
   const lv = {}; WHO.forEach((w) => { lv[w] = opts.levels ? opts.levels[w] || 0 : LEVELS[w][Math.min(night, 6) - 1]; });
   const S = { night, rng: rngFrom(seed), t: 0, hour: 0, lv, pos: {}, acc: {}, since: {}, hold: {}, box: 100, boxOut: 0, battery: 100, flashDead: 0, flashOn: false, aimedAt: null, aimT: 0,
-    mask: 0, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
+    mask: 0, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
   WHO.forEach((w) => { S.pos[w] = CAST[w].home; S.acc[w] = S.rng() * CAST[w].every; S.since[w] = 0; });
   return S;
 }
@@ -77,14 +77,16 @@ export function step(S, dt, input) {
   if (S.hour >= 6) { S.won = true; fx.push({ type: 'win' }); return fx; }
   const hb = S.hour >= 4 ? 2 : S.hour >= 2 ? 1 : 0; // later hours are harder
   // mask: eases up and down, can't be worn with the cameras up
-  S.mask += ((input.mask && !input.cam ? 1 : 0) - S.mask) * Math.min(1, dt * 7);
+  S.mask += ((input.mask && (!input.cam || input.coop) ? 1 : 0) - S.mask) * Math.min(1, dt * 7);
   const masked = S.mask > 0.75;
   // flashlight and battery
   if (S.flashDead > 0) S.flashDead -= dt;
-  S.flashOn = !!input.flash && S.battery > 0 && S.flashDead <= 0 && !masked;
+  S.flashOn = !!input.flash && S.battery > 0 && S.flashDead <= 0 && !masked && !input.freezeLight;
+  if (S.cheat && S.cheat.battery) S.battery = 100;
   if (S.flashOn) S.battery = Math.max(0, S.battery - dt * (100 / 55)); else S.battery = Math.min(100, S.battery + dt * 7);
   S.aimedAt = S.flashOn ? input.aim || null : null;
   S.wind = !!input.wind && input.cam === 'prize';
+  if (S.cheat && S.cheat.freeze) return fx;
   for (const w of WHO) {
     const def = CAST[w], lvl = Math.min(20, S.lv[w] + (S.lv[w] > 0 ? hb : 0)); if (lvl <= 0 && w !== 'ibrahim') continue;
     const at = S.pos[w];

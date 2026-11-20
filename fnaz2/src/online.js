@@ -20,7 +20,7 @@ export async function beat(screen, night) {
   try { await rpc('heartbeat', { p_id: pid, p_ver: 'fnaz2-' + VERSION, p_platform: platform(), p_screen: String(screen || ''), p_night: night | 0, p_mode: 'single' }); status.lastBeat = Date.now(); } catch (e) { /* offline */ }
 }
 export async function news() {
-  try { const a = await rpc('get_announcement', {}); if (a && (a.title || a.message) && a.id) { status.lastNews = a; return a; } } catch (e) { /* offline */ }
+  try { const r = await rpc('get_announcement', {}); const a = r && r.data ? r.data : r; if (a && (a.title || a.message) && a.id && !(a.until && /^\d{4}-\d{2}-\d{2}$/.test(a.until) && new Date(a.until + 'T23:59:59').getTime() < Date.now())) { status.lastNews = a; return a; } } catch (e) { /* offline */ }
   return null;
 }
 /* Daily challenge: the same setup for every player on a given date. */

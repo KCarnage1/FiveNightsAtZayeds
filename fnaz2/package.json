@@ -3,13 +3,18 @@
  "version": "0.2.0",
  "private": true,
  "scripts": {
-  "build": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js --minify",
+  "build": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js --minify && esbuild src/debug.js --bundle --format=iife --outfile=debug.bundle.js --minify",
   "dev": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js",
-  "test": "node tests/ai.test.mjs"
+  "test": "node tests/ai.test.mjs",
+  "peer": "peerjs --port 9000 --path /"
  },
  "devDependencies": {
   "esbuild": "0.28.2",
+  "peer": "^1.0.2",
   "three": "0.187.0"
  },
- "type": "module"
+ "type": "module",
+ "dependencies": {
+  "peerjs": "^1.5.5"
+ }
 }
