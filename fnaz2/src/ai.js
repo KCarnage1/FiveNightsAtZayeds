@@ -45,7 +45,7 @@ export function rngFrom(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D
 export function newNight(night, seed = 1, opts = {}) {
   const lv = {}; WHO.forEach((w) => { lv[w] = opts.levels ? opts.levels[w] || 0 : LEVELS[w][Math.min(night, 6) - 1]; });
   const S = { night, rng: rngFrom(seed), t: 0, hour: 0, lv, pos: {}, acc: {}, since: {}, hold: {}, box: 100, boxOut: 0, battery: 100, flashDead: 0, flashOn: false, aimedAt: null, aimT: 0,
-    mask: 0, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
+    mods: Object.assign({ drain: 1, charge: 1, box: 1, revive: 0, maskSpeed: 7 }, opts.mods || {}), mask: 0, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
   WHO.forEach((w) => { S.pos[w] = CAST[w].home; S.acc[w] = S.rng() * CAST[w].every; S.since[w] = 0; });
   return S;
 }
@@ -77,13 +77,13 @@ export function step(S, dt, input) {
   if (S.hour >= 6) { S.won = true; fx.push({ type: 'win' }); return fx; }
   const hb = S.hour >= 4 ? 2 : S.hour >= 2 ? 1 : 0; // later hours are harder
   // mask: eases up and down, can't be worn with the cameras up
-  S.mask += ((input.mask && (!input.cam || input.coop) ? 1 : 0) - S.mask) * Math.min(1, dt * 7);
+  S.mask += ((input.mask && (!input.cam || input.coop) ? 1 : 0) - S.mask) * Math.min(1, dt * S.mods.maskSpeed);
   const masked = S.mask > 0.75;
   // flashlight and battery
   if (S.flashDead > 0) S.flashDead -= dt;
   S.flashOn = !!input.flash && S.battery > 0 && S.flashDead <= 0 && !masked && !input.freezeLight;
   if (S.cheat && S.cheat.battery) S.battery = 100;
-  if (S.flashOn) S.battery = Math.max(0, S.battery - dt * (100 / 55)); else S.battery = Math.min(100, S.battery + dt * 7);
+  if (S.flashOn) S.battery = Math.max(0, S.battery - dt * (100 / 55) * S.mods.drain); else S.battery = Math.min(100, S.battery + dt * 7 * S.mods.charge);
   S.aimedAt = S.flashOn ? input.aim || null : null;
   S.wind = !!input.wind && input.cam === 'prize';
   if (S.cheat && S.cheat.freeze) return fx;
@@ -96,7 +96,7 @@ export function step(S, dt, input) {
       S.offT[w] = (S.offT[w] || 0) + dt;
       if (def.kind === 'nuisance') { S.flashDead = Math.max(S.flashDead, 1.5); if (masked && S.offT[w] > 1.2) leave(S, w, fx, 'main'); else if (S.offT[w] > 14) leave(S, w, fx, 'hall'); continue; }
       if (masked) { if (S.offT[w] > 1.0 + S.rng() * 1.2) leave(S, w, fx, def.kind === 'crawler' ? 'ceiling' : 'main'); }
-      else if (S.offT[w] > 3.4 - Math.min(1.2, lvl * 0.06)) { if (!S.inv) { S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
+      else if (S.offT[w] > 3.4 - Math.min(1.2, lvl * 0.06)) { if (!S.inv) { if (revive(S, w, fx)) continue; S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
       continue;
     }
     S.acc[w] += dt;
@@ -120,7 +120,7 @@ function runner(S, w, dt, lvl, input, fx) { // wSherbet: runs the hallway; the f
     S.runT[w] = (S.runT[w] || 0) + dt;
     if (S.aimedAt === 'hall') S.hold[w] = (S.hold[w] || 0) + dt; else S.hold[w] = Math.max(0, (S.hold[w] || 0) - dt * 0.5);
     if (S.hold[w] > 1.1) { S.pos[w] = 'parts'; S.runT[w] = 0; S.hold[w] = 0; S.acc[w] = -6; fx.push({ type: 'pushed', who: w, from: 'hall', to: 'parts' }); return; }
-    if (S.runT[w] > 4.2) { if (!S.inv) { S.dead = w; fx.push({ type: 'kill', who: w }); } else { S.pos[w] = 'parts'; S.runT[w] = 0; } }
+    if (S.runT[w] > 4.2) { if (!S.inv && !revive(S, w, fx)) { S.dead = w; fx.push({ type: 'kill', who: w }); } else { S.pos[w] = 'parts'; S.runT[w] = 0; } }
     return;
   }
   S.acc[w] += dt; if (S.acc[w] < CAST[w].every) return; S.acc[w] = 0;
@@ -131,10 +131,14 @@ function puppet(S, dt, lvl, fx) { // Ibrahim: the music box has to be wound, or 
   if (S.boxOut > 0) { // he is out of the box
     S.boxOut += dt; S.pos.ibrahim = S.boxOut > 6 ? 'hall' : 'prize';
     if (S.box > 25 && S.boxOut < 7) { S.boxOut = 0; S.pos.ibrahim = 'prize'; fx.push({ type: 'boxsafe' }); return; }
-    if (S.boxOut > 11) { if (!S.inv) { S.dead = 'ibrahim'; fx.push({ type: 'kill', who: 'ibrahim' }); } else S.boxOut = 0; }
+    if (S.boxOut > 11) { if (!S.inv && !revive(S, 'ibrahim', fx)) { S.dead = 'ibrahim'; fx.push({ type: 'kill', who: 'ibrahim' }); } else { S.boxOut = 0; S.box = 60; } }
     return;
   }
   if (S.wind) S.box = Math.min(100, S.box + dt * 26);
-  else S.box = Math.max(0, S.box - dt * (0.55 + lvl * 0.05));
+  else S.box = Math.max(0, S.box - dt * (0.55 + lvl * 0.05) * S.mods.box);
+  if (S.cheat && S.cheat.box) S.box = 100;
   if (S.box <= 0) { S.boxOut = 0.001; fx.push({ type: 'boxout' }); }
 }
+
+/* Lucky Charm (from the shop): the first would-be kill of a night is turned away instead. */
+function revive(S, w, fx) { if (S.mods.revive > 0) { S.mods.revive--; if (S.pos[w] === 'office') { S.pos[w] = 'main'; S.offT[w] = 0; S.acc[w] = -6; } fx.push({ type: 'revived', who: w }); return true; } return false; }

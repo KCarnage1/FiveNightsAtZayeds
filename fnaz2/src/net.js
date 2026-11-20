@@ -57,6 +57,7 @@ export function createNet() {
     });
     p.on('error', (e) => { clearTimeout(to); fail(e.type === 'peer-unavailable' ? 'No room with that code. Check it and try again.' : friendly(e)); });
   });
+  N.reopen = () => { clearTimers(); try { if (N.conn) N.conn.close(); } catch (e) { /* ignore */ } N.conn = null; N.ping = 0; setState('hosting'); };
   N.close = () => { clearTimers(); try { if (N.conn) N.conn.close(); } catch (e) { /* ignore */ } try { if (N.peer) N.peer.destroy(); } catch (e) { /* ignore */ } N.conn = N.peer = null; N.role = null; N.code = ''; N.ping = 0; if (N.state !== 'idle') setState('idle'); };
   return N;
 }

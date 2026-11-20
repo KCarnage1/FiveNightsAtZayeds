@@ -8,6 +8,11 @@ import { cfg, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings
 import * as Calls from './calls.js';
 import * as Online from './online.js';
 import { loadFace } from './models/kit.js';
+import * as Shop from './shop.js';
+import { openShop, dailyReward } from './shopui.js';
+import { initCoop } from './coop.js';
+import { initAdmin } from './adminui.js';
+import { wordTyper } from './admin.js';
 
 const $ = (s) => document.querySelector(s);
 const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
@@ -38,11 +43,11 @@ const G = { mode: 'title', S: null, cam: null, pitch: 0, yaw: 0, yawT: 0, keys: 
 const ORDER = WHO.slice();
 const LABEL = { 7: 'Custom Night' };
 function startNight(n, opts = {}) {
-  startAudio(); closeModal(); G.S = newNight(n, opts.seed || (Date.now() & 0xffff), opts); G.mode = 'play'; G.paused = false; G.cam = null; G.mask = false; G.light = false; G.yaw = G.yawT = 0; G.from = {}; G.scareWho = null; G.speed = opts.speed || 1; G.label = opts.label || LABEL[n] || 'Night ' + n; G.opts = opts;
+  startAudio(); closeModal(); const mods = opts.daily || opts.coop === 'guest' ? undefined : Shop.mods(); G.S = newNight(n, opts.seed || (Date.now() & 0xffff), Object.assign({}, opts, { mods })); G.S.cheated = false; G.hourPaid = 0; G.opts = opts; if (G.adm) { G.adm.used = false; } G.mode = 'play'; G.paused = false; G.cam = null; G.mask = false; G.light = false; G.yaw = G.yawT = 0; G.from = {}; G.scareWho = null; G.speed = opts.speed || 1; G.label = opts.label || LABEL[n] || 'Night ' + n; G.opts = opts; applyCosmetics();
   stats.plays++; saveStats(); document.body.classList.add('playing');
   $('#screen').hidden = true; $('#hud').hidden = false; $('#hNight').textContent = G.label; $('#scareBar').hidden = true; $('#bPause').hidden = false;
   intro(G.label);
-  if (n <= 6 && !opts.label) setTimeout(() => { if (G.mode === 'play' && G.S && G.S.night === n) { Snd.ring(); setTimeout(() => { if (G.mode === 'play') Calls.start(n, $('#call')); }, 1800); } }, 2600);
+  if (n <= 6 && (!opts.label || opts.coop) && !opts.daily) setTimeout(() => { if (G.mode === 'play' && G.S && G.S.night === n) { Snd.ring(); setTimeout(() => { if (G.mode === 'play') Calls.start(n, $('#call')); }, 1800); } }, 2600);
   else say('Hold F or click for the flashlight. Hold M for the mask. C opens the cameras.', 6000);
 }
 function intro(label) { const d = document.createElement('div'); d.className = 'intro'; d.innerHTML = `<b>${label}</b><span>12:00 AM</span>`; document.body.appendChild(d); setTimeout(() => d.remove(), 3200); }
@@ -57,9 +62,9 @@ function closeModal() { $('#modal').hidden = true; $('#modal').innerHTML = ''; }
 const modalOpen = () => !$('#modal').hidden;
 const TABS = {
   Audio: [{ k: 'master', t: 'range', l: 'Master volume', min: 0, max: 100 }, { k: 'sfx', t: 'range', l: 'Effects', min: 0, max: 100 }, { k: 'music', t: 'range', l: 'Music box', min: 0, max: 100 }],
-  Video: [{ k: 'quality', t: 'select', l: 'Quality', o: [['low', 'Low (best for phones)'], ['medium', 'Medium'], ['high', 'High']], p: 'Lower quality renders fewer pixels. Try Low if the game stutters.' }, { k: 'fov', t: 'range', l: 'Field of view', min: 55, max: 95 }, { k: 'shake', t: 'toggle', l: 'Screen shake' }, { k: 'flashing', t: 'toggle', l: 'Flashing effects', p: 'Turn off to remove bright flashes and flicker.' }, { k: 'fps', t: 'toggle', l: 'Show FPS' }, { t: 'button', l: 'Fullscreen', b: 'Toggle', act: () => toggleFull() }],
-  Gameplay: [{ k: 'sens', t: 'range', l: 'Look sensitivity', min: 40, max: 200 }, { k: 'invert', t: 'toggle', l: 'Invert look' }, { k: 'hints', t: 'toggle', l: 'On-screen hints' }, { k: 'calls', t: 'toggle', l: 'Phone calls' }, { k: 'voice', t: 'toggle', l: 'Read calls aloud', p: 'Uses your device\'s text-to-speech voice.' }, { k: 'subtitles', t: 'toggle', l: 'Subtitles' }, { k: 'autopause', t: 'toggle', l: 'Pause when the tab loses focus' }],
-  Online: [{ k: 'share', t: 'toggle', l: 'Show that I am online', p: 'Tells the developer the game is open: a random ID, the version, your device type and the screen you are on. No name, no account, no location.' }, { t: 'status' }],
+  Video: [{ k: 'quality', t: 'select', l: 'Quality', o: [['low', 'Low (best for phones)'], ['medium', 'Medium'], ['high', 'High']], p: 'Lower quality renders fewer pixels. Try Low if the game stutters.' }, { k: 'fov', t: 'range', l: 'Field of view', min: 55, max: 95 }, { k: 'brightness', t: 'range', l: 'Brightness', min: 60, max: 150 }, { k: 'uiScale', t: 'range', l: 'HUD size', min: 80, max: 130 }, { k: 'shake', t: 'toggle', l: 'Screen shake' }, { k: 'flashing', t: 'toggle', l: 'Flashing effects', p: 'Turn off to remove bright flashes and flicker.' }, { k: 'fps', t: 'toggle', l: 'Show FPS' }, { t: 'button', l: 'Fullscreen', b: 'Toggle', act: () => toggleFull() }],
+  Gameplay: [{ k: 'sens', t: 'range', l: 'Look sensitivity', min: 40, max: 200 }, { k: 'invert', t: 'toggle', l: 'Invert look' }, { k: 'toggleMask', t: 'toggle', l: 'Mask: tap to toggle', p: 'Off = hold to wear it.' }, { k: 'toggleLight', t: 'toggle', l: 'Flashlight: tap to toggle', p: 'Off = hold to shine it.' }, { k: 'haptics', t: 'toggle', l: 'Vibration (phones)' }, { k: 'hints', t: 'toggle', l: 'On-screen hints' }, { k: 'calls', t: 'toggle', l: 'Phone calls' }, { k: 'voice', t: 'toggle', l: 'Read calls aloud', p: 'Uses your device\'s text-to-speech voice.' }, { k: 'subtitles', t: 'toggle', l: 'Subtitles' }, { k: 'autopause', t: 'toggle', l: 'Pause when the tab loses focus' }],
+  Online: [{ k: 'share', t: 'toggle', l: 'Show that I am online', p: 'Tells the developer the game is open: a random ID, the version, your device type and the screen you are on. No name, no account, no location.' }, { k: 'broker', t: 'text', l: 'Custom matchmaking server', p: 'Leave empty for the default. Format host:port, for example localhost:9000.' }, { t: 'status' }],
   Data: [{ t: 'button', l: 'Reset settings', b: 'Reset', act: () => { resetSettings(); settings('Data'); toast('Settings reset'); } }, { t: 'button', l: 'Erase progress and stats', b: 'Erase…', danger: true, act: () => { if (confirm('Erase all nights beaten and stats?')) { resetProgress(); settings('Data'); toast('Progress erased'); if (G.mode === 'title') home(); } } }]
 };
 function settings(tab = 'Audio') {
@@ -67,6 +72,7 @@ function settings(tab = 'Audio') {
     if (r.t === 'range') return `<div class="row"><label for="s${i}">${r.l}</label><span><input id="s${i}" data-k="${r.k}" type="range" min="${r.min}" max="${r.max}" value="${cfg[r.k]}"> <output>${cfg[r.k]}</output></span></div>`;
     if (r.t === 'toggle') return `<div class="row"><label for="s${i}">${r.l}</label><input id="s${i}" class="tog" data-k="${r.k}" type="checkbox" ${cfg[r.k] ? 'checked' : ''}>${r.p ? `<p>${r.p}</p>` : ''}</div>`;
     if (r.t === 'select') return `<div class="row"><label for="s${i}">${r.l}</label><select id="s${i}" data-k="${r.k}">${r.o.map(([v, n]) => `<option value="${v}" ${cfg[r.k] === v ? 'selected' : ''}>${n}</option>`).join('')}</select>${r.p ? `<p>${r.p}</p>` : ''}</div>`;
+    if (r.t === 'text') return `<div class="row"><label for="s${i}">${r.l}</label><input id="s${i}" class="sm" data-k="${r.k}" type="text" value="${esc(cfg[r.k] || '')}" style="width:170px" autocomplete="off">${r.p ? `<p>${r.p}</p>` : ''}</div>`;
     if (r.t === 'button') return `<div class="row"><label>${r.l}</label><button class="sm ${r.danger ? 'danger' : ''}" data-act="${i}">${r.b}</button></div>`;
     return `<div class="row"><label>Server</label><span id="olStatus">${Online.status.online === null ? 'not checked' : Online.status.online ? 'connected' : 'offline'}</span><p><button class="sm" id="olCheck">Check connection</button></p></div>`;
   }).join('');
@@ -76,6 +82,7 @@ function settings(tab = 'Audio') {
   m.querySelectorAll('input[type=range]').forEach((el) => { el.oninput = () => { setCfg(el.dataset.k, +el.value); el.nextElementSibling.textContent = el.value; Snd.click(); }; });
   m.querySelectorAll('input.tog').forEach((el) => { el.onchange = () => setCfg(el.dataset.k, el.checked); });
   m.querySelectorAll('select').forEach((el) => { el.onchange = () => setCfg(el.dataset.k, el.value); });
+  m.querySelectorAll('input[type=text]').forEach((el) => { el.onchange = () => setCfg(el.dataset.k, el.value.trim()); });
   m.querySelectorAll('[data-act]').forEach((el) => { el.onclick = () => TABS[tab][+el.dataset.act].act(); });
   const chk = $('#olCheck'); if (chk) chk.onclick = async () => { $('#olStatus').textContent = 'checking…'; try { await Online.rpc('get_announcement', {}); } catch (e) { /* status set */ } if ($('#olStatus')) $('#olStatus').textContent = Online.status.online ? 'connected' : 'offline'; };
   $('#mClose').onclick = () => { closeModal(); if (G.paused) pauseScreen(); };
@@ -83,6 +90,7 @@ function settings(tab = 'Audio') {
 function toggleFull() { try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch (e) { toast('Fullscreen is not available here'); } }
 onChange((k) => {
   if (k === 'quality' || k === '*') applyQuality(); if (k === 'fov' || k === '*') { player.fov = camV.fov = cfg.fov; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); }
+  if (k === 'brightness' || k === '*') renderer.toneMappingExposure = 1.3 * cfg.brightness / 100; if (k === 'uiScale' || k === '*') document.documentElement.style.setProperty('--ui', cfg.uiScale / 100);
   if (k === 'fps' || k === '*') { $('#fps').hidden = !cfg.fps; } if (k === 'flashing' || k === '*') document.body.classList.toggle('noflash', !cfg.flashing);
   if (k === 'share' && cfg.share) Online.beat(G.mode, G.S ? G.S.night : 0);
 });
@@ -92,16 +100,23 @@ function applyQuality() { renderer.setPixelRatio(Math.min(devicePixelRatio || 1,
 /* ---- the home page ---- */
 let newsItem = null;
 function home() {
-  G.mode = 'title'; Calls.stop(); document.body.classList.remove('playing'); G.paused = false; $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); $('#call').hidden = true; $('#scareBar').hidden = true; $('#staticOv').classList.remove('on'); closeModal();
-  const u = unlocked(), s = $('#screen'); s.hidden = false; s.className = 'screen clear';
-  s.innerHTML = `<div class="home"><h1 class="logo">Five Nights<br>at Zayed's 2</h1>
-    <div class="menu"><button id="mNew">${stats.beaten ? 'Continue' : 'New game'} <small>Night ${u}</small></button><button id="mNights">Night select</button><button id="mCustom">Custom night <small>${stats.beaten >= 6 ? '' : 'beat Night 6'}</small></button><button id="mDaily">Daily challenge</button><button id="mExtras">Extras</button><button id="mSet">Settings</button></div>
+  G.mode = 'title'; Calls.stop(); document.body.classList.remove('playing'); G.paused = false; G.menuOpen = false; $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); $('#call').hidden = true; $('#scareBar').hidden = true; $('#staticOv').classList.remove('on'); closeModal(); const pk = $('#pings'); if (pk) pk.hidden = true;
+  const u = unlocked(), s = $('#screen'); s.hidden = false; s.className = 'screen titlebg';
+  const dly = stats.claim !== Online.dayKey();
+  s.innerHTML = `<div class="title"><div class="top"><div class="tag1">One soul · four bodies</div><h1 class="logo">Five Nights<br><em>at Zayed's 2</em></h1></div>
+    <div class="bottom"><div class="tmenu"><button class="main" id="mNew">${stats.beaten ? 'Continue' : 'Play'}<small>Night ${u}</small></button><button id="mCoop">Co-op<small>2 players online</small></button><button id="mNights">Nights</button><button id="mCustom">Custom<small>${stats.beaten >= 6 ? 'your own night' : 'beat Night 6'}</small></button><button id="mDaily">Daily</button><button id="mShop">Shop${dly ? '<small>reward ready!</small>' : ''}</button><button id="mExtras">Extras</button><button id="mSet">Settings</button></div>
     ${newsItem ? `<div class="news"><b>${esc(newsItem.title || 'News')}</b> ${esc(String(newsItem.message || '').replace(/\s+/g, ' ').slice(0, 200))}</div>` : ''}
-    <div class="foot">v${Online.VERSION} · ${stats.wins} win${stats.wins === 1 ? '' : 's'} · ${stats.deaths} death${stats.deaths === 1 ? '' : 's'}</div></div>`;
-  $('#mNew').onclick = () => startNight(u); $('#mNights').onclick = nightSelect; $('#mCustom').onclick = () => (stats.beaten >= 6 ? customNight() : toast('Beat Night 6 to unlock the Custom Night')); $('#mDaily').onclick = daily; $('#mExtras').onclick = extras; $('#mSet').onclick = () => settings();
-  s.querySelectorAll('.menu button').forEach((b) => b.addEventListener('pointerenter', () => Snd.click()));
+    <div class="foot">v${Online.VERSION} · ${stats.wins} win${stats.wins === 1 ? '' : 's'} · ${stats.deaths} death${stats.deaths === 1 ? '' : 's'} · <span id="kb">F3 debug</span></div></div></div><div class="corner"><span class="coins" id="coins">🪙 ${stats.coins}</span></div>`;
+  $('#mNew').onclick = () => startNight(u); $('#mNights').onclick = nightSelect; $('#mCustom').onclick = () => (stats.beaten >= 6 ? customNight() : toast('Beat Night 6 to unlock the Custom Night')); $('#mDaily').onclick = daily; $('#mExtras').onclick = extras; $('#mSet').onclick = () => settings(); $('#mCoop').onclick = () => coop.menu(); $('#mShop').onclick = () => openShop(ctx); $('#coins').onclick = () => openShop(ctx);
+  s.querySelectorAll('.tmenu button').forEach((b) => b.addEventListener('pointerenter', () => Snd.click()));
   Online.beat('title', 0);
 }
+const refreshHome = () => { if (G.mode === 'title' && $('#screen').querySelector('.title') && !$('#screen').hidden) { const c = $('#coins'); if (c) c.textContent = '🪙 ' + stats.coins; } };
+function leaveToMenu(msg) { G.mode = 'title'; Calls.stop(); $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); document.body.classList.remove('playing'); closeModal(); const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div><h2>${esc(msg)}</h2><button class="big" id="tt">Menu</button></div>`; $('#tt').onclick = home; }
+function applyCosmetics() { flash.color.set(Shop.colorOf('light')); const c = Shop.colorOf('mask'); document.querySelectorAll('#maskOv path:nth-child(2)').forEach((p) => p.setAttribute('stroke', c)); }
+const dbg = document.createElement('div'); dbg.id = 'dbg'; dbg.hidden = true; document.body.appendChild(dbg);
+const errLog = []; addEventListener('error', (e) => errLog.push(e.message)); addEventListener('unhandledrejection', (e) => errLog.push('promise: ' + (e.reason && e.reason.message || e.reason)));
+function toggleDebug() { dbg.hidden = !dbg.hidden; }
 function nightSelect() {
   const u = unlocked(); let b = ''; for (let n = 1; n <= 6; n++) b += `<button data-n="${n}" ${n > u ? 'disabled' : ''}>Night ${n}</button>`;
   const s = $('#screen'); s.className = 'screen'; s.innerHTML = `<div><h2>Night select</h2><div class="nights">${b}</div><button class="big alt" id="bk">Back</button></div>`;
@@ -158,44 +173,69 @@ function closeGal() { const m = $('#modal'); m.className = 'screen modal'; m.hid
 
 /* ---- pause, game over, win ---- */
 function pause(on) {
-  if (G.mode !== 'play' || G.scareWho) return; G.paused = on; if (on) { G.light = false; G.wind = false; setMask(false); Calls.stop(); pauseScreen(); } else { $('#screen').hidden = true; closeModal(); }
+  if (G.mode !== 'play' || G.scareWho) return;
+  if (G.coop) { G.menuOpen = on; if (on) pauseScreen(); else { $('#screen').hidden = true; closeModal(); } return; }
+  G.paused = on; if (on) { G.light = false; G.wind = false; setMask(false); Calls.stop(); pauseScreen(); } else { $('#screen').hidden = true; closeModal(); }
 }
-function pauseScreen() { const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div><h2>Paused</h2><p>${G.label} · ${(G.S.hour === 0 ? 12 : G.S.hour)} AM</p><button class="big" id="pr">Resume</button><button class="big alt" id="ps">Settings</button><button class="big alt" id="pm">Quit to menu</button></div>`; $('#pr').onclick = () => pause(false); $('#ps').onclick = () => settings(); $('#pm').onclick = () => { G.mode = 'title'; home(); }; }
+function pauseScreen() { const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div><h2>${G.coop ? 'Menu' : 'Paused'}</h2><p>${G.label} · ${(G.S.hour === 0 ? 12 : G.S.hour)} AM${G.coop ? '<br>Co-op keeps running while this is open.' : ''}</p><button class="big" id="pr">Resume</button><button class="big alt" id="ps">Settings</button><button class="big alt" id="pm">Quit to menu</button></div>`; $('#pr').onclick = () => pause(false); $('#ps').onclick = () => settings(); $('#pm').onclick = () => { if (G.coop) coop.leave(); G.mode = 'title'; home(); }; }
 function over(win) {
-  Calls.stop(); const n = G.S.night; G.mode = win ? 'won' : 'dead'; $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); $('#scareBar').hidden = true; $('#call').hidden = true; $('#staticOv').classList.remove('on'); document.body.classList.remove('playing');
-  if (win) { stats.wins++; if (n <= 6 && !G.opts.label) stats.beaten = Math.max(stats.beaten, n); if (G.opts.daily) stats.daily[G.opts.daily] = true; } else { stats.deaths++; stats.killers[G.scareWho] = (stats.killers[G.scareWho] || 0) + 1; }
+  Calls.stop(); const n = G.S.night, cheated = !!(G.S.cheated || (G.adm && G.adm.used)); G.mode = win ? 'won' : 'dead'; G.cam = null; G.light = false; G.mask = false; $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); $('#scareBar').hidden = true; $('#call').hidden = true; $('#staticOv').classList.remove('on'); document.body.classList.remove('playing'); const pk = $('#pings'); if (pk) pk.hidden = true;
+  let rw = { parts: [], total: 0 };
+  if (!cheated) {
+    rw = Shop.reward(win, n, G.S.hour, !!G.opts.custom || n === 7, G.S.lv); if (rw.total) Shop.earn(rw.total);
+    if (win) { stats.wins++; if (n <= 6 && !G.opts.label || (G.opts.coop && n <= 6)) stats.beaten = Math.max(stats.beaten, n); if (G.opts.daily) stats.daily[G.opts.daily] = true; } else { stats.deaths++; stats.killers[G.scareWho] = (stats.killers[G.scareWho] || 0) + 1; }
+  }
   saveStats();
+  const coopMode = !!G.coop, guest = !!G.guest;
+  const pay = cheated ? '<p class="hint">Admin powers were used: no coins or progress for this run.</p>' : rw.total ? `<p>${rw.parts.map(([l, v]) => `${l} +${v}`).join(' · ')} → <b>🪙 +${rw.total}</b></p>` : '';
   const s = $('#screen'); s.hidden = false; s.className = 'screen';
+  const next = win && n < 6 && !G.opts.label ? `<button class="big" id="nx">Night ${n + 1}</button>` : '';
+  const buttons = coopMode ? (guest ? '<p class="pulse">Waiting for the host to start again…</p>' : `<button class="big" id="rt">Play again</button>`) + '<button class="big alt" id="tt">Leave</button>' : `${next}<button class="big ${next ? 'alt' : ''}" id="rt">${win ? 'Replay' : 'Try again'}</button><button class="big alt" id="tt">Menu</button>`;
   s.innerHTML = win
-    ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? 'The sun is up. The police at the door are no longer the worst thing in the building.' : 'The sun is up. The bodies are still. For now.'}</p>${n < 6 && !G.opts.label ? `<button class="big" id="nx">Night ${n + 1}</button>` : ''}<button class="big alt" id="rt">Replay</button><button class="big alt" id="tt">Menu</button></div>`
-    : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p><p>${hintFor(G.scareWho)}</p><button class="big" id="rt">Try again</button><button class="big alt" id="tt">Menu</button></div>`;
-  if ($('#nx')) $('#nx').onclick = () => startNight(n + 1); $('#rt').onclick = () => startNight(n, G.opts); $('#tt').onclick = home;
+    ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? 'The sun is up. The police at the door are no longer the worst thing in the building.' : 'The sun is up. The bodies are still. For now.'}</p>${pay}${buttons}</div>`
+    : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p><p>${hintFor(G.scareWho)}</p>${pay}${buttons}</div>`;
+  if ($('#nx')) $('#nx').onclick = () => startNight(n + 1, { }); 
+  if ($('#rt')) $('#rt').onclick = () => (coopMode ? coop.again() : startNight(n, G.opts));
+  $('#tt').onclick = () => { if (coopMode) coop.leave(); home(); };
 }
 const hintFor = (w) => ({ ibrahim: 'The music box ran out. Keep winding it from the Prize Corner camera.', wSherbet: 'Withered Sherbet runs the hallway. The mask will not stop him: shine the light down the hall.', gelly: 'Gelly comes through the vents. Wear the mask until she leaves.' }[w] || 'Put the mask on when something is in the office.');
 
 /* ---- input ---- */
+const buzz = (p) => { if (cfg.haptics && navigator.vibrate) try { navigator.vibrate(p); } catch (e) { /* ignore */ } };
+const canPlay = () => G.mode === 'play' && !G.paused && !G.scareWho && !G.guest;
+const setLight = (v) => { if (!canPlay() || G.cam) { if (!v) G.light = false; return; } G.light = v; };
+const pressLight = () => { if (cfg.toggleLight) setLight(!G.light); else setLight(true); }; const releaseLight = () => { if (!cfg.toggleLight) setLight(false); };
+const setMask = (v) => { if (!canPlay()) { if (!v) G.mask = false; return; } if (v && (G.cam && !G.coop)) return; if (v !== G.mask) Snd.mask(v); G.mask = v; };
+const pressMask = () => { if (cfg.toggleMask) setMask(!G.mask); else setMask(true); }; const releaseMask = () => { if (!cfg.toggleMask) setMask(false); };
 addEventListener('pointermove', (e) => { const v = (e.clientX / innerWidth - 0.5) * 2 * 1.45 * (cfg.sens / 100) * (cfg.invert ? -1 : 1); G.yawT = Math.max(-1.45, Math.min(1.45, v)); });
-canvas.addEventListener('pointerdown', (e) => { if (G.mode === 'play' && !G.paused && !G.cam && e.button !== 2) G.light = true; });
-addEventListener('pointerup', () => { G.light = false; G.wind = false; });
+canvas.addEventListener('pointerdown', (e) => { if (e.button !== 2) pressLight(); });
+addEventListener('pointerup', () => { releaseLight(); G.wind = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
-const setMask = (v) => { if (G.mode !== 'play' || G.paused) return; if (v && G.cam) return; if (v !== G.mask) Snd.mask(v); G.mask = v; };
+const typer = wordTyper(); let admin = null, coop = null;
+const typing = (e) => { const t = e.target; return t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName); };
 addEventListener('keydown', (e) => {
-  if (e.repeat) return; const k = e.key.toLowerCase(); G.keys[k] = 1;
-  if (k === 'escape' || k === 'p') { if (modalOpen()) { $('#mClose') ? $('#mClose').click() : closeModal(); } else if (G.mode === 'play') pause(!G.paused); return; }
+  if (typing(e)) return; const k = e.key.toLowerCase();
+  if (!e.repeat && typer(e.key) && admin) { e.preventDefault(); admin.open(); return; }
+  if (e.repeat) return; G.keys[k] = 1;
+  if (k === 'f3') { e.preventDefault(); toggleDebug(); return; }
+  if (k === 'escape' || k === 'p') { if (modalOpen()) { $('#mClose') ? $('#mClose').click() : closeModal(); } else if (G.mode === 'play') pause(G.coop ? !G.menuOpen : !G.paused); return; }
+  if ((G.mode === 'dead' || G.mode === 'won') && (k === 'r' || k === 'enter')) { const bt = $('#rt') || $('#nx'); if (bt) bt.click(); return; }
   if (G.paused) return;
-  if (k === 'f') G.light = true; if (k === 'm') setMask(true); if (k === 'w') G.wind = true;
+  if (k === 'f' || k === ' ') { if (k === ' ') e.preventDefault(); pressLight(); } if (k === 'm') pressMask(); if (k === 'w') G.wind = true;
   if (k === 'c' || k === 'tab') { e.preventDefault(); toggleCam(); }
+  if (G.cam && (k === 'arrowleft' || k === 'q' || k === 'arrowright' || k === 'e')) { const i = camIds.indexOf(G.cam), d = k === 'arrowleft' || k === 'q' ? -1 : 1; selectCam(camIds[(i + d + camIds.length) % camIds.length]); }
   const d = '1234567890'.indexOf(k); if (G.cam && d >= 0 && d < camIds.length) selectCam(camIds[d]);
 });
-addEventListener('keyup', (e) => { const k = e.key.toLowerCase(); G.keys[k] = 0; if (k === 'f') G.light = false; if (k === 'm') setMask(false); if (k === 'w') G.wind = false; });
+addEventListener('keyup', (e) => { if (typing(e)) return; const k = e.key.toLowerCase(); G.keys[k] = 0; if (k === 'f' || k === ' ') releaseLight(); if (k === 'm') releaseMask(); if (k === 'w') G.wind = false; });
 const hold = (el, on, off) => { el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); on(); }); for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, off); };
-hold($('#bMask'), () => setMask(true), () => setMask(false)); hold($('#bFlash'), () => { if (!G.cam) G.light = true; }, () => { G.light = false; });
+hold($('#bMask'), pressMask, releaseMask); hold($('#bFlash'), pressLight, releaseLight);
 $('#bCam').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleCam(); });
 hold($('#bWind'), () => { G.wind = true; }, () => { G.wind = false; });
 
 const camIds = Object.keys(CAMS);
 function toggleCam() {
-  if (G.mode !== 'play' || G.paused) return;
+  if (G.mode !== 'play' || G.paused || G.guest || G.scareWho) return;
+  if (G.coop) { toast('Your partner has the cameras'); return; }
   if (G.cam) { G.cam = null; $('#camUI').hidden = true; $('#bCam').classList.remove('on'); Snd.click(); return; }
   if (G.mask) setMask(false);
   G.cam = G.camLast || 'stage'; $('#camUI').hidden = false; $('#bCam').classList.add('on'); selectCam(G.cam); Snd.click();
@@ -252,11 +292,12 @@ const pan = (n) => (n === 'ventL' || n === 'partyL' || n === 'prize' || n === 'k
 function apply(fx) {
   for (const f of fx) {
     if (f.type === 'move') { (f.to.startsWith('vent') || f.to === 'ceiling' ? Snd.vent : Snd.step)(pan(f.to)); if (f.to === 'hall' && !G.cam) say('Something is in the hallway.', 2200); }
-    else if (f.type === 'enter') { G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office!', 3000); G.shake = 0.5; }
+    else if (f.type === 'enter') { G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); buzz(60); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office!', 3000); G.shake = 0.5; }
     else if (f.type === 'run') { Snd.clang(0); say('Withered Sherbet is running the hall! Shine the light down it!', 3000); }
     else if (f.type === 'pushed') { Snd.step(pan(f.from)); }
     else if (f.type === 'boxout') { Snd.chime(); say('The music box ran out. Wind it from the Prize Corner camera!', 4000); }
-    else if (f.type === 'kill') { G.scareWho = f.who; G.scareT = 0; Snd.scare(); $('#scareBar').hidden = false; $('#maskOv').classList.remove('on'); $('#camUI').hidden = true; }
+    else if (f.type === 'revived') { Snd.chime(); say('The lucky charm saved you!', 3000); buzz(80); }
+    else if (f.type === 'kill') { G.cam = null; buzz([200, 60, 200]); G.scareWho = f.who; G.scareT = 0; Snd.scare(); $('#scareBar').hidden = false; $('#maskOv').classList.remove('on'); $('#camUI').hidden = true; }
     else if (f.type === 'win') { Snd.chime(); over(true); }
   }
 }
@@ -270,7 +311,7 @@ function drawMini() {
   mini.fillStyle = '#fff'; mini.fillRect(sx(-0.2), sz(0.4), 5, 5);
 }
 function updateHud() {
-  const S = G.S; $('#hClock').textContent = (S.hour === 0 ? 12 : S.hour) + ' AM'; $('#mFlash').style.width = S.battery + '%'; $('#boxM').style.display = ''; $('#mBox').style.width = S.box + '%';
+  const S = G.S; if (!G.guest && S.hour > (G.hourPaid | 0)) { G.hourPaid = S.hour; toast('Hour survived'); } $('#hClock').textContent = (S.hour === 0 ? 12 : S.hour) + ' AM'; $('#mFlash').style.width = S.battery + '%'; $('#boxM').style.display = ''; $('#mBox').style.width = S.box + '%';
   $('#mBox').style.background = S.box < 25 ? '#e8453c' : ''; $('#bMask').classList.toggle('on', G.mask); $('#bFlash').classList.toggle('on', G.light);
   $('#staticOv').classList.toggle('on', !!G.cam);
 }
@@ -282,10 +323,17 @@ function frame(now) {
   if (G.sized !== w + 'x' + h + 'x' + pr) { G.sized = w + 'x' + h + 'x' + pr; renderer.setSize(w, h, false); player.aspect = camV.aspect = w / h; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); }
   if (!G.ready) return;
   if (cfg.fps) { fpsN++; fpsT += dt; if (fpsT >= 0.5) { $('#fps').textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
+  if (!dbg.hidden) dbg.textContent = `${Math.round(1 / Math.max(dt, 0.001))} fps · mode ${G.mode}${G.S ? ' · ' + G.label + ' · t ' + G.S.t.toFixed(1) + 's · bat ' + Math.round(G.S.battery) + ' · box ' + Math.round(G.S.box) : ''}\nnet ${G.net ? G.net.state + ' ' + (G.net.role || '') + ' ' + G.net.code + ' ' + G.net.ping + 'ms' : '-'} · errors ${errLog.length}${errLog.length ? '\n' + errLog.slice(-2).join('\n') : ''}\nF3 hides this · /debug.html runs the self-tests`;
   if (hintT > 0) { hintT -= dt * 1000; if (hintT <= 0) $('#hint').textContent = ''; }
   const live = G.mode === 'play' && G.S && !G.paused;
   let titleFlash = 0;
-  if (G.mode === 'title' || G.mode === 'won' || G.mode === 'dead') { // a slow pan, and now and then something stands in the hall
+  if (G.mode === 'title') { // the stage: the four Toy bodies under the lights, with the odd blackout
+    titleT -= dt; if (titleT <= 0 && !titleOn) { titleOn = 0.3; titleT = 6 + Math.random() * 6; }
+    if (titleOn > 0) titleOn -= dt;
+    const camPos = player.position;
+    for (const x of WHO) { const toy = CAST[x].toy; bots[x].root.visible = toy; if (toy) { const [bx, by, bz] = spot(x, 'stage'); const r = bots[x].root; r.position.set(bx, by, bz); r.scale.setScalar(1); r.rotation.set(0, 0, 0); r.lookAt(camPos.x * 0.6, by, camPos.z); animate(bots[x], dt, 'idle'); } }
+  }
+  if (G.mode === 'won' || G.mode === 'dead') { // a slow pan, and now and then something stands in the hall
     G.yaw = Math.sin(now / 4000) * 0.45; titleT -= dt;
     if (titleT <= 0 && !titleOn) { titleOn = 0.32; titleBot = WHO[Math.floor(Math.random() * 8)]; titleT = 5 + Math.random() * 5; }
     for (const x of WHO) bots[x].root.visible = false;
@@ -294,7 +342,9 @@ function frame(now) {
   if (live && !G.scareWho) {
     const S = G.S; stats.seconds += dt; G.yaw += (G.yawT - G.yaw) * Math.min(1, dt * 6);
     const aim = G.yaw < -0.9 ? 'ventL' : G.yaw > 0.9 ? 'ventR' : 'hall';
-    const fx = step(S, dt * G.speed, { mask: G.mask, flash: G.light && !G.cam, aim, cam: G.cam, wind: G.wind });
+    let fx = [];
+    if (!G.guest) { const rc = G.coop ? G.coop.remote : null; fx = step(S, dt * G.speed, { mask: G.mask, flash: G.light && !G.cam, aim, cam: rc ? rc.cam : G.cam, wind: rc ? rc.wind : G.wind, coop: !!G.coop }); if (G.coop) coop.hostTick(dt, fx); } else coop.guestTick(dt);
+    if (admin) admin.frame();
     apply(fx); Snd.box(S.box, dt); Snd.hum(0.04 + (G.cam ? 0.02 : 0));
     if (G.mask) { G.breathT -= dt; if (G.breathT <= 0) { Snd.breath(); G.breathT = 1.4; } }
     $('#maskOv').classList.toggle('on', S.mask > 0.5); $('#bWind').classList.toggle('on', G.wind && !!G.cam);
@@ -309,6 +359,11 @@ function frame(now) {
   } else if (live || G.mode === 'title') { for (const x of WHO) if (!(G.mode === 'title' && x === titleBot)) animate(bots[x], dt * (live ? 1 : 0), 'idle'); }
   if (live && !G.scareWho) placeAll();
   // camera + lights
+  if (G.mode === 'title') {
+    for (const id in map.lights) map.lights[id].intensity = 0; officeLight.intensity = 0; camLight.intensity = 0; flash.intensity = 0;
+    const dark = titleOn > 0 && cfg.flashing; map.lights.main.intensity = dark ? 0 : 13 + Math.sin(now / 900) * 1.5; camLight.position.set(0, 2.5, -14); camLight.intensity = dark ? 0 : 2;
+    player.position.set(Math.sin(now / 6000) * 1.3, 2.35, -13.3); player.lookAt(Math.sin(now / 8000) * 0.7, 1.7, -20.2); renderer.render(scene, player); return;
+  }
   G.shake = Math.max(0, G.shake - dt); const shake = cfg.shake ? G.shake * 0.03 : 0;
   for (const id in map.lights) map.lights[id].intensity = 0;
   if (G.cam && G.mode === 'play') {
@@ -326,15 +381,15 @@ function frame(now) {
     player.position.set(Math.sin(now / 1500) * 0.01 + (Math.random() - .5) * shake, 1.35, 0.6); renderer.render(scene, player);
   }
 }
-addEventListener('visibilitychange', () => { if (document.hidden && cfg.autopause && G.mode === 'play') pause(true); });
-addEventListener('blur', () => { if (cfg.autopause && G.mode === 'play' && !G.scareWho) pause(true); });
+addEventListener('visibilitychange', () => { if (document.hidden && cfg.autopause && G.mode === 'play' && !G.coop) pause(true); });
+addEventListener('blur', () => { if (cfg.autopause && G.mode === 'play' && !G.scareWho && !G.coop) pause(true); });
 canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); toast('Graphics context lost. Reload the page.'); });
 setInterval(() => { const sc = G.mode === 'play' ? 'game' : G.mode; Online.beat(sc, G.S && G.mode === 'play' ? G.S.night : 0); }, 30000);
 
 /* ---- boot: the loading page ---- */
 const TIPS = ['The mask makes you look like one of them. It does not fool the Falcon.', 'Shine the flashlight down the hall: the old Falcon will turn back.', 'Wind the music box from the Prize Corner camera, and do not stop.', 'You cannot use the cameras while you wear the mask.', 'One soul. Four bodies. They do not want to be split.', 'Bidoof will not hurt you. He will only break your flashlight.', 'Qerh Cooperations thanks you for your service.'];
 async function boot() {
-  $('#ldTip').textContent = TIPS[Math.floor(Math.random() * TIPS.length)]; applyQuality(); document.body.classList.toggle('noflash', !cfg.flashing); $('#fps').hidden = !cfg.fps; player.fov = camV.fov = cfg.fov;
+  $('#ldTip').textContent = TIPS[Math.floor(Math.random() * TIPS.length)]; applyQuality(); renderer.toneMappingExposure = 1.3 * cfg.brightness / 100; document.documentElement.style.setProperty('--ui', cfg.uiScale / 100); document.body.classList.toggle('noflash', !cfg.flashing); $('#fps').hidden = !cfg.fps; player.fov = camV.fov = cfg.fov;
   const bar = (p, m) => { $('#ldBar').style.width = Math.round(p * 100) + '%'; if (m) $('#ldMsg').textContent = m; };
   const nap = () => new Promise((r) => setTimeout(r, 25));
   bar(0.05, 'Building the pizzeria…'); await nap();
@@ -345,9 +400,12 @@ async function boot() {
   bar(1, 'Ready.');
   if (!renderer.getContext()) { $('#ldWarn').hidden = false; $('#ldWarn').textContent = 'Your browser could not start 3D graphics.'; return; }
   const go = $('#ldGo'); go.hidden = false; go.focus();
-  const start = () => { startAudio(); if (matchMedia('(pointer:coarse)').matches) toggleFull(); $('#loading').classList.add('out'); setTimeout(() => $('#loading').remove(), 700); home(); Online.news().then((a) => { if (a) { newsItem = a; if (G.mode === 'title' && !modalOpen()) home(); } }); };
+  const start = () => { startAudio(); if (matchMedia('(pointer:coarse)').matches) toggleFull(); $('#loading').classList.add('out'); setTimeout(() => $('#loading').remove(), 700); home(); const jc = new URLSearchParams(location.search).get('join'); if (jc) coop.joinLobby(jc.toUpperCase()); else if (stats.claim !== Online.dayKey()) setTimeout(() => dailyReward(ctx), 900); Online.news().then((a) => { if (a) { newsItem = a; if (G.mode === 'title' && !modalOpen()) home(); } }); };
   go.onclick = start;
+  window.__bootDone = true;
 }
+const ctx = { G, $, esc, toast, say, openModal, closeModal, startNight, home, over, Snd, bots, apply, NAMES, CAMS, selectCam, refreshHome, applyCosmetics, leaveToMenu, unlocked };
+coop = initCoop(ctx); admin = initAdmin(ctx);
 requestAnimationFrame(frame);
 boot();
 window.FNAZ2 = { G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };
