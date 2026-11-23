@@ -98,3 +98,18 @@ body.coop-host #bCam{opacity:.35}
 #dbg{position:fixed;left:6px;top:6px;z-index:80;background:#000b;color:#9fe;font:11px/1.45 monospace;padding:6px 8px;border-radius:6px;white-space:pre;pointer-events:none;max-width:90vw;overflow:hidden}
 #hud{zoom:var(--ui,1)}
 body.cam-on #gl{filter:grayscale(1) contrast(1.25) brightness(1.2)}
+
+/* ---------- accessibility pass (contrast checked with the antislop contrast tool; touch targets at least 44px) ---------- */
+.foot,#kb{opacity:.75}                                  /* was .45: 3.8:1; now above 4.5:1 */
+:where(button,select,input,[tabindex]):focus-visible{outline:3px solid #ffd24a;outline-offset:2px}
+.tmenu button:focus-visible{outline-color:#fff}
+.pausebtn{width:44px;height:44px}
+@media (pointer:coarse){
+  #pings button{min-height:44px;padding:8px 14px}
+  #camList button{min-height:44px;padding:8px 10px}
+  .tabs button,.btnrow button,.panel .sm{min-height:44px}
+  .tmenu button{min-height:48px}
+  .row input[type=range]{height:32px}
+  .tog{width:52px;height:30px}.tog:after{width:24px;height:24px}.tog:checked:after{left:25px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
