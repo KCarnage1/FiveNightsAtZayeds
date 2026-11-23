@@ -243,7 +243,7 @@ function toggleCam() {
 function selectCam(id) { G.cam = G.camLast = id; $('#camName').textContent = 'CAM ' + (camIds.indexOf(id) + 1) + ' · ' + CAMS[id].name; $('#bWind').hidden = id !== 'prize'; [...$('#camList').children].forEach((b) => b.classList.toggle('on', b.dataset.id === id)); Snd.click(); }
 $('#bPause').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); pause(true); });
 $('#callSkip').addEventListener('click', () => { Calls.stop(); });
-$('#camList').innerHTML = camIds.map((id, i) => `<button data-id="${id}">${i + 1} ${CAMS[id].name}</button>`).join('');
+$('#camList').innerHTML = camIds.map((id, i) => `<button data-id="${id}" title="${CAMS[id].name}" aria-label="Camera ${i + 1}, ${CAMS[id].name}"><b>${i + 1}</b><span> ${CAMS[id].name}</span></button>`).join('');
 $('#camList').addEventListener('pointerdown', (e) => { const b = e.target.closest('button'); if (b) { e.stopPropagation(); selectCam(b.dataset.id); } });
 
 /* ---- placing the cast in the world ---- */
