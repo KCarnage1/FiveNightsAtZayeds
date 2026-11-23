@@ -113,3 +113,13 @@ body.cam-on #gl{filter:grayscale(1) contrast(1.25) brightness(1.2)}
   .tog{width:52px;height:30px}.tog:after{width:24px;height:24px}.tog:checked:after{left:25px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* short screens (phones on their side): one-line logo, smaller buttons, and nothing sits on top of the characters or the menu */
+@media (max-height:520px){
+  .title{padding:8px 12px}.title .tag1{font-size:10px}
+  .title h1{font-size:clamp(24px,min(6vw,10vh),56px);margin:2px 0}.title h1 br{display:none}.title h1 em{margin-left:.25em}
+  .tmenu{gap:6px}.tmenu button{padding:8px 14px;font-size:13px}.tmenu button.main{font-size:15px;padding:9px 22px}.tmenu button small{display:none}
+  .foot{margin-top:2px}
+}
+#toast{bottom:auto;top:56px}
+@media (orientation:portrait) and (pointer:coarse){.title .tag1::after{content:"\A Turn your phone sideways for the full view";white-space:pre;display:block;letter-spacing:.04em;text-transform:none;opacity:.85;margin-top:4px}}

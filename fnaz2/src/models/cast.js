@@ -59,7 +59,7 @@ export function buildZayed(who, variant = 'withered') {
   }
   const face = faceDome(head, loadFace(s.face), { aspect: .72 });
   const extras = kindExtras(s.kind, head, skin, dark, toy, who, body);
-  if (!toy) wear(root, body, head, bone, dark, who);
+  if (toy) toyDetails(head, who, s); else { wear(root, body, head, bone, dark, who); tornHead(head, who, bone, dark); }
   return { root, body, head, jaw, face, armL: arms.L, armR: arms.R, who, variant, kind: s.kind, toy, extras, t: Math.random() * 100 };
 }
 
@@ -107,4 +107,36 @@ export function animate(b, dt, mode = 'idle') {
   b.head.rotation.set(Math.sin(t * .6) * .04, Math.sin(t * .4) * .25 + twitch * .1, Math.sin(t * .9) * .03 + twitch * .05);
   b.jaw.rotation.x = (b.toy ? 0 : .22) + Math.max(0, Math.sin(t * 1.7)) * (b.toy ? .15 : .1);
   b.armL.rotation.x = Math.sin(t * .9) * .05; b.armR.rotation.x = Math.sin(t * .9 + 1) * .05;
+}
+
+/* A point on the head's surface: theta up from the equator, phi around (0 = straight ahead). */
+const onHead = (r, up, around) => [Math.sin(around) * Math.cos(up) * r, 0.3 + Math.sin(up) * r, Math.cos(around) * Math.cos(up) * r];
+
+/* The Toy bodies: painted rosy cheeks, a glossy sheen, and a different party piece for each (the Zayeds' own twist). */
+function toyDetails(head, who, s) {
+  const blush = new THREE.MeshStandardMaterial({ color: 0xff4a80, roughness: .5, emissive: 0xff2060, emissiveIntensity: .3, polygonOffsetFactor: -2, polygonOffset: true });
+  for (const sx of [-1, 1]) { const ar = sx * 0.98, [x, y, z] = onHead(.326, -0.12, ar); const c = mesh(new THREE.CircleGeometry(.07, 24), blush, head, [x, y, z]); c.rotation.set(0.12, ar, 0); c.castShadow = false; } // outside the photo, on each cheek
+  const gold = plastic(0xffd24a, { rough: .2 }), pink = plastic(0xff6aa8, { rough: .2 });
+  if (who === 'bubbles') { // a party hat with a pom-pom
+    mesh(new THREE.ConeGeometry(.12, .3, 16), pink, head, [0.0, .72, -.04], [-.12, 0, .18]); mesh(new THREE.SphereGeometry(.035, 10, 8), gold, head, [.03, .85, -.07]);
+    for (const sx of [-1, 1]) for (let k = 0; k < 2; k++) { const [x, y, z] = onHead(.33, 0.18 + k * .1, sx * 0.55); mesh(new THREE.CylinderGeometry(.002, .002, .08, 4), matte(0xffffff, .3), head, [x + sx * .04, y, z], [0, 0, sx * 1.2]); }
+  }
+  if (who === 'taffy') { // a flower crown
+    for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; mesh(new THREE.SphereGeometry(.035, 10, 8), plastic([0xff7aa0, 0xfff1a0, 0x9ae0ff][i % 3], { rough: .3 }), head, [Math.sin(a) * .25, .6, Math.cos(a) * .25]); }
+  }
+  if (who === 'sherbet') { // a small gold crown
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; mesh(new THREE.ConeGeometry(.03, .08, 6), gold, head, [Math.sin(a) * .13, .68, Math.cos(a) * .13 - .02]); }
+    mesh(new THREE.CylinderGeometry(.14, .14, .04, 16), gold, head, [0, .64, -.02]);
+  }
+  if (who === 'zayed') { mesh(new THREE.SphereGeometry(.03, 10, 8), gold, head, [.0, .83, 0]); } // a gold tassel on the fez
+  // a "ZAYED EXPRESS" delivery sash-badge on every Toy
+  mesh(new THREE.CircleGeometry(.06, 16), matte(0xffd24a, .35), head.parent, [.2, 1.1, .4]).rotation.y = .3;
+}
+
+/* The Withered bodies: torn fur on the head over bare metal, a loose wire, a chewed ear. */
+function tornHead(head, who, bone, dark) {
+  const cap = mesh(new THREE.SphereGeometry(.14, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), bone, head, [.2, .42, .12], [.5, 0, -.9], [1, .5, 1]);
+  mesh(new THREE.TorusGeometry(.09, .012, 6, 14), dark, head, [.2, .4, .14], [.5, .6, 0]);
+  for (let i = 0; i < 3; i++) limb(head, [.2 + i * .02, .42, .2], [.3 + i * .04, .3 - i * .05, .25], .006, .004, matte(0x2a2420, .6));
+  mesh(new THREE.SphereGeometry(.03, 8, 6), matte(0xd0453a, .4), head, [-.28, .18, .1]); // a stain
 }
