@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildMap, ROOMS, CAMS } from './map.js';
+import { buildMap, dressMap, ROOMS, CAMS } from './map.js';
 import { buildZayed, animate } from './models/cast.js';
 import { buildIbrahim, buildGelly, buildBidoof } from './models/extras.js';
 import { newNight, step, CAST, WHO, HOUR_SEC } from './ai.js';
@@ -23,7 +23,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPrefere
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.3;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x030206); scene.fog = new THREE.FogExp2(0x040308, 0.03);
 scene.add(new THREE.HemisphereLight(0x8a86c0, 0x1c1018, 0.16));
-const map = buildMap(scene);
+const map = buildMap(scene); const propsReady = dressMap(scene).catch(() => 0);
 const player = new THREE.PerspectiveCamera(68, 1, 0.05, 80); player.position.set(0, 1.35, 0.6); scene.add(player);
 const camV = new THREE.PerspectiveCamera(72, 1, 0.05, 80); scene.add(camV);
 const camLight = new THREE.PointLight(0xe8f0ff, 0, 30, 1.2); scene.add(camLight);
@@ -358,6 +358,7 @@ function frame(now) {
     if (G.scareT > 1.6) { officeLight.intensity = 7; b.root.visible = false; $('#flashOv').style.opacity = 0; over(false); }
   } else if (live || G.mode === 'title') { for (const x of WHO) if (!(G.mode === 'title' && x === titleBot)) animate(bots[x], dt * (live ? 1 : 0), 'idle'); }
   if (live && !G.scareWho) placeAll();
+  document.body.classList.toggle('cam-on', !!(G.cam && G.mode === 'play'));
   // camera + lights
   if (G.mode === 'title') {
     for (const id in map.lights) map.lights[id].intensity = 0; officeLight.intensity = 0; camLight.intensity = 0; flash.intensity = 0;
@@ -396,6 +397,7 @@ async function boot() {
   let i = 0; for (const w of WHO) { bar(0.1 + (i++ / WHO.length) * 0.6, 'Assembling ' + NAMES[w] + '…'); makeBot(w); await nap(); }
   G.ready = true; bar(0.72, 'Loading faces…');
   await Promise.all(['zayed', 'bubbles', 'taffy', 'sherbet'].map((n) => new Promise((res) => { const t = loadFace(n); const t0 = Date.now(); (function poll() { if ((t.image && t.image.complete !== false && t.image.width) || Date.now() - t0 > 7000) res(); else setTimeout(poll, 60); })(); })));
+  bar(0.8, 'Loading models…'); await Promise.race([propsReady, new Promise((r) => setTimeout(r, 6000))]);
   bar(0.9, 'Warming up the lights…'); for (const x of WHO) bots[x].root.visible = false; renderer.render(scene, player); await nap();
   bar(1, 'Ready.');
   if (!renderer.getContext()) { $('#ldWarn').hidden = false; $('#ldWarn').textContent = 'Your browser could not start 3D graphics.'; return; }
@@ -408,4 +410,4 @@ const ctx = { G, $, esc, toast, say, openModal, closeModal, startNight, home, ov
 coop = initCoop(ctx); admin = initAdmin(ctx);
 requestAnimationFrame(frame);
 boot();
-window.FNAZ2 = { G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };
+window.FNAZ2 = { propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };

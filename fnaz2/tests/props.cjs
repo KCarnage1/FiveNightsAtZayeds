@@ -1,0 +1,3 @@
+const { chromium } = require('playwright');
+(async () => { const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] }); const p = await b.newPage({ viewport: { width: 1500, height: 560 } }); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+  await p.goto('http://localhost:8766/propview.html'); await p.waitForFunction('window.__ready', null, { timeout: 60000 }); console.log((await p.evaluate(() => window.__info)).join('\n')); await p.screenshot({ path: process.argv[2] }); console.log(errs.join('|') || 'no errors'); await b.close(); })();

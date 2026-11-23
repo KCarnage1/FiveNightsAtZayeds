@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { canvasTex, matte, mesh, group } from './models/kit.js';
+import { loadProp } from './models/props.js';
+import { KIND, floorTexture, wallMaterial, tileUV, decorate } from './decor.js';
 
 /* The pizzeria. +z is toward the player, -z runs away down the hallway into the main hall.
  * Rooms are boxes with doorway gaps; vents are low ducts that open into the office's side walls. */
@@ -46,11 +48,11 @@ export function buildMap(scene) {
   const checker = (a, b) => canvasTex(128, 128, (g, w, h) => { g.fillStyle = a; g.fillRect(0, 0, w, h); g.fillStyle = b; for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) if ((x + y) % 2) g.fillRect(x * 32, y * 32, 32, 32); }, { repeat: true });
   for (const [id, r] of Object.entries(ROOMS)) {
     const [x0, z0, x1, z1] = r.b, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, g = group(scene, null, 'room-' + id);
-    const ft = checker('#' + new THREE.Color(r.floor).getHexString(), '#' + new THREE.Color(r.floor).multiplyScalar(.75).getHexString()); ft.repeat.set(w / 2, d / 2);
+    const kind = KIND[id] || 'party'; const ft = floorTexture(kind, w, d);
     const floorM = new THREE.MeshStandardMaterial({ map: ft, roughness: .55, metalness: .05 });
     mesh(new THREE.PlaneGeometry(w, d), floorM, g, [cx, 0, cz], [-Math.PI / 2, 0, 0]);
     mesh(new THREE.PlaneGeometry(w, d), matte(0x1b1820, .9), g, [cx, r.h, cz], [Math.PI / 2, 0, 0]);
-    const wm = matte(r.wall, .85);
+    const wm = wallMaterial(kind, r.wall);
     const wallSide = (axis, c, lo, hi) => { // split a wall at its doorway gaps
       const gaps = GAPS.filter((q) => q[0] === axis && Math.abs(q[1] - c) < 0.05 && q[2] >= lo - .01 && q[3] <= hi + .01).sort((a, b) => a[2] - b[2]);
       let cur = lo; const segs = [];
@@ -58,7 +60,7 @@ export function buildMap(scene) {
       if (cur < hi) segs.push([cur, hi]);
       for (const [a, b] of segs) {
         const len = b - a; if (len < .02) continue;
-        if (axis === 'z') mesh(new THREE.BoxGeometry(len, r.h, T), wm, g, [(a + b) / 2, r.h / 2, c]); else mesh(new THREE.BoxGeometry(T, r.h, len), wm, g, [c, r.h / 2, (a + b) / 2]);
+        if (axis === 'z') mesh(tileUV(new THREE.BoxGeometry(len, r.h, T), len, r.h), wm, g, [(a + b) / 2, r.h / 2, c]); else mesh(tileUV(new THREE.BoxGeometry(T, r.h, len), len, r.h), wm, g, [c, r.h / 2, (a + b) / 2]);
       }
       for (const q of gaps) { // a lintel over each doorway so the opening reads as a door
         if (id.startsWith('vent')) continue;
@@ -71,10 +73,13 @@ export function buildMap(scene) {
       const L = new THREE.PointLight(0xffd9a8, 0, 22, 1.6); L.position.set(cx, Math.min(r.h - .5, 3), cz); g.add(L); lights[id] = L;
     } else { const L = new THREE.PointLight(0x9fb2ff, 0, 9, 1.8); L.position.set(cx, .8, cz); g.add(L); lights[id] = L; }
   }
-  props(scene);
+  props(scene); decorate(scene);
   return { lights };
 }
 
+/* Simple stand-in shapes are built first; dressMap() swaps each for its CAD model once the model has loaded (and keeps the stand-in if it can't). */
+const swaps = [];
+function stand(scene, name, build) { const g = group(scene); build(g); swaps.push({ name, g }); return g; }
 function props(scene) {
   const wood = matte(0x5a3a22, .6), dk = matte(0x16131a, .7), red = matte(0x8a1f2a, .7), cloth = matte(0xe9e2d0, .9);
   // the desk
@@ -88,14 +93,12 @@ function props(scene) {
   mesh(new THREE.BoxGeometry(9, .4, 3), matte(0x3a2a4a, .6), scene, [0, .2, -20]);
   const curtainL = mesh(new THREE.BoxGeometry(1.8, 4, .2), red, scene, [-4, 2, -21.8]); mesh(new THREE.BoxGeometry(1.8, 4, .2), red, scene, [4, 2, -21.8]);
   // tables with party hats in the party rooms and main hall
-  for (const [x, z] of [[-12, -7], [-12, -2.5], [12, -7], [12, -2.5], [-4, -16], [4, -16], [0, -14.5]]) { mesh(new THREE.CylinderGeometry(.7, .7, .08, 20), cloth, scene, [x, .8, z]); mesh(new THREE.CylinderGeometry(.08, .12, .8, 10), dk, scene, [x, .4, z]); mesh(new THREE.ConeGeometry(.12, .3, 10), matte(0xe84a8a, .5), scene, [x + .2, .99, z]); }
+  for (const [x, z] of [[-12, -7], [-12, -2.5], [12, -7], [12, -2.5], [-4, -16], [4, -16], [0, -14.5]]) { const g = stand(scene, 'party_table', (g) => { mesh(new THREE.CylinderGeometry(.7, .7, .08, 20), cloth, g, [x, .8, z]); mesh(new THREE.CylinderGeometry(.08, .12, .8, 10), dk, g, [x, .4, z]); mesh(new THREE.ConeGeometry(.12, .3, 10), matte(0xe84a8a, .5), g, [x + .2, .99, z]); }); g.userData.at = { x, y: 0, z, s: 0.72, ry: (x * 7 + z * 3) % 6.28 }; }
   // the music box in the prize corner: a gift box on a tall shelf
-  mesh(new THREE.BoxGeometry(1.6, 1.4, 1.4), matte(0x70409a, .5), scene, [-12, .7, -20]);
-  mesh(new THREE.BoxGeometry(1.7, .25, 1.5), matte(0xffd24a, .4), scene, [-12, 1.5, -20]);
-  mesh(new THREE.SphereGeometry(.28, 14, 10), matte(0xe84a8a, .45), scene, [-12, 1.78, -20]);
+  stand(scene, 'music_box', (g) => { mesh(new THREE.BoxGeometry(1.6, 1.4, 1.4), matte(0x70409a, .5), g, [-12, .7, -20]); mesh(new THREE.BoxGeometry(1.7, .25, 1.5), matte(0xffd24a, .4), g, [-12, 1.5, -20]); mesh(new THREE.SphereGeometry(.28, 14, 10), matte(0xe84a8a, .45), g, [-12, 1.78, -20]); }).userData.at = { x: -12, y: 0, z: -20, s: 1.9, ry: 0.35 };
   for (let i = 0; i < 6; i++) mesh(new THREE.BoxGeometry(.6, .6, .6), matte([0xd0453a, 0x3aa0d0, 0x5ab05a][i % 3], .6), scene, [-14.2 + (i % 3) * .75, .3 + (i / 3 | 0) * .6, -16.4]);
   // arcade machines in the game area
-  for (let i = 0; i < 3; i++) { mesh(new THREE.BoxGeometry(.9, 2, .8), matte(0x203050, .5), scene, [10.8 + i * 1.3, 1, -21.3]); mesh(new THREE.PlaneGeometry(.6, .5), new THREE.MeshStandardMaterial({ color: 0x66ccff, emissive: 0x2288cc, emissiveIntensity: 1.2 }), scene, [10.8 + i * 1.3, 1.5, -20.88]); }
+  for (let i = 0; i < 3; i++) { const x = 10.8 + i * 1.3; stand(scene, 'arcade_cabinet', (g) => { mesh(new THREE.BoxGeometry(.9, 2, .8), matte(0x203050, .5), g, [x, 1, -21.3]); mesh(new THREE.PlaneGeometry(.6, .5), new THREE.MeshStandardMaterial({ color: 0x66ccff, emissive: 0x2288cc, emissiveIntensity: 1.2 }), g, [x, 1.5, -20.88]); }).userData.at = { x, y: 0, z: -21.4, s: 1.08, ry: -Math.PI / 2 }; }
   // the cove: a curtain and a stage
   mesh(new THREE.BoxGeometry(4, .3, 2.5), matte(0x5a3040, .7), scene, [-7.5, .15, -26.5]); mesh(new THREE.BoxGeometry(4, 2.4, .12), red, scene, [-7.5, 1.5, -24.6]);
   // shelves and broken parts in Parts & Service
@@ -103,5 +106,18 @@ function props(scene) {
   // hallway stripe lights (off until the flashlight finds them)
   for (let z = -4; z > -12; z -= 2) mesh(new THREE.BoxGeometry(.05, .05, 1.2), matte(0x333333), scene, [0, 3.05, z]);
   // vent grilles on the office walls
-  for (const sx of [-1, 1]) mesh(new THREE.BoxGeometry(.06, 1, 1.15), matte(0x303338, .4), scene, [sx * 2.92, .6, -.4]);
+  for (const sx of [-1, 1]) stand(scene, 'vent_grille', (g) => { mesh(new THREE.BoxGeometry(.06, 1, 1.15), matte(0x303338, .4), g, [sx * 2.92, .6, -.4]); }).userData.at = { x: sx * 2.86, y: 0.08, z: -0.4, s: 0.9, ry: sx < 0 ? 0 : Math.PI };
+  // things on the desk that only exist as models: a fan and the flashlight
+  swaps.push({ name: 'desk_fan', g: null, at: { x: 1.0, y: 1.01, z: 1.45, s: 1, ry: -0.5 } }, { name: 'flashlight', g: null, at: { x: -0.35, y: 1.01, z: 1.75, s: 1, ry: 0.8 } });
+}
+
+/* Replace the stand-ins with the CAD models (see models-src/). Safe to call once, after buildMap. */
+export async function dressMap(scene) {
+  let n = 0;
+  await Promise.all(swaps.map(async (sw) => {
+    const at = sw.at || (sw.g && sw.g.userData.at); if (!at) return;
+    const m = await loadProp(sw.name); if (!m) return;
+    m.position.set(at.x, at.y, at.z); m.rotation.y = at.ry; m.scale.multiplyScalar(at.s); scene.add(m); if (sw.g) sw.g.visible = false; n++;
+  }));
+  return n;
 }
