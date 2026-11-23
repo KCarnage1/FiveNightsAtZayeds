@@ -137,3 +137,11 @@ body.cam-on #gl{filter:grayscale(1) contrast(1.25) brightness(1.2)}
 }
 #callSkip{min-height:44px;min-width:44px}
 @media (pointer:coarse){#call button{min-height:44px;padding:0 14px}.adm select,.adm input[type=text],.adm input[type=password]{min-height:44px}.row select{min-height:44px}}
+
+/* the night card sits under every menu, and the pause menu is one card with stacked buttons */
+.intro{z-index:15}#screen{z-index:20}
+.pausebox{text-align:center;width:min(360px,92vw)}.pausebox .stack{display:grid;gap:8px;margin:14px 0 8px}.pausebox .stack button.big{margin:0;width:100%}
+.pausebox h2{margin:0 0 4px}
+@media (orientation:portrait) and (pointer:coarse){.title .tag1::after{content:"\A Plays best sideways"}}
+#toast{top:auto;bottom:calc(8px + env(safe-area-inset-bottom))}
+@media (pointer:coarse){#kb{display:none}}

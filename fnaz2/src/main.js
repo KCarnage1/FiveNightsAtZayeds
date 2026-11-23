@@ -89,12 +89,14 @@ function settings(tab = 'Audio') {
 }
 function toggleFull() { try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch (e) { toast('Fullscreen is not available here'); } }
 onChange((k) => {
-  if (k === 'quality' || k === '*') applyQuality(); if (k === 'fov' || k === '*') { player.fov = camV.fov = cfg.fov; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); }
+  if (k === 'quality' || k === '*') applyQuality(); if (k === 'fov' || k === '*') applyFov();
   if (k === 'brightness' || k === '*') renderer.toneMappingExposure = 1.3 * cfg.brightness / 100; if (k === 'uiScale' || k === '*') document.documentElement.style.setProperty('--ui', cfg.uiScale / 100);
   if (k === 'fps' || k === '*') { $('#fps').hidden = !cfg.fps; } if (k === 'flashing' || k === '*') document.body.classList.toggle('noflash', !cfg.flashing);
   if (k === 'share' && cfg.share) Online.beat(G.mode, G.S ? G.S.night : 0);
 });
 const RATIO = { low: 0.7, medium: 1, high: 1.5 };
+/* In portrait the sideways view would be cramped, so the vertical field of view widens to keep the same horizontal view (up to a limit). */
+function applyFov() { const asp = innerWidth / Math.max(1, innerHeight), v = asp >= 1 ? cfg.fov : Math.min(92, 2 * Math.atan(Math.tan(cfg.fov * Math.PI / 360) / asp) * 180 / Math.PI); if (Math.abs(player.fov - v) > 0.01) { player.fov = camV.fov = v; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); } }
 function applyQuality() { renderer.setPixelRatio(Math.min(devicePixelRatio || 1, RATIO[cfg.quality] || 1)); G.sized = 0; }
 
 /* ---- the home page ---- */
@@ -106,7 +108,7 @@ function home() {
   s.innerHTML = `<div class="title"><div class="top"><div class="tag1">One soul · four bodies</div><h1 class="logo">Five Nights<br><em>at Zayed's 2</em></h1></div>
     <div class="bottom"><div class="tmenu"><button class="main" id="mNew">${stats.beaten ? 'Continue' : 'Play'}<small>Night ${u}</small></button><button id="mCoop">Co-op<small>2 players online</small></button><button id="mNights">Nights</button><button id="mCustom">Custom<small>${stats.beaten >= 6 ? 'your own night' : 'beat Night 6'}</small></button><button id="mDaily">Daily</button><button id="mShop">Shop${dly ? '<small>reward ready!</small>' : ''}</button><button id="mExtras">Extras</button><button id="mSet">Settings</button></div>
     ${newsItem ? `<div class="news"><b>${esc(newsItem.title || 'News')}</b> ${esc(String(newsItem.message || '').replace(/\s+/g, ' ').slice(0, 200))}</div>` : ''}
-    <div class="foot">v${Online.VERSION} · ${stats.wins} win${stats.wins === 1 ? '' : 's'} · ${stats.deaths} death${stats.deaths === 1 ? '' : 's'} · <span id="kb">F3 debug</span></div></div></div><div class="corner"><span class="coins" id="coins">🪙 ${stats.coins}</span></div>`;
+    <div class="foot">v${Online.VERSION} · ${stats.wins} win${stats.wins === 1 ? '' : 's'} · ${stats.deaths} death${stats.deaths === 1 ? '' : 's'}<span id="kb"> · F3 debug</span></div></div></div><div class="corner"><span class="coins" id="coins">🪙 ${stats.coins}</span></div>`;
   $('#mNew').onclick = () => startNight(u); $('#mNights').onclick = nightSelect; $('#mCustom').onclick = () => (stats.beaten >= 6 ? customNight() : toast('Beat Night 6 to unlock the Custom Night')); $('#mDaily').onclick = daily; $('#mExtras').onclick = extras; $('#mSet').onclick = () => settings(); $('#mCoop').onclick = () => coop.menu(); $('#mShop').onclick = () => openShop(ctx); $('#coins').onclick = () => openShop(ctx);
   s.querySelectorAll('.tmenu button').forEach((b) => b.addEventListener('pointerenter', () => Snd.click()));
   Online.beat('title', 0);
@@ -177,7 +179,7 @@ function pause(on) {
   if (G.coop) { G.menuOpen = on; if (on) pauseScreen(); else { $('#screen').hidden = true; closeModal(); } return; }
   G.paused = on; if (on) { G.light = false; G.wind = false; setMask(false); Calls.stop(); pauseScreen(); } else { $('#screen').hidden = true; closeModal(); }
 }
-function pauseScreen() { const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div><h2>${G.coop ? 'Menu' : 'Paused'}</h2><p>${G.label} · ${(G.S.hour === 0 ? 12 : G.S.hour)} AM${G.coop ? '<br>Co-op keeps running while this is open.' : ''}</p><button class="big" id="pr">Resume</button><button class="big alt" id="ps">Settings</button><button class="big alt" id="pm">Quit to menu</button></div>`; $('#pr').onclick = () => pause(false); $('#ps').onclick = () => settings(); $('#pm').onclick = () => { if (G.coop) coop.leave(); G.mode = 'title'; home(); }; }
+function pauseScreen() { const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div class="panel pausebox"><h2>${G.coop ? 'Menu' : 'Paused'}</h2><p class="hint">${G.label} at ${(G.S.hour === 0 ? 12 : G.S.hour)} AM${G.coop ? '. The night keeps running for your partner.' : ''}</p><div class="stack"><button class="big" id="pr">Resume</button><button class="big alt" id="ps">Settings</button><button class="big alt" id="pm">${G.coop ? 'Leave the room' : 'Quit to menu'}</button></div><p class="hint">Esc or P also resumes.</p></div>`; $('#pr').onclick = () => pause(false); $('#ps').onclick = () => settings(); $('#pm').onclick = () => { if (G.coop) coop.leave(); G.mode = 'title'; home(); }; }
 function over(win) {
   Calls.stop(); const n = G.S.night, cheated = !!(G.S.cheated || (G.adm && G.adm.used)); G.mode = win ? 'won' : 'dead'; G.cam = null; G.light = false; G.mask = false; $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); $('#scareBar').hidden = true; $('#call').hidden = true; $('#staticOv').classList.remove('on'); document.body.classList.remove('playing'); const pk = $('#pings'); if (pk) pk.hidden = true;
   let rw = { parts: [], total: 0 };
@@ -320,7 +322,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min(0.1, (now - last) / 1000); last = now;
   const w = innerWidth, h = innerHeight, pr = renderer.getPixelRatio();
-  if (G.sized !== w + 'x' + h + 'x' + pr) { G.sized = w + 'x' + h + 'x' + pr; renderer.setSize(w, h, false); player.aspect = camV.aspect = w / h; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); }
+  if (G.sized !== w + 'x' + h + 'x' + pr) { G.sized = w + 'x' + h + 'x' + pr; renderer.setSize(w, h, false); player.aspect = camV.aspect = w / h; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); applyFov(); }
   if (!G.ready) return;
   if (cfg.fps) { fpsN++; fpsT += dt; if (fpsT >= 0.5) { $('#fps').textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
   if (!dbg.hidden) dbg.textContent = `${Math.round(1 / Math.max(dt, 0.001))} fps · mode ${G.mode}${G.S ? ' · ' + G.label + ' · t ' + G.S.t.toFixed(1) + 's · bat ' + Math.round(G.S.battery) + ' · box ' + Math.round(G.S.box) : ''}\nnet ${G.net ? G.net.state + ' ' + (G.net.role || '') + ' ' + G.net.code + ' ' + G.net.ping + 'ms' : '-'} · errors ${errLog.length}${errLog.length ? '\n' + errLog.slice(-2).join('\n') : ''}\nF3 hides this · /debug.html runs the self-tests`;
