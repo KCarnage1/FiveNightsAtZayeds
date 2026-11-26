@@ -5,6 +5,7 @@ import { buildZayed, animate } from './models/cast.js';
 import { buildIbrahim, buildGelly, buildBidoof } from './models/extras.js';
 import { newNight, step, CAST, WHO, HOUR_SEC } from './ai.js';
 import { S as Snd, start as startAudio } from './audio.js';
+import { applyDisplay, captionFx, captionBox, cueHud, tutStart, tutEnter, tutTick } from './access.js';
 import { cfg, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings, resetProgress, OPEN_NIGHTS } from './settings.js';
 import * as Calls from './calls.js';
 import * as Online from './online.js';
@@ -48,7 +49,7 @@ const G = { mode: 'title', S: null, cam: null, pitch: 0, yaw: 0, yawT: 0, keys: 
 const ORDER = WHO.slice();
 const LABEL = { 7: 'Custom Night' };
 function startNight(n, opts = {}) {
-  startAudio(); closeModal(); const mods = opts.daily || opts.coop === 'guest' ? undefined : Shop.mods(); G.S = newNight(n, opts.seed || (Date.now() & 0xffff), Object.assign({}, opts, { mods })); G.S.cheated = false; G.hourPaid = 0; G.opts = opts; const S0 = G.S; if (G.adm) { G.adm.used = false; } G.mode = 'play'; G.paused = false; G.cam = null; G.mask = false; G.light = false; G.yaw = G.yawT = 0; G.from = {}; G.scareWho = null; G.speed = opts.speed || 1; G.label = opts.label || LABEL[n] || 'Night ' + n; G.opts = opts; applyCosmetics();
+  startAudio(); closeModal(); const mods = opts.daily || opts.coop === 'guest' ? undefined : Shop.mods(); if (mods && cfg.assist) mods.strike = 1.25; /* assist: a quarter more time before they strike */ G.S = newNight(n, opts.seed || (Date.now() & 0xffff), Object.assign({}, opts, { mods })); G.S.cheated = false; G.hourPaid = 0; G.opts = opts; const S0 = G.S; if (G.adm) { G.adm.used = false; } G.mode = 'play'; G.paused = false; G.cam = null; G.mask = false; G.light = false; G.yaw = G.yawT = 0; G.from = {}; G.scareWho = null; G.speed = opts.speed || 1; G.label = opts.label || LABEL[n] || 'Night ' + n; G.opts = opts; applyCosmetics();
   stats.plays++; saveStats(); document.body.classList.add('playing');
   $('#screen').hidden = true; $('#hud').hidden = false; $('#hNight').textContent = G.label; $('#scareBar').hidden = true; $('#bPause').hidden = false;
   intro(G.label); if (n <= 6 && !opts.daily) showLoreItems(n); else hideLoreItems();
@@ -70,6 +71,7 @@ const TABS = {
   Audio: [{ k: 'master', t: 'range', l: 'Master volume', min: 0, max: 100 }, { k: 'sfx', t: 'range', l: 'Effects', min: 0, max: 100 }, { k: 'music', t: 'range', l: 'Music box', min: 0, max: 100 }],
   Video: [{ k: 'quality', t: 'select', l: 'Quality', o: [['low', 'Low (best for phones)'], ['medium', 'Medium'], ['high', 'High']], p: 'Lower quality renders fewer pixels. Try Low if the game stutters.' }, { k: 'fov', t: 'range', l: 'Field of view', min: 55, max: 95 }, { k: 'brightness', t: 'range', l: 'Brightness', min: 60, max: 150 }, { k: 'uiScale', t: 'range', l: 'HUD size', min: 80, max: 130 }, { k: 'shake', t: 'toggle', l: 'Screen shake' }, { k: 'flashing', t: 'toggle', l: 'Flashing effects', p: 'Turn off to remove bright flashes and flicker.' }, { k: 'fps', t: 'toggle', l: 'Show FPS' }, { t: 'button', l: 'Fullscreen', b: 'Toggle', act: () => toggleFull() }],
   Gameplay: [{ k: 'sens', t: 'range', l: 'Look sensitivity', min: 40, max: 200 }, { k: 'invert', t: 'toggle', l: 'Invert look' }, { k: 'toggleMask', t: 'toggle', l: 'Mask: tap to toggle', p: 'Off = hold to wear it.' }, { k: 'toggleLight', t: 'toggle', l: 'Flashlight: tap to toggle', p: 'Off = hold to shine it.' }, { k: 'haptics', t: 'toggle', l: 'Vibration (phones)' }, { k: 'hints', t: 'toggle', l: 'On-screen hints' }, { k: 'calls', t: 'toggle', l: 'Phone calls' }, { k: 'voice', t: 'toggle', l: 'Read calls aloud', p: 'Uses your device\'s text-to-speech voice.' }, { k: 'subtitles', t: 'toggle', l: 'Subtitles' }, { k: 'autopause', t: 'toggle', l: 'Pause when the tab loses focus' }],
+  Accessibility: [{ k: 'textSize', t: 'range', l: 'Text size', min: 100, max: 160, p: 'Makes the clock, meters, hints, captions and tutorial bigger.' }, { k: 'contrast', t: 'toggle', l: 'High contrast HUD', p: 'Solid black panels, white text and thick outlines.' }, { k: 'cues', t: 'toggle', l: 'Shape and text cues', p: 'Adds percentages, the word LOW, striped low meters and a warning badge when something is in the office, so colour is never the only signal.' }, { k: 'captions', t: 'toggle', l: 'Sound captions', p: 'Shows a short line with an arrow for sounds: vent clanks, footsteps and the music box.' }, { k: 'assist', t: 'toggle', l: 'Assist mode', p: 'Gives you a quarter more time before something in the office strikes. Applies from the next night. Coins are not reduced.' }, { k: 'tutorial', t: 'toggle', l: 'Show the tutorial on Night 1', p: 'Turn on to see the tips again.' }, { t: 'button', l: 'Replay the tutorial', b: 'Reset', act: () => { stats.tutorial = false; stats.tutSteps = {}; saveStats(); setCfg('tutorial', true); settings('Accessibility'); toast('The tutorial will show on Night 1'); } }],
   Online: [{ k: 'liveFaces', t: 'toggle', l: 'Live profile pictures', p: 'Characters can use the current Discord profile picture of the person they are based on. Your device loads the picture from Discord. Off keeps the pictures that came with the game.' }, { k: 'share', t: 'toggle', l: 'Show that I am online', p: 'Tells the developer the game is open: a random ID, the version, your device type and the screen you are on. No name, no account, no location.' }, { k: 'broker', t: 'text', l: 'Custom matchmaking server', p: 'Leave empty for the default. Format host:port, for example localhost:9000.' }, { t: 'status' }],
   Data: [{ t: 'update' }, { t: 'button', l: 'Reset settings', b: 'Reset', act: () => { resetSettings(); settings('Data'); toast('Settings reset'); } }, { t: 'button', l: 'Erase progress and stats', b: 'Erase…', danger: true, act: () => { if (confirm('Erase all nights beaten and stats?')) { resetProgress(); settings('Data'); toast('Progress erased'); if (G.mode === 'title') home(); } } }]
 };
@@ -98,7 +100,7 @@ function settings(tab = 'Audio') {
 function toggleFull() { try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch (e) { toast('Fullscreen is not available here'); } }
 onChange((k) => {
   if (k === 'quality' || k === '*') applyQuality(); if (k === 'fov' || k === '*') applyFov();
-  if (k === 'brightness' || k === '*') renderer.toneMappingExposure = 1.3 * cfg.brightness / 100; if (k === 'uiScale' || k === '*') document.documentElement.style.setProperty('--ui', cfg.uiScale / 100);
+  if (k === 'brightness' || k === '*') renderer.toneMappingExposure = 1.3 * cfg.brightness / 100; if (k === 'textSize' || k === 'contrast' || k === 'cues' || k === '*') applyDisplay(); if (k === 'uiScale' || k === '*') document.documentElement.style.setProperty('--ui', cfg.uiScale / 100);
   if (k === 'fps' || k === '*') { $('#fps').hidden = !cfg.fps; } if (k === 'flashing' || k === '*') document.body.classList.toggle('noflash', !cfg.flashing);
   if (k === 'share' && cfg.share) Online.beat(G.mode, G.S ? G.S.night : 0);
 });
@@ -230,12 +232,13 @@ function over(win) {
   saveStats();
   const coopMode = !!G.coop, guest = !!G.guest;
   const pay = cheated ? '<p class="hint">Admin powers were used: no coins or progress for this run.</p>' : rw.total ? `<p>${rw.parts.map(([l, v]) => `${l} +${v}`).join(' · ')} → <b>${ic('coin')}+${rw.total}</b></p>` : '';
-  const s = $('#screen'); s.hidden = false; s.className = 'screen';
+  const s = $('#screen'); s.hidden = false; s.className = 'screen'; $('#tut').hidden = true;
+  const assistNote = G.assist ? '<p class="hint">Assist mode was on: monsters in the office waited 25% longer to strike. Coins were not reduced.</p>' : '';
   const next = win && n < OPEN_NIGHTS && !G.opts.label ? `<button class="big" id="nx">Night ${n + 1}</button>` : '';
   const buttons = coopMode ? (guest ? '<p class="pulse">Waiting for the host to start again…</p>' : `<button class="big" id="rt">Play again</button>`) + '<button class="big alt" id="tt">Leave</button>' : `${next}<button class="big ${next ? 'alt' : ''}" id="rt">${win ? 'Replay' : 'Try again'}</button><button class="big alt" id="tt">Menu</button>`;
   s.innerHTML = win
-    ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? (Lore.has(Lore.FINAL_ID) ? 'The sun is up. You know whose order this was. The door is yours to open, Rashid.' : Lore.countFound() >= Math.round(Lore.total() * 0.6) ? 'The sun is up, and the police are at the door. You hold most of the pieces. Four numbers in the case file would tell you the rest.' : 'The sun is up. The police at the door are no longer the worst thing in the building. There is more to find in the cameras, from the first night on.') : 'The sun is up. The bodies are still. For now.'}${win && n >= OPEN_NIGHTS && !G.opts.label ? ' More nights are coming soon.' : ''}</p>${pay}${buttons}</div>`
-    : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p>${DEATH_LINE[G.scareWho] ? `<p class="quote">${DEATH_LINE[G.scareWho]}</p>` : ''}<p>${hintFor(G.scareWho)}</p>${pay}${buttons}</div>`;
+    ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? (Lore.has(Lore.FINAL_ID) ? 'The sun is up. You know whose order this was. The door is yours to open, Rashid.' : Lore.countFound() >= Math.round(Lore.total() * 0.6) ? 'The sun is up, and the police are at the door. You hold most of the pieces. Four numbers in the case file would tell you the rest.' : 'The sun is up. The police at the door are no longer the worst thing in the building. There is more to find in the cameras, from the first night on.') : 'The sun is up. The bodies are still. For now.'}${win && n >= OPEN_NIGHTS && !G.opts.label ? ' More nights are coming soon.' : ''}</p>${pay}${assistNote}${buttons}</div>`
+    : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p>${DEATH_LINE[G.scareWho] ? `<p class="quote">${DEATH_LINE[G.scareWho]}</p>` : ''}<p>${hintFor(G.scareWho)}</p>${pay}${assistNote}${buttons}</div>`;
   if ($('#nx')) $('#nx').onclick = () => startNight(n + 1, { }); 
   if ($('#rt')) $('#rt').onclick = () => (coopMode ? coop.again() : startNight(n, G.opts));
   $('#tt').onclick = () => { if (coopMode) coop.leave(); home(); };
@@ -273,10 +276,11 @@ addEventListener('keydown', (e) => {
   if (G.paused) return;
   if (k === 'f' || k === ' ') { if (k === ' ') e.preventDefault(); pressLight(); } if (k === 'm') pressMask(); if (k === 'w') G.wind = true;
   if (k === 'c' || k === 'tab') { e.preventDefault(); toggleCam(); }
+  if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = (k === 'arrowleft' || k === 'a' ? -1 : 1) * 1.2; /* keyboard look: hold to turn */
   if (G.cam && (k === 'arrowleft' || k === 'q' || k === 'arrowright' || k === 'e')) { const i = camIds.indexOf(G.cam), d = k === 'arrowleft' || k === 'q' ? -1 : 1; selectCam(camIds[(i + d + camIds.length) % camIds.length]); }
   const d = '1234567890'.indexOf(k); if (G.cam && d >= 0 && d < camIds.length) selectCam(camIds[d]);
 });
-addEventListener('keyup', (e) => { if (typing(e)) return; const k = e.key.toLowerCase(); G.keys[k] = 0; if (k === 'f' || k === ' ') releaseLight(); if (k === 'm') releaseMask(); if (k === 'w') G.wind = false; });
+addEventListener('keyup', (e) => { if (typing(e)) return; const k = e.key.toLowerCase(); G.keys[k] = 0; if (k === 'f' || k === ' ') releaseLight(); if (k === 'm') releaseMask(); if (k === 'w') G.wind = false; if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = 0; });
 const hold = (el, on, off) => { el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); on(); }); for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, off); };
 hold($('#bMask'), pressMask, releaseMask); hold($('#bFlash'), pressLight, releaseLight);
 $('#bCam').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleCam(); });
@@ -342,8 +346,9 @@ const camGlitch = () => { const o = $('#staticOv'); if (!G.cam || !cfg.flashing 
 const pan = (n) => (n === 'ventL' || n === 'partyL' || n === 'prize' || n === 'kids' ? -0.8 : n === 'ventR' || n === 'partyR' || n === 'game' ? 0.8 : 0);
 function apply(fx) {
   for (const f of fx) {
+    captionFx(f);
     if (f.type === 'move') { camGlitch(); Snd.move(f.to, pan(f.to)); if (f.to === 'hall' && !G.cam) say('Something is in the hallway.', 2200); }
-    else if (f.type === 'enter') { G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); buzz(60); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office!', 3000); G.shake = 0.5; }
+    else if (f.type === 'enter') { tutEnter(); G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); buzz(60); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office!', 3000); G.shake = 0.5; }
     else if (f.type === 'run') { Snd.clang(0); say('Withered Sherbet is running the hall! Shine the light down it!', 3000); }
     else if (f.type === 'pushed') { Snd.step(pan(f.from)); }
     else if (f.type === 'boxout') { Snd.chime(); say('The music box ran out. Wind it from the Prize Corner camera!', 4000); }
@@ -364,6 +369,8 @@ function drawMini() {
 function updateHud() {
   const S = G.S; if (!G.guest && S.hour > (G.hourPaid | 0)) { G.hourPaid = S.hour; toast('Hour survived'); } $('#hClock').textContent = (S.hour === 0 ? 12 : S.hour) + ' AM'; $('#mFlash').style.width = S.battery + '%'; $('#boxM').style.display = ''; $('#mBox').style.width = S.box + '%';
   $('#mBox').style.background = S.box < 25 ? '#e8453c' : ''; $('#bMask').classList.toggle('on', G.mask); $('#bFlash').classList.toggle('on', G.light);
+  if (cfg.cues) { const w = Object.keys(S.pos).find((k) => S.pos[k] === 'office'); cueHud(S, w ? (NAMES[w] || 'Something') + ' is in the office' : ''); } else $('#danger').hidden = true;
+  captionBox(S.box);
   $('#staticOv').classList.toggle('on', !!G.cam);
 }
 function flicker(now) { for (let i = 0; i < signMats.length; i++) { const v = Math.sin(now / 210 + i * 7.3) * Math.sin(now / 330 + i * 2.1); signMats[i].emissiveIntensity = cfg.flashing && v > 0.9 ? 0.08 : 0.65 + Math.sin(now / 900 + i) * 0.05; } }
@@ -400,7 +407,7 @@ function frame(now) {
     apply(fx); Snd.box(S.box, dt); Snd.hum(0.04 + (G.cam ? 0.02 : 0)); Snd.frame(dt, !!(G.light && !G.cam), S.battery, G.mask, S.pos);
     if (G.mask) { G.breathT -= dt; if (G.breathT <= 0) { Snd.breath(); G.breathT = 1.4; } }
     $('#maskOv').classList.toggle('on', S.mask > 0.5); $('#bWind').classList.toggle('on', G.wind && !!G.cam);
-    updateHud(); if (G.cam) drawMini();
+    updateHud(); tutTick(G, dt); if (G.cam) drawMini();
   }
   if (G.scareWho && G.mode === 'play') { // the jumpscare: the body fills the view, shaking
     G.scareT += dt; const b = bots[G.scareWho]; b.root.visible = true; b.root.scale.setScalar(1.1);
@@ -462,6 +469,7 @@ async function boot() {
 }
 const ctx = { G, $, esc, toast, say, openModal, closeModal, startNight, home, over, Snd, bots, apply, NAMES, CAMS, selectCam, refreshHome, applyCosmetics, leaveToMenu, unlocked };
 coop = initCoop(ctx); admin = initAdmin(ctx);
+applyDisplay();
 requestAnimationFrame(frame);
 boot();
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]peer=/.test(location.search) && location.hostname !== 'localhost') navigator.serviceWorker.register('sw.js').catch(() => {});
