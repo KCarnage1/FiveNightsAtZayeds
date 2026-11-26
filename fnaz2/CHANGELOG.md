@@ -3,6 +3,8 @@
 ## 0.6.0
 - Live profile pictures: characters can use the current Discord profile picture of the person they are based on, updated by the server every few minutes. Admin menu, Faces tab, links each character to a Discord user. Off switch in Settings.
 - Lore: the case file (Extras). Twelve hidden papers on the cameras and in the office, call transcripts, and a four-digit puzzle that unlocks the truth about Order #0. New phone-call clues and a Night 6 epilogue that reflects what you found.
+- Twelve more papers (24 in all): the party invitation, the staff cap label, the doors memo, the kitchen ledger, the telecom log and more. The truth about Order #0 now includes the costume party.
+- Ibrahim, Gelly and Bidoof are linked to their Discord accounts for live pictures.
 - Redrawn animatronics (smooth bodies, jointed limbs, soft-edged faces).
 
 ## 0.5.0

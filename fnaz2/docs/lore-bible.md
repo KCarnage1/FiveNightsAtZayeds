@@ -10,6 +10,8 @@ This is the full story behind FNAZ 1 and FNAZ 2. **Established** means it was al
 - A note about a **cupcake**: "Do not eat it."
 
 ## New: what really happened (the answer to the puzzle)
+**The party.** The cupcakes were for a **costume party**: four best friends, invited to Abdulla's Cafeteria, who came as a **camel, a cat, a goat and a falcon**. They waited by the window until the lights went out, then went home. **Nobody was hurt.** That is what Qerh's file leaves out: nothing happened except a promise that was never kept. A promise with nobody left to keep it does not die.
+
 **Order #0.** In the week the cafeteria closed, its number was moved to the Salem's Candy counter. That evening someone rang the old number and ordered **twelve cupcakes, four candles on each, delivered by six**. **Rashid, seventeen and behind the counter, wrote it down and went on his break.** The order never reached the kitchen. **Abdulla**, still closing up the kitchen, heard the extension, picked it up and promised it would arrive. It never did. The next morning the police found the building empty, the kitchen warm and the phone off the hook. That is "Order Night".
 
 An order that can be neither cancelled nor completed **split into four things it needs to stay alive**: someone to **wait** (Camel, patience), someone to **call** (Cat, nerve), someone to **remember** (Goat, memory) and someone to **deliver** (Falcon, hunger). That is the "one soul, four bodies." The soul is **an unfinished delivery**, and it is anchored to the person who wrote the order down. They are not coming to hurt Rashid. They are coming to deliver what he took.
@@ -27,7 +29,7 @@ An order that can be neither cancelled nor completed **split into four things it
 - **The flashlight:** Qerh-issue safety light. **The vents:** the old order chute.
 
 ## How players find it out (nothing is explained outright)
-**Case file (Extras).** Twelve papers are hidden in the cameras and your office, appearing from the night they were filed. Click one to pick it up (it replaces the flashlight click). Each night's phone call is filed as a transcript after you survive it.
+**Case file (Extras).** Twenty-four papers are hidden in the cameras and your office, appearing from the night they were filed. Click one to pick it up (it replaces the flashlight click). Each night's phone call is filed as a transcript after you survive it.
 
 | Paper | Night | Where | What it reveals |
 |---|---|---|---|
@@ -42,8 +44,25 @@ An order that can be neither cancelled nor completed **split into four things it
 | Order chute blueprint | 4 | Kid's Cove | The vents and Gelly |
 | Tag on Bidoof | 4 | The stage | Complaints bell |
 | Police report | 5 | Parts & Service | The witness "R.", age 17, took the order |
-| Cupcake with a note | 6 | Your desk | In Rashid's own handwriting |
+| Cupcake with a note | 6 | Your office | In Rashid's own handwriting |
 
 **The puzzle.** The four order slips have the numbers **4, 7, 1, 2**. The final call tells you to "put them in the order the bodies were made": Camel, Cat, Goat, Falcon, so **4712**. Dialling it in the Case file unlocks the last page, **Order #0**, the answer above.
 
 **The phone calls** each add a clue: papers taped around the building; the vents are the old order chute; the music box is hold music; keep the slip numbers; the witness's initial is "on every slip."
+
+### The second wave of papers (added later)
+| Paper | Night | Where | What it reveals |
+|---|---|---|---|
+| Birthday invitation | 1 | Party Room 2 | The party: a camel, a cat, a goat, a falcon; "from the four of us" |
+| Label in the Zayed mask | 2 | Your office | The mask is the old staff cap: staff are "on shift", so orders are asked for, not handed back. It does not work on the hungry or those still holding |
+| Qerh memo: the doors | 3 | Your office | "Open door policy": the order must be able to arrive. The cap and flashlight are issued without telling the guard why |
+| Cupcake recipe card | 3 | Prize Corner | Four candles, one for each who waits. "A promise is a recipe too" |
+| Hold ticket | 3 | Prize Corner (on the music box) | "Caller 1 of 1. Estimated wait: until delivered." (Ibrahim) |
+| Photo: the owner | 4 | The stage | Abdulla never took the gold costume off: "still on shift" |
+| Letter from Salem | 4 | Game Area | Salem built the mascots, named after the four who ordered; "that phone rings a little too clearly" |
+| Receipt: roller skates | 4 | Game Area | The Falcon's skates; "fast, but always late" |
+| Kitchen ledger | 5 | Parts & Service | Order #0 not delivered; paid in advance with one promise |
+| Staff schedule | 5 | Prize Corner | R. on break 5:55 to 6:20; Abdulla kept the kitchen open; the old number ring at the counter |
+| Telecom log | 5 | Main Hallway | 3,214 calls, always 5:58 pm, always answered on Extension 2, but the kitchen has no phone |
+| Claim file cover note | 5 | Parts & Service | Why Qerh does not want the order delivered: the building cannot be sold while it is open. Close the file, or close the witness |
+| Rashid's own note | 6 | Your office | "It was only ever a cake. I think a promise is bigger than a cake." |
