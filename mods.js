@@ -268,13 +268,23 @@
   // a remembered password (desktop app) logs in quietly in the background
   if (nativeKey) nativeKey.load().then(async (pw) => { if (pw && (await verify(pw)) === true) { admin.pw = pw; admin.remembered = true; } }).catch(() => {});
 
+  /* Tabs: the sections that other files add (players, announcements) are sorted into tabs the first time the panel opens. */
+  const TAB_OF = { Powers: 'powers', Time: 'powers', 'Summon to my door': 'night', Night: 'night', 'AI levels (this night)': 'night', Coins: 'economy' };
+  const TABS = [['players', 'Players'], ['powers', 'Powers'], ['night', 'Night'], ['economy', 'Coins'], ['broadcast', 'Announce']];
+  let tab = 'players', tabBar = null;
+  function showTab(t) { tab = t; note.hidden = t === 'players' || t === 'broadcast'; for (const s of panel.querySelectorAll('.mm-sec')) s.hidden = s.dataset.tab !== t; for (const b of tabBar.children) b.classList.toggle('on', b.dataset.tab === t); }
+  function tabify() {
+    for (const s of panel.querySelectorAll('.mm-sec')) s.dataset.tab = s.classList.contains('live') ? 'players' : s.classList.contains('ann') ? 'broadcast' : TAB_OF[s.querySelector('h3').childNodes[0].textContent.trim()] || 'powers';
+    if (!tabBar) { tabBar = document.createElement('nav'); tabBar.className = 'mm-tabs'; tabBar.setAttribute('aria-label', 'Admin sections'); tabBar.innerHTML = TABS.map(([k, n]) => `<button type="button" data-tab="${k}">${n}</button>`).join(''); panel.insertBefore(tabBar, note); tabBar.addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) showTab(b.dataset.tab); }); }
+    showTab(tab);
+  }
   function toggle(force) {
     const open = force === undefined ? !isOpen() : !!force;
     if (open && online()) { toast('Not available in online rooms.'); return; }
     if (open === isOpen()) return;
     if (open) {
       if (!admin.pw) { showLogin(); return; }
-      panel.hidden = false; panel.classList.remove('out'); syncPanel(); sound('chime');
+      panel.hidden = false; panel.classList.remove('out'); tabify(); syncPanel(); sound('chime');
       panel.dispatchEvent(new Event('fnaz:open'));
     } else { panel.classList.add('out'); setTimeout(() => { if (panel.classList.contains('out')) panel.hidden = true; }, 220); }
   }

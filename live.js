@@ -64,7 +64,7 @@
   setInterval(() => {
     const y = NET && NET.h && NET.h.y; if (!sharing() || document.hidden || !y || !y.running || !y.ai) return;
     const ai = y.ai, p = SUMMON.map((w) => (w === 'sherbet' ? (ai.sherbet.running ? 'running' : 'stage ' + ai.sherbet.stage) : room(ai[w])));
-    rpc('report_state', { p_id: pid, p_state: { n: Math.round(y.night) || 0, h: y.hour, p } }, 4000).catch(() => {});
+    rpc('report_state', { p_id: pid, p_state: { n: Math.round(y.night) || 0, h: y.hour, p, w: Math.round(y.power), d: [+!!y.doorL, +!!y.doorR], l: [+!!y.lightL, +!!y.lightR], c: y.monitor ? String(y.cam || '') : '' } }, 4000).catch(() => {});
   }, 3000);
   let since = null;
   const num = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || lo));
@@ -100,6 +100,8 @@
     sec.className = 'mm-sec live';
     sec.innerHTML = `<h3>Online now <b id="lvTotal">…</b></h3>
       <div id="lvChips" class="lv-chips"></div>
+      <div id="lvSpec" class="lv-spec" hidden><div class="lv-spec-head"><b id="lvSpecWho"></b><button type="button" id="lvStop">Stop watching</button></div><canvas id="lvMap" width="420" height="300" aria-label="Live map of the watched player's night"></canvas><p id="lvInfo" class="lv-info"></p></div>
+      <input type="search" id="lvFind" class="lv-find" placeholder="Filter players (ID, device, night)" aria-label="Filter players">
       <div id="lvList" class="lv-list" aria-live="polite"></div>
       <p class="mm-note" id="lvNote"></p>
       <details class="ann-setup"><summary>Change the admin password</summary>
@@ -110,6 +112,41 @@
     const $l = (s) => sec.querySelector(s);
     let timer = 0, busy = false;
     const nightText = (p) => (p.screen === 'game' ? (p.night === 13 ? 'secret night' : p.night >= 8 ? 'Nightmare ' + (p.night - 7) : p.night === 6 ? '4/20 mode' : p.night === 7 ? 'custom night' : 'Night ' + p.night) : p.screen === 'title' ? 'title screen' : p.screen || 'menu');
+    const NAMES4 = { zayed: 'Camel', bubbles: 'Cat', taffy: 'Goat', sherbet: 'Falcon' };
+    const st = (p) => (p.state ? `Night ${p.state.n}, ${p.state.h || 12} AM · Camel ${p.state.p[0] || '-'}, Cat ${p.state.p[1] || '-'}, Goat ${p.state.p[2] || '-'}, Falcon ${p.state.p[3] || '-'}` : '');
+    const tools = (t) => `<span class="lv-tools" data-t="${t}">${Object.entries(NAMES4).map(([w, n]) => `<button type="button" data-k="summon" data-who="${w}">${n}</button>`).join('')}<button type="button" data-k="watch" class="lv-watch">Watch</button><button type="button" data-k="msg">Message</button><button type="button" data-k="speed">Fast 10s</button><button type="button" data-k="give">+50 coins</button></span>`;
+    let last = [], watching = '';
+    /* The floor plan of the old building (x, y, width, height in a 0-100 grid) for the live view. */
+    const PLAN = { backstage: [3, 5, 20, 15, 'Backstage'], stage: [38, 3, 24, 15, 'Stage'], restroom: [77, 5, 20, 15, 'Restrooms'], cove: [3, 26, 20, 16, 'Cove'], dining: [28, 24, 44, 22, 'Dining'], kitchen: [77, 26, 20, 16, 'Kitchen'], westHall: [26, 50, 11, 22, 'W hall'], eastHall: [63, 50, 11, 22, 'E hall'], supply: [8, 74, 17, 14, 'Supply'], westCor: [26, 74, 11, 14, 'W corner'], eastCor: [63, 74, 11, 14, 'E corner'], office: [40, 76, 20, 18, 'OFFICE'] };
+    const COLORS = { zayed: '#e0b56c', bubbles: '#ff8cc0', taffy: '#fff0d4', sherbet: '#ff9a3a' };
+    function drawMap(p) {
+      const cv = $l('#lvMap'), g = cv.getContext('2d'), W = cv.width, H = cv.height, s = p.state, X = (v) => v * W / 100, Y = (v) => v * H / 100;
+      g.clearRect(0, 0, W, H); g.font = '600 12px sans-serif'; g.textAlign = 'center';
+      for (const [k, [x, y, w, h, n]] of Object.entries(PLAN)) { g.fillStyle = k === 'office' ? '#3a1730' : '#1d1824'; g.strokeStyle = s && s.c === k ? '#ffe066' : 'rgba(241,231,208,.3)'; g.lineWidth = s && s.c === k ? 3 : 1.2; g.fillRect(X(x), Y(y), X(w), Y(h)); g.strokeRect(X(x), Y(y), X(w), Y(h)); g.fillStyle = 'rgba(241,231,208,.55)'; g.fillText(n, X(x + w / 2), Y(y + 4.2)); }
+      if (!s) return;
+      const slot = {}; // where each body stands: a room name, a '*' for in your office, or the Falcon's stage count
+      ['zayed', 'bubbles', 'taffy', 'sherbet'].forEach((w, i) => {
+        let r = s.p[i] || '', office = r[0] === '*'; r = office ? 'office' : r;
+        if (w === 'sherbet') r = r === 'running' ? 'westHall' : 'cove';
+        const box = PLAN[r] || PLAN.stage, n = (slot[r] = (slot[r] || 0) + 1) - 1;
+        g.fillStyle = COLORS[w]; g.beginPath(); g.arc(X(box[0] + 4 + n * 5), Y(box[1] + box[3] - 4), 7, 0, 7); g.fill(); g.strokeStyle = office ? '#ff4d8d' : '#000'; g.lineWidth = office ? 3 : 1; g.stroke();
+      });
+      // the two doors and the lights beside them
+      [[37, s.d && s.d[0], s.l && s.l[0]], [62, s.d && s.d[1], s.l && s.l[1]]].forEach(([x, door, light]) => { g.fillStyle = door ? '#ff4d8d' : '#555'; g.fillRect(X(x), Y(76), 5, Y(18)); if (light) { g.fillStyle = '#ffe066'; g.beginPath(); g.arc(X(x + 2.5), Y(72), 6, 0, 7); g.fill(); } });
+    }
+    function spectate() {
+      const p = last.find((x) => x.pid === watching), box = $l('#lvSpec'); box.hidden = !watching;
+      if (!watching) return;
+      if (!p) { $l('#lvSpecWho').textContent = 'Player ' + watching.slice(0, 6) + ' left'; $l('#lvInfo').textContent = 'This player is no longer online.'; drawMap({}); return; }
+      const s = p.state; $l('#lvSpecWho').textContent = 'Watching ' + p.id + ' · ' + (p.platform || '?') + ' · v' + (p.ver || '?');
+      $l('#lvInfo').textContent = s ? `Night ${s.n}, ${s.h || 12} AM` + (s.d ? ` · power ${s.w}% · doors ${s.d[0] ? 'L closed' : 'L open'}, ${s.d[1] ? 'R closed' : 'R open'} · ${s.c ? 'on camera ' + s.c : 'looking at the office'}` : ' · (older version: no door or power info)') : `Not in a night (${nightText(p)}).`;
+      drawMap(p);
+    }
+    function render() {
+      const q = ($l('#lvFind').value || '').toLowerCase(), list = last.filter((p) => !q || [p.id, p.platform, p.ver, nightText(p), p.mode].join(' ').toLowerCase().includes(q));
+      $l('#lvList').innerHTML = last.length ? (q ? '' : `<div class="lv-all"><b>Everyone</b>${tools('all')}</div>`) + (list.map((p) => `<div class="${p.pid === watching ? 'on' : ''}"><b>${p.id}</b><span>${p.platform || '?'} · v${p.ver || '?'}</span><span>${nightText(p)}${p.mode === 'online' ? ' · online room' : ''}</span><i>${p.mins}m</i>${p.state ? `<small class="lv-state">${st(p)}</small>` : ''}${tools(p.pid)}</div>`).join('') || '<em>No player matches the filter.</em>') : '<em>Nobody has the game open right now.</em>';
+      spectate();
+    }
     async function refresh() {
       if (busy) return;
       const pw = FNAZMOD.admin.get();
@@ -121,21 +158,22 @@
         $l('#lvTotal').textContent = d.total + (d.today > d.total ? ' · ' + d.today + ' today' : '');
         const count = (key, f) => { const m = {}; for (const p of d.players) { const k = f ? f(p) : p[key] || '?'; m[k] = (m[k] || 0) + 1; } return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<span>${n} ${k}</span>`).join(''); };
         $l('#lvChips').innerHTML = d.players.length ? count('platform') + count('ver', (p) => 'v' + (p.ver || '?')) + count('mode') : '';
-        const st = (p) => (p.state ? `Night ${p.state.n}, ${p.state.h || 12} AM · Camel ${p.state.p[0] || '-'}, Cat ${p.state.p[1] || '-'}, Goat ${p.state.p[2] || '-'}, Falcon ${p.state.p[3] || '-'}` : '');
-        const tools = (t) => `<span class="lv-tools" data-t="${t}">${['zayed', 'bubbles', 'taffy', 'sherbet'].map((w) => `<button type="button" data-k="summon" data-who="${w}">${{ zayed: 'Camel', bubbles: 'Cat', taffy: 'Goat', sherbet: 'Falcon' }[w]}</button>`).join('')}<button type="button" data-k="msg">Message</button><button type="button" data-k="speed">Fast 10s</button><button type="button" data-k="give">+50 coins</button></span>`;
-        $l('#lvList').innerHTML = (d.players.length ? `<div class="lv-all"><b>Everyone</b>${tools('all')}</div>` + d.players.map((p) => `<div><b>${p.id}</b><span>${p.platform || '?'} · v${p.ver || '?'}</span><span>${nightText(p)}${p.mode === 'online' ? ' · online room' : ''}</span><i>${p.mins}m</i>${p.state ? `<small class="lv-state">${st(p)}</small>` : ''}${tools(p.pid)}</div>`).join('') : '<em>Nobody has the game open right now.</em>');
-        $l('#lvNote').textContent = 'Anonymous: a short ID, never a name. Updates every few seconds.';
+        last = d.players; render();
+        $l('#lvNote').textContent = 'Anonymous: a short ID, never a name. Updates every two seconds.';
       } catch (e) { $l('#lvNote').textContent = 'Could not reach the server.'; }
       finally { busy = false; }
     }
-    const start = () => { clearInterval(timer); refresh(); timer = setInterval(() => { if (panel.hidden) { clearInterval(timer); return; } refresh(); }, 4000); };
+    const start = () => { clearInterval(timer); refresh(); timer = setInterval(() => { if (panel.hidden) { clearInterval(timer); return; } refresh(); }, 2000); };
     panel.addEventListener('fnaz:open', start);
     $l('#lvList').addEventListener('click', async (e) => {
       const b = e.target.closest('button[data-k]'); if (!b) return; const t = b.closest('.lv-tools').dataset.t, k = b.dataset.k, pw = FNAZMOD.admin.get();
+      if (k === 'watch') { watching = t; render(); return; }
       const args = k === 'summon' ? { who: b.dataset.who } : k === 'speed' ? { mult: 2, sec: 10 } : k === 'give' ? { coins: 50 } : { text: (prompt('Message to show:') || '').trim() };
       if (k === 'msg' && !args.text) return;
       try { const r = await rpc('admin_send', { p_secret: pw, p_target: t, p_kind: k, p_args: args }, 6000); $l('#lvNote').textContent = r ? 'Sent.' : 'The server refused (password?).'; } catch (err) { $l('#lvNote').textContent = 'Could not reach the server.'; }
     });
+    $l('#lvStop').addEventListener('click', () => { watching = ''; render(); });
+    $l('#lvFind').addEventListener('input', render);
     $l('#lvChange').addEventListener('click', async () => {
       const o = $l('#lvOld').value, n = $l('#lvNew').value, m = $l('#lvPw');
       if (n.length < 12) { m.textContent = 'The new password needs 12 or more characters.'; return; }

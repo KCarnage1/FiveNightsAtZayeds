@@ -40,7 +40,7 @@ await p2.keyboard.type(process.env.FNAZ_ADMIN_WORD||'x',{delay:30});await p2.wai
 console.log('3 right password -> panel open:',await p2.evaluate(()=>!document.getElementById('modMenu').hidden));
 console.log('  online now:',await p2.evaluate(()=>document.getElementById('lvTotal').textContent),'|',JSON.stringify(await p2.evaluate(()=>[...document.querySelectorAll('#lvChips span')].map(s=>s.textContent))),'|',await p2.evaluate(()=>document.querySelectorAll('#lvList div').length),'rows, first:',await p2.evaluate(()=>document.querySelector('#lvList div').innerText.replace(/\n/g,' ')));
 // 4. publish a double-coins event + gift, then see it arrive
-await p2.click('[data-preset=gift]');await p2.fill('#anG','300');await p2.selectOption('#anE','double');await p2.fill('#anEM','45');
+await p2.click('[data-tab=broadcast]');await p2.click('[data-preset=gift]');await p2.fill('#anG','300');await p2.selectOption('#anE','double');await p2.fill('#anEM','45');
 const t0=Date.now();await p2.click('#anPub');await p2.waitForTimeout(900);
 console.log('4 publish ->',await p2.evaluate(()=>document.getElementById('anH').textContent));
 console.log('  server received:',JSON.stringify({gift:published.gift,event:published.event&&published.event.type,eventMin:Math.round((Date.parse(published.event.until)-Date.now())/60000),pwSent:calls.filter(c=>c.name==='admin_publish').pop().a.p_secret===PW}));
