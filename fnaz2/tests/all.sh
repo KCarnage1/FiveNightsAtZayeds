@@ -12,4 +12,5 @@ run live-faces node tests/faces.cjs
 run lore-case-file node tests/lore.cjs
 run lore-papers-reachable node tests/lore-places.cjs
 run phone-audit node tests/audit.cjs
+run adversarial node tests/adversarial.cjs
 echo; [ $fail = 0 ] && echo "ALL CHECKS PASSED" || echo "SOME CHECKS FAILED"; exit $fail
