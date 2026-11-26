@@ -335,7 +335,9 @@ impl Night<'_> {
             return;
         }
         self.set_sub("acc", w, 0.0);
-        if self.rand() * 20.0 < lvl {
+        if self.rand() * 20.0 < lvl
+            && !(self.n("night") <= 2.0 && WHO.iter().any(|o| self.pos(o) == "office"))
+        {
             self.set_pos(w, "hall");
             self.set_sub("runT", w, 0.0);
             self.fx(json!({"type": "run", "who": w}));
@@ -514,7 +516,7 @@ fn run(n: &mut Night, dt: f64, input: &Value) -> Result<(), String> {
                         false,
                     );
                 }
-            } else if off > 3.4 - (lvl * 0.06).min(1.2) && !truthy(n.s.get("inv")) {
+            } else if off > 3.4 + (if n.n("night") == 1.0 { 1.2 } else { 0.0 }) - (lvl * 0.06).min(1.2) && !truthy(n.s.get("inv")) {
                 if n.revive(w) {
                     continue;
                 }
@@ -536,6 +538,14 @@ fn run(n: &mut Night, dt: f64, input: &Value) -> Result<(), String> {
             if n.aimed().as_deref() == Some(at.as_str()) && n.rand() < 0.7 {
                 let to = nexts(w, &at).first().copied().unwrap_or("");
                 n.leave(w, to, true);
+                continue;
+            }
+            if n.n("night") <= 2.0
+                && (n.pos("wSherbet") == "hall"
+                    || WHO.iter().any(|o| {
+                        *o != w && n.pos(o) == "office" && def(o).kind != Kind::Nuisance
+                    }))
+            {
                 continue;
             }
             n.set_pos(w, "office");
