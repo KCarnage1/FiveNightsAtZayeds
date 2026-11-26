@@ -74,24 +74,42 @@ export function smoothLathe(points, mat, seg = 56, res = 48) {
   const curve = new THREE.SplineCurve(points.map(([r, y]) => new THREE.Vector2(r, y)));
   return new THREE.Mesh(new THREE.LatheGeometry(curve.getPoints(res).map((v) => new THREE.Vector2(Math.max(0, v.x), v.y)), seg), mat);
 }
-/* Puts a soft edge on a cut-out photo so it blends into the head instead of looking pasted on. */
-export function featherTexture(tex, feather = 0.14) {
-  const out = new THREE.CanvasTexture(document.createElement('canvas')); out.colorSpace = THREE.SRGBColorSpace; out.anisotropy = 8;
-  const build = () => { const img = tex.image; if (!img || !img.width) return; const c = out.image; c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
-    const m = document.createElement('canvas'); m.width = c.width; m.height = c.height; const mg = m.getContext('2d'); mg.drawImage(img, 0, 0); mg.globalCompositeOperation = 'source-in'; mg.filter = `blur(${Math.round(c.width * feather * 0.5)}px)`; mg.drawImage(img, 0, 0);
-    g.globalCompositeOperation = 'destination-in'; g.filter = `blur(${Math.round(c.width * feather * 0.35)}px)`; g.drawImage(m, 0, 0); g.filter = 'none'; out.needsUpdate = true; };
-  if (tex.image && tex.image.width) build(); else { const prev = tex.onUpdate; tex.onUpdate = () => { build(); tex.onUpdate = prev; }; const iv = setInterval(() => { if (tex.image && tex.image.width) { clearInterval(iv); build(); } }, 80); setTimeout(() => clearInterval(iv), 9000); }
-  return out;
+/* ---- the faces ----
+ * Every character's face is one shared canvas texture. It starts as the bundled photo (a cut-out with a soft edge) and is redrawn
+ * as a round, soft-edged crop whenever a newer picture arrives (see faces.js), so every body, poster and screen updates at once. */
+const W = 512, H = 692, store = {}, listeners = new Set();
+const blur = (src, px) => { const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const g = c.getContext('2d'); g.filter = `blur(${px}px)`; g.drawImage(src, 0, 0); return c; };
+function paint(name, img, round) {
+  const f = store[name], g = f.canvas.getContext('2d'); g.clearRect(0, 0, W, H);
+  const layer = document.createElement('canvas'); layer.width = W; layer.height = H; const lg = layer.getContext('2d');
+  if (round) { // a square picture: cover-crop it into a circle in the middle of the face area
+    const d = Math.round(Math.min(W, H) * 0.92), cx = W / 2, cy = H * 0.5; lg.save(); lg.beginPath(); lg.arc(cx, cy, d / 2, 0, Math.PI * 2); lg.clip();
+    const sc = Math.max(d / img.width, d / img.height); lg.drawImage(img, cx - img.width * sc / 2, cy - img.height * sc / 2, img.width * sc, img.height * sc); lg.restore();
+  } else { const sc = Math.min(W / img.width, H / img.height); lg.drawImage(img, (W - img.width * sc) / 2, (H - img.height * sc) / 2, img.width * sc, img.height * sc); }
+  // soft edge: keep the picture only where a blurred copy of its outline is solid
+  const mask = blur(layer, 16); g.drawImage(layer, 0, 0); g.globalCompositeOperation = 'destination-in'; g.drawImage(mask, 0, 0); g.globalCompositeOperation = 'source-over';
+  try { g.getImageData(0, 0, 1, 1); } catch (e) { return false; } // a picture from another site without permission would taint the canvas
+  f.tex.needsUpdate = true; listeners.forEach((fn) => fn(name)); return true;
 }
-export const loadFace = (() => {
-  const L = new THREE.TextureLoader(), mem = {};
-  return (name) => mem[name] || (mem[name] = L.load('assets/faces/' + name + '.png', (t) => { t.colorSpace = THREE.SRGBColorSpace; }));
-})();
+export function faceTexture(name) {
+  if (store[name]) return store[name].tex;
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; store[name] = { canvas, tex, live: false, ready: null };
+  store[name].ready = new Promise((res) => { const img = new Image(); img.onload = () => { if (!store[name].live) paint(name, img, false); res(); }; img.onerror = () => res(); img.src = 'assets/faces/' + name + '.png'; setTimeout(res, 7000); });
+  return tex;
+}
+export const loadFace = faceTexture;
+export const faceReady = (name) => { faceTexture(name); return store[name].ready; };
+export const faceCanvas = (name) => { faceTexture(name); return store[name].canvas; };
+export const onFaceChange = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+/* A newer picture for a character. Returns false (and keeps the old face) if it cannot be used. */
+export function setLiveFace(name, img) { faceTexture(name); const ok = paint(name, img, true); if (ok) store[name].live = true; return ok; }
+export const faceIsLive = (name) => !!(store[name] && store[name].live);
 
 /* The real face, mapped onto a dome that sits just outside the head sphere. */
 export function faceDome(head, tex, { r = 0.322, y = 0.3, z = 0, aspect = 1 } = {}) {
   const w = Math.min(2.4, 1.75 * aspect);
-  const ft = featherTexture(tex); const m = new THREE.MeshStandardMaterial({ map: ft, transparent: true, alphaTest: 0.04, depthWrite: false, roughness: 0.7, emissive: 0xffffff, emissiveMap: ft, emissiveIntensity: 0, polygonOffset: true, polygonOffsetFactor: -2 });
+  const m = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.04, depthWrite: false, roughness: 0.7, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0, polygonOffset: true, polygonOffsetFactor: -2 });
   const f = new THREE.Mesh(new THREE.SphereGeometry(r, 40, 32, Math.PI / 2 - w / 2, w, Math.PI / 2 - 0.875, 1.75), m);
   f.position.set(0, y, z); head.add(f);
   return f;

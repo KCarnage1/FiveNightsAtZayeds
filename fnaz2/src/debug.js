@@ -8,6 +8,7 @@ import { cfg, set as setCfg } from './settings.js';
 import * as Online from './online.js';
 import { createNet, peerOptions } from './net.js';
 import { adminWordOk } from './admin.js';
+import { DOCS, CODE, byId } from './lore.js';
 
 const out = document.getElementById('out'), results = [];
 const errors = []; addEventListener('error', (e) => errors.push(e.message)); addEventListener('unhandledrejection', (e) => errors.push('promise: ' + (e.reason && e.reason.message || e.reason)));
@@ -33,6 +34,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await test('Settings save and load', () => { const old = cfg.master; setCfg('master', 41); const ok = JSON.parse(localStorage.getItem('fnaz2_settings_v1')).master === 41; setCfg('master', old); if (!ok) throw new Error('not saved'); });
   await test('Share codes round-trip', () => { const lv = {}; WHO.forEach((w, i) => { lv[w] = (i * 2) % 21; }); const c = Online.encode(lv, WHO); const d = Online.decode(c, WHO); if (!d || WHO.some((w) => d[w] !== lv[w])) throw new Error('mismatch ' + c); return c; });
   await test('Daily challenge is the same for everyone', () => { const a = Online.dailySetup('2030-01-02'), b = Online.dailySetup('2030-01-02'), c = Online.dailySetup('2030-01-03'); if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error('not stable'); if (JSON.stringify(a) === JSON.stringify(c)) throw new Error('same every day'); });
+  await test('Lore: documents are consistent and the puzzle code matches the four slips', () => { const ids = DOCS.map((x) => x.id); if (new Set(ids).size !== ids.length) throw new Error('duplicate ids'); const slips = ['slip_camel', 'slip_cat', 'slip_goat', 'slip_falcon'].map((i) => byId(i).digit).join(''); if (slips + '' !== CODE) throw new Error('code ' + CODE + ' does not match slips ' + slips + ' (camel, cat, goat, falcon)'); for (const x of DOCS) if (!x.text || x.text.length < 20) throw new Error(x.id + ' has no text'); return DOCS.length + ' documents'; });
   await test('Admin word check is hashed (no plain word in code)', () => { if (adminWordOk('not the word') || adminWordOk('')) throw new Error('accepts wrong words'); });
   await test('Game server reachable (optional)', async () => { try { await Online.rpc('get_announcement', {}, 5000); return 'connected'; } catch (e) { return null; } });
   // P2P: two peers in this page talk through the broker, exactly like two players would.

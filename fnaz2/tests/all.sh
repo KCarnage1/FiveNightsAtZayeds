@@ -8,5 +8,7 @@ run debug-page node tests/debug.cjs "?peer=localhost:9000"
 run full-flow node tests/flow.cjs /tmp/f
 run co-op node tests/coop.cjs
 [ -n "$FNAZ_ADMIN_WORD" ] && run shop-admin node tests/shop-admin.cjs
+run live-faces node tests/faces.cjs
+run lore-case-file node tests/lore.cjs
 run phone-audit node tests/audit.cjs
 echo; [ $fail = 0 ] && echo "ALL CHECKS PASSED" || echo "SOME CHECKS FAILED"; exit $fail

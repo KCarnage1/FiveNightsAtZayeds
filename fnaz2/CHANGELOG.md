@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+- Live profile pictures: characters can use the current Discord profile picture of the person they are based on, updated by the server every few minutes. Admin menu, Faces tab, links each character to a Discord user. Off switch in Settings.
+- Lore: the case file (Extras). Twelve hidden papers on the cameras and in the office, call transcripts, and a four-digit puzzle that unlocks the truth about Order #0. New phone-call clues and a Night 6 epilogue that reflects what you found.
+- Redrawn animatronics (smooth bodies, jointed limbs, soft-edged faces).
+
 ## 0.5.0
 - New look: black-and-white security cameras, checkerboard floors, striped confetti walls, bunting, balloons, star curtains and signs.
 - CAD-built props (music box, arcade cabinets, fan, vent grilles, flashlight, party tables) made with build123d.

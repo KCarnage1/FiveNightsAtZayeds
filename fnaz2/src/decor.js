@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { canvasTex, matte, mesh, group } from './models/kit.js';
+import { canvasTex, matte, mesh, group, faceCanvas, onFaceChange } from './models/kit.js';
 
 /* The look of the pizzeria: bright party rooms with striped, confetti-covered walls and checkerboard floors, bunting and balloons,
  * posters, the kids' crayon drawings in the office. Cameras are shown in grey by the page (CSS), as on the old security monitors. */
@@ -66,16 +66,17 @@ function poster(scene, w, h, pos, rotY, draw) {
   const t = canvasTex(512, Math.round(512 * h / w), draw);
   const m = mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: .7 }), scene, pos, [0, rotY, 0]); m.castShadow = false; return t;
 }
-const drawFaces = (g, W, H, y, size) => { ['zayed', 'bubbles', 'taffy', 'sherbet'].forEach((n, i) => { const img = new Image(); img.onload = () => { g.save(); g.beginPath(); g.arc(W / 8 + i * W / 4, y, size, 0, 7); g.clip(); const s = size * 2.2; g.drawImage(img, W / 8 + i * W / 4 - s / 2, y - s / 2 * (img.height / img.width), s, s * (img.height / img.width)); g.restore(); g.lineWidth = 5; g.strokeStyle = '#fff'; g.beginPath(); g.arc(W / 8 + i * W / 4, y, size, 0, 7); g.stroke(); g.__tex && (g.__tex.needsUpdate = true); }; img.src = 'assets/faces/' + n + '.png'; }); };
+const paintFaces = (g, W, y, size) => { ['zayed', 'bubbles', 'taffy', 'sherbet'].forEach((n, i) => { const cx = W / 8 + i * W / 4; g.save(); g.beginPath(); g.arc(cx, y, size, 0, 7); g.clip(); g.fillStyle = '#f4e2c8'; g.fillRect(cx - size, y - size, size * 2, size * 2); const c = faceCanvas(n), h = size * 2.3, w = h * c.width / c.height; g.drawImage(c, cx - w / 2, y - h / 2, w, h); g.restore(); g.lineWidth = 5; g.strokeStyle = '#fff'; g.beginPath(); g.arc(cx, y, size, 0, 7); g.stroke(); }); };
 function celebrate(scene, pos, rotY) {
   let tex; tex = poster(scene, 1.5, 1.0, pos, rotY, (g, W, H) => {
     const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#ffe27a'); gr.addColorStop(1, '#ff7aa8'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
     g.fillStyle = '#fff'; g.font = '900 78px system-ui,sans-serif'; g.textAlign = 'center'; g.strokeStyle = '#6a2a8a'; g.lineWidth = 10; g.strokeText('CELEBRATE!', W / 2, 100); g.fillText('CELEBRATE!', W / 2, 100);
-    g.fillStyle = '#6a2a8a'; g.font = '700 26px system-ui'; g.fillText('The Zayeds · one soul, four bodies', W / 2, 150); g.__tex = null; drawFaces(g, W, H, 270, 58);
+    g.fillStyle = '#6a2a8a'; g.font = '700 26px system-ui'; g.fillText('The Zayeds · one soul, four bodies', W / 2, 150); g.__redraw = () => paintFaces(g, W, 270, 58); g.__redraw();
     g.fillStyle = '#3a1a5a'; g.font = '700 22px system-ui'; ['Camel', 'Cat', 'Goat', 'Falcon'].forEach((n, i) => g.fillText(n, W / 8 + i * W / 4, 370));
     for (let i = 0; i < 40; i++) { g.fillStyle = pick(PARTY); g.fillRect(rnd() * W, rnd() * H, 8, 4); }
     g.strokeStyle = '#fff'; g.lineWidth = 12; g.strokeRect(6, 6, W - 12, H - 12);
   });
+  const g = tex.image.getContext('2d'); onFaceChange(() => { if (g.__redraw) { g.__redraw(); tex.needsUpdate = true; } });
   return tex;
 }
 function drawing(scene, pos, rotY, who) { // a child's crayon drawing of one of the Zayeds

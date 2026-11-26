@@ -7,12 +7,15 @@ import { S as Snd, start as startAudio } from './audio.js';
 import { cfg, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings, resetProgress } from './settings.js';
 import * as Calls from './calls.js';
 import * as Online from './online.js';
-import { loadFace } from './models/kit.js';
+import { faceReady, faceCanvas } from './models/kit.js';
+import { startLiveFaces, refreshFaces } from './faces.js';
 import * as Shop from './shop.js';
 import { openShop, dailyReward } from './shopui.js';
 import { initCoop } from './coop.js';
 import { initAdmin } from './adminui.js';
 import { ic } from './icons.js';
+import * as Lore from './lore.js';
+import { buildLoreItems, showLoreItems, hideLoreItems, pickLoreItem, loreScreen } from './lore3d.js';
 import { wordTyper } from './admin.js';
 
 const $ = (s) => document.querySelector(s);
@@ -23,7 +26,7 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPrefere
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.3;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x030206); scene.fog = new THREE.FogExp2(0x040308, 0.03);
 scene.add(new THREE.HemisphereLight(0x8a86c0, 0x1c1018, 0.16));
-const map = buildMap(scene); const propsReady = dressMap(scene).catch(() => 0);
+const map = buildMap(scene); buildLoreItems(scene); const propsReady = dressMap(scene).catch(() => 0);
 const player = new THREE.PerspectiveCamera(68, 1, 0.05, 80); player.position.set(0, 1.35, 0.6); scene.add(player);
 const camV = new THREE.PerspectiveCamera(72, 1, 0.05, 80); scene.add(camV);
 const camLight = new THREE.PointLight(0xe8f0ff, 0, 30, 1.2); scene.add(camLight);
@@ -46,7 +49,7 @@ function startNight(n, opts = {}) {
   startAudio(); closeModal(); const mods = opts.daily || opts.coop === 'guest' ? undefined : Shop.mods(); G.S = newNight(n, opts.seed || (Date.now() & 0xffff), Object.assign({}, opts, { mods })); G.S.cheated = false; G.hourPaid = 0; G.opts = opts; if (G.adm) { G.adm.used = false; } G.mode = 'play'; G.paused = false; G.cam = null; G.mask = false; G.light = false; G.yaw = G.yawT = 0; G.from = {}; G.scareWho = null; G.speed = opts.speed || 1; G.label = opts.label || LABEL[n] || 'Night ' + n; G.opts = opts; applyCosmetics();
   stats.plays++; saveStats(); document.body.classList.add('playing');
   $('#screen').hidden = true; $('#hud').hidden = false; $('#hNight').textContent = G.label; $('#scareBar').hidden = true; $('#bPause').hidden = false;
-  intro(G.label);
+  intro(G.label); if (n <= 6 && !opts.daily) showLoreItems(n); else hideLoreItems();
   if (n <= 6 && (!opts.label || opts.coop) && !opts.daily) setTimeout(() => { if (G.mode === 'play' && G.S && G.S.night === n) { Snd.ring(); setTimeout(() => { if (G.mode === 'play') Calls.start(n, $('#call')); }, 1800); } }, 2600);
   else say('Hold F or click for the flashlight. Hold M for the mask. C opens the cameras.', 6000);
 }
@@ -64,7 +67,7 @@ const TABS = {
   Audio: [{ k: 'master', t: 'range', l: 'Master volume', min: 0, max: 100 }, { k: 'sfx', t: 'range', l: 'Effects', min: 0, max: 100 }, { k: 'music', t: 'range', l: 'Music box', min: 0, max: 100 }],
   Video: [{ k: 'quality', t: 'select', l: 'Quality', o: [['low', 'Low (best for phones)'], ['medium', 'Medium'], ['high', 'High']], p: 'Lower quality renders fewer pixels. Try Low if the game stutters.' }, { k: 'fov', t: 'range', l: 'Field of view', min: 55, max: 95 }, { k: 'brightness', t: 'range', l: 'Brightness', min: 60, max: 150 }, { k: 'uiScale', t: 'range', l: 'HUD size', min: 80, max: 130 }, { k: 'shake', t: 'toggle', l: 'Screen shake' }, { k: 'flashing', t: 'toggle', l: 'Flashing effects', p: 'Turn off to remove bright flashes and flicker.' }, { k: 'fps', t: 'toggle', l: 'Show FPS' }, { t: 'button', l: 'Fullscreen', b: 'Toggle', act: () => toggleFull() }],
   Gameplay: [{ k: 'sens', t: 'range', l: 'Look sensitivity', min: 40, max: 200 }, { k: 'invert', t: 'toggle', l: 'Invert look' }, { k: 'toggleMask', t: 'toggle', l: 'Mask: tap to toggle', p: 'Off = hold to wear it.' }, { k: 'toggleLight', t: 'toggle', l: 'Flashlight: tap to toggle', p: 'Off = hold to shine it.' }, { k: 'haptics', t: 'toggle', l: 'Vibration (phones)' }, { k: 'hints', t: 'toggle', l: 'On-screen hints' }, { k: 'calls', t: 'toggle', l: 'Phone calls' }, { k: 'voice', t: 'toggle', l: 'Read calls aloud', p: 'Uses your device\'s text-to-speech voice.' }, { k: 'subtitles', t: 'toggle', l: 'Subtitles' }, { k: 'autopause', t: 'toggle', l: 'Pause when the tab loses focus' }],
-  Online: [{ k: 'share', t: 'toggle', l: 'Show that I am online', p: 'Tells the developer the game is open: a random ID, the version, your device type and the screen you are on. No name, no account, no location.' }, { k: 'broker', t: 'text', l: 'Custom matchmaking server', p: 'Leave empty for the default. Format host:port, for example localhost:9000.' }, { t: 'status' }],
+  Online: [{ k: 'liveFaces', t: 'toggle', l: 'Live profile pictures', p: 'Characters can use the current Discord profile picture of the person they are based on. Your device loads the picture from Discord. Off keeps the pictures that came with the game.' }, { k: 'share', t: 'toggle', l: 'Show that I am online', p: 'Tells the developer the game is open: a random ID, the version, your device type and the screen you are on. No name, no account, no location.' }, { k: 'broker', t: 'text', l: 'Custom matchmaking server', p: 'Leave empty for the default. Format host:port, for example localhost:9000.' }, { t: 'status' }],
   Data: [{ t: 'button', l: 'Reset settings', b: 'Reset', act: () => { resetSettings(); settings('Data'); toast('Settings reset'); } }, { t: 'button', l: 'Erase progress and stats', b: 'Erase…', danger: true, act: () => { if (confirm('Erase all nights beaten and stats?')) { resetProgress(); settings('Data'); toast('Progress erased'); if (G.mode === 'title') home(); } } }]
 };
 function settings(tab = 'Audio') {
@@ -156,14 +159,27 @@ function extras() {
   const s = $('#screen'); s.className = 'screen'; const k = Object.entries(stats.killers).sort((a, b) => b[1] - a[1])[0];
   s.innerHTML = `<div class="panel"><h2>Extras</h2><div class="stat"><div><b>${stats.beaten}</b><span>Nights beaten</span></div><div><b>${stats.wins}</b><span>Wins</span></div><div><b>${stats.deaths}</b><span>Deaths</span></div><div><b>${Math.round(stats.seconds / 60)}m</b><span>Played</span></div></div>
    <p>${k ? `Most deaths: <b>${NAMES[k[0]] || k[0]}</b> (${k[1]})` : 'No deaths yet.'}</p>
-   <div class="btnrow"><button class="pri" id="xg">Characters</button><button id="xc">Controls</button><button id="xa">About</button><button id="bk">Back</button></div></div>`;
-  $('#xg').onclick = gallery; $('#bk').onclick = home;
+   <div class="btnrow"><button class="pri" id="xf">Case file ${Lore.countFound()}/${Lore.total()}</button><button id="xg">Characters</button><button id="xc">Controls</button><button id="xa">About</button><button id="bk">Back</button></div></div>`;
+  $('#xf').onclick = () => caseFile(); $('#xg').onclick = gallery; $('#bk').onclick = home;
   $('#xa').onclick = about;
   $('#xc').onclick = () => { s.innerHTML = `<div class="panel"><h2>Controls</h2><p>Mouse / finger: look left and right (vents are at the sides).<br>Hold <b>F</b> or click: flashlight.<br>Hold <b>M</b>: Zayed mask (cameras off while worn).<br><b>C</b> / Tab: cameras · <b>1–9</b>: pick a camera.<br>Hold <b>W</b> on the Prize Corner camera: wind the music box.<br><b>Esc</b> / P: pause.</p><div class="btnrow"><button id="bk">Back</button></div></div>`; $('#bk').onclick = extras; };
 }
+/* The case file: everything found so far, with a hint for what is not. Four digits unlock the last page. */
+function caseFile(sel = null, msg = '') {
+  const s = $('#screen'); s.className = 'screen'; const docs = Lore.DOCS.filter((d) => d.kind !== 'final' || Lore.has(d.id));
+  const cur = sel && Lore.byId(sel) ? Lore.byId(sel) : null;
+  const list = docs.map((d) => { const got = Lore.has(d.id); return `<button class="doc ${got ? 'got' : ''} ${cur && cur.id === d.id ? 'on' : ''}" data-id="${d.id}"><b>${got ? esc(d.title) : 'Not found yet'}</b><span>${got ? esc(d.where) : esc(d.kind === 'call' ? 'Night ' + d.night : 'Night ' + d.night + ' or later')}</span></button>`; }).join('');
+  const body = cur ? (Lore.has(cur.id) ? `<h3>${esc(cur.title)}</h3><p class="docbody">${esc(cur.text).replace(/\n/g, '<br>')}</p>` : `<h3>Not found yet</h3><p>${esc(Lore.hint(cur))}</p>`) : `<h3>Case file Q-0007</h3><p>Claims file for the old Abdulla's Cafeteria building. Papers turn up in the cameras and around your office from the night they were filed. Click one to pick it up. Calls are filed after you survive the night. ${Lore.countFound()} of ${Lore.total()} found.</p>`;
+  s.innerHTML = `<div class="panel wide"><h2>Case file</h2><div class="cf"><div class="cflist">${list}</div><div class="cfview">${body}<p class="hint" id="cfmsg">${esc(msg)}</p></div></div>
+    <div class="row"><label for="dial">Dial the order</label><span><input id="dial" class="sm code-in" maxlength="4" inputmode="numeric" placeholder="0000" autocomplete="off" style="width:110px"> <button class="sm" id="dialgo">Dial</button></span><p>${Lore.slipsFound() ? 'You hold all four order slips.' : 'Four digits. The slips will tell you which.'}</p></div>
+    <div class="btnrow"><button class="pri" id="bk">Back</button></div></div>`;
+  s.querySelectorAll('.doc').forEach((b) => { b.onclick = () => caseFile(b.dataset.id); }); $('#bk').onclick = extras;
+  const dial = () => { const v = $('#dial').value; if (Lore.has(Lore.FINAL_ID) && v === Lore.CODE) { caseFile(Lore.FINAL_ID); return; } if (Lore.tryCode(v)) { Snd.chime(); caseFile(Lore.FINAL_ID, 'The line connects.'); } else { Snd.click(); caseFile(sel, 'The line is busy.'); } };
+  $('#dialgo').onclick = dial; $('#dial').onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') dial(); };
+}
 function about() {
   const s = $('#screen'); s.className = 'screen';
-  s.innerHTML = `<div class="panel"><h2>About</h2><p>Five Nights at Zayed's 2 is a fan game made for fun. It is not affiliated with Scott Cawthon or Five Nights at Freddy's. The characters, faces and story belong to the people who made them.</p><p>Version ${Online.VERSION}. Made with three.js, PeerJS and CAD models built in build123d.</p><h3>What the game sends</h3><p>If you leave "Show that I am online" on, the game sends a random ID, the version, your device type and the screen you are on, about every 30 seconds. No name, no account, no location. Co-op connects the two players directly; the matchmaking server only introduces them. Your saves, settings and coins stay in this browser.</p><div class="btnrow"><button class="pri" id="bk">Back</button></div></div>`;
+  s.innerHTML = `<div class="panel"><h2>About</h2><p>Five Nights at Zayed's 2 is a fan game made for fun. It is not affiliated with Scott Cawthon or Five Nights at Freddy's. The characters, faces and story belong to the people who made them.</p><p>Version ${Online.VERSION}. Made with three.js, PeerJS and CAD models built in build123d.</p><h3>What the game loads</h3><p>With Live profile pictures on, your device fetches each character's current Discord profile picture from Discord's picture server, so Discord can see your address, as with any image. Turn it off in Settings to use only the pictures bundled with the game.</p><h3>What the game sends</h3><p>If you leave "Show that I am online" on, the game sends a random ID, the version, your device type and the screen you are on, about every 30 seconds. No name, no account, no location. Co-op connects the two players directly; the matchmaking server only introduces them. Your saves, settings and coins stay in this browser.</p><div class="btnrow"><button class="pri" id="bk">Back</button></div></div>`;
   $('#bk').onclick = extras;
 }
 let gi = 0;
@@ -189,6 +205,7 @@ function pauseScreen() { const s = $('#screen'); s.hidden = false; s.className =
 function over(win) {
   Calls.stop(); const n = G.S.night, cheated = !!(G.S.cheated || (G.adm && G.adm.used)); G.mode = win ? 'won' : 'dead'; G.cam = null; G.light = false; G.mask = false; $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); $('#scareBar').hidden = true; $('#call').hidden = true; $('#staticOv').classList.remove('on'); document.body.classList.remove('playing'); const pk = $('#pings'); if (pk) pk.hidden = true;
   let rw = { parts: [], total: 0 };
+  if (!cheated && win && n <= 6 && (!G.opts.label || G.opts.coop)) for (let k = 1; k <= n; k++) Lore.collect('call' + k);
   if (!cheated) {
     rw = Shop.reward(win, n, G.S.hour, !!G.opts.custom || n === 7, G.S.lv); if (rw.total) Shop.earn(rw.total);
     if (win) { stats.wins++; if (n <= 6 && !G.opts.label || (G.opts.coop && n <= 6)) stats.beaten = Math.max(stats.beaten, n); if (G.opts.daily) stats.daily[G.opts.daily] = true; } else { stats.deaths++; stats.killers[G.scareWho] = (stats.killers[G.scareWho] || 0) + 1; }
@@ -200,7 +217,7 @@ function over(win) {
   const next = win && n < 6 && !G.opts.label ? `<button class="big" id="nx">Night ${n + 1}</button>` : '';
   const buttons = coopMode ? (guest ? '<p class="pulse">Waiting for the host to start again…</p>' : `<button class="big" id="rt">Play again</button>`) + '<button class="big alt" id="tt">Leave</button>' : `${next}<button class="big ${next ? 'alt' : ''}" id="rt">${win ? 'Replay' : 'Try again'}</button><button class="big alt" id="tt">Menu</button>`;
   s.innerHTML = win
-    ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? 'The sun is up. The police at the door are no longer the worst thing in the building.' : 'The sun is up. The bodies are still. For now.'}</p>${pay}${buttons}</div>`
+    ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? (Lore.has(Lore.FINAL_ID) ? 'The sun is up. You know whose order this was. The door is yours to open, Rashid.' : Lore.countFound() >= 8 ? 'The sun is up, and the police are at the door. You hold most of the pieces. Four numbers in the case file would tell you the rest.' : 'The sun is up. The police at the door are no longer the worst thing in the building. There is more to find in the cameras, from the first night on.') : 'The sun is up. The bodies are still. For now.'}</p>${pay}${buttons}</div>`
     : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p><p>${hintFor(G.scareWho)}</p>${pay}${buttons}</div>`;
   if ($('#nx')) $('#nx').onclick = () => startNight(n + 1, { }); 
   if ($('#rt')) $('#rt').onclick = () => (coopMode ? coop.again() : startNight(n, G.opts));
@@ -216,7 +233,14 @@ const pressLight = () => { if (cfg.toggleLight) setLight(!G.light); else setLigh
 const setMask = (v) => { if (!canPlay()) { if (!v) G.mask = false; return; } if (v && (G.cam && !G.coop)) return; if (v !== G.mask) Snd.mask(v); G.mask = v; };
 const pressMask = () => { if (cfg.toggleMask) setMask(!G.mask); else setMask(true); }; const releaseMask = () => { if (!cfg.toggleMask) setMask(false); };
 addEventListener('pointermove', (e) => { const v = (e.clientX / innerWidth - 0.5) * 2 * 1.45 * (cfg.sens / 100) * (cfg.invert ? -1 : 1); G.yawT = Math.max(-1.45, Math.min(1.45, v)); });
-canvas.addEventListener('pointerdown', (e) => { if (e.button !== 2) pressLight(); });
+canvas.addEventListener('pointerdown', (e) => { if (e.button !== 2 && tryPickup(e)) return; if (e.button !== 2) pressLight(); });
+/* A paper from the case file under the pointer? Pick it up instead of using the light. */
+function tryPickup(e) {
+  if (G.mode !== 'play' || G.paused || G.scareWho) return false;
+  const id = pickLoreItem(e.clientX, e.clientY, G.cam ? camV : player); if (!id) return false;
+  if (Lore.collect(id)) { Snd.chime(); buzz(40); const d = Lore.byId(id); toast('Picked up: ' + d.title + '. It is in Extras, under Case file.'); showLoreItems(G.S.night); if (Lore.slipsFound() && !Lore.has(Lore.FINAL_ID)) say('You have all four order slips. Something about their order matters.', 5000); }
+  return true;
+}
 addEventListener('pointerup', () => { releaseLight(); G.wind = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
 const typer = wordTyper(); let admin = null, coop = null;
@@ -404,7 +428,7 @@ async function boot() {
   bar(0.05, 'Building the pizzeria…'); await nap();
   let i = 0; for (const w of WHO) { bar(0.1 + (i++ / WHO.length) * 0.6, 'Assembling ' + NAMES[w] + '…'); makeBot(w); await nap(); }
   G.ready = true; bar(0.72, 'Loading faces…');
-  await Promise.all(['zayed', 'bubbles', 'taffy', 'sherbet'].map((n) => new Promise((res) => { const t = loadFace(n); const t0 = Date.now(); (function poll() { if ((t.image && t.image.complete !== false && t.image.width) || Date.now() - t0 > 7000) res(); else setTimeout(poll, 60); })(); })));
+  await Promise.all(['zayed', 'bubbles', 'taffy', 'sherbet'].map(faceReady)); startLiveFaces();
   bar(0.8, 'Loading models…'); await Promise.race([propsReady, new Promise((r) => setTimeout(r, 6000))]);
   bar(0.9, 'Warming up the lights…'); for (const x of WHO) bots[x].root.visible = false; renderer.render(scene, player); await nap();
   bar(1, 'Ready.');
@@ -419,4 +443,4 @@ coop = initCoop(ctx); admin = initAdmin(ctx);
 requestAnimationFrame(frame);
 boot();
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]peer=/.test(location.search) && location.hostname !== 'localhost') navigator.serviceWorker.register('sw.js').catch(() => {});
-window.FNAZ2 = { renderer, propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };
+window.FNAZ2 = { Lore, loreScreen, faceCanvas, refreshFaces, renderer, propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };

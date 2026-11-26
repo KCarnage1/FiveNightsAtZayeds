@@ -1,7 +1,7 @@
 /* Player settings and progress, saved in this browser. Every read and write is wrapped, since storage can be blocked. */
 const KEY = 'fnaz2_settings_v1', STATS = 'fnaz2_stats_v1';
 const touch = typeof matchMedia === 'function' && matchMedia('(pointer:coarse)').matches;
-export const DEFAULTS = { brightness: 100, uiScale: 100, toggleMask: false, toggleLight: false, haptics: true, name: '', broker: '', master: 80, sfx: 100, music: 70, sens: 100, invert: false, fov: 68, quality: touch ? 'low' : 'medium', shake: true, flashing: true, hints: true, calls: true, voice: true, subtitles: true, fps: false, share: true, autopause: true };
+export const DEFAULTS = { liveFaces: true, brightness: 100, uiScale: 100, toggleMask: false, toggleLight: false, haptics: true, name: '', broker: '', master: 80, sfx: 100, music: 70, sens: 100, invert: false, fov: 68, quality: touch ? 'low' : 'medium', shake: true, flashing: true, hints: true, calls: true, voice: true, subtitles: true, fps: false, share: true, autopause: true };
 const read = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v && typeof v === 'object' ? v : d; } catch (e) { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } };
 export const cfg = Object.assign({}, DEFAULTS, read(KEY, {}));

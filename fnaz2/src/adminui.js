@@ -1,11 +1,13 @@
 import { adminWordOk } from './admin.js';
 import { ic } from './icons.js';
+import { refreshFaces, status as faceStatus } from './faces.js';
 import { WHO, NODES, HOUR_SEC } from './ai.js';
 import * as Online from './online.js';
 import { stats, saveStats } from './settings.js';
 import { UPGRADES, COSMETICS, buy, earn } from './shop.js';
 
 /* The admin menu. Opened by typing the secret word; every power needs the server to confirm the password first. */
+const FACE_LABEL = { zayed: 'Zayed (camel)', bubbles: 'Bubbles (cat)', taffy: 'Taffy (goat)', sherbet: 'Sherbet (falcon)', ibrahim: 'Ibrahim', gelly: 'Gelly', bidoof: 'Bidoof' };
 export function initAdmin(ctx) {
   const { G, $, esc, toast, openModal, closeModal } = ctx;
   G.adm = { on: false, god: false, freeze: false, battery: false, box: false, radar: false, free: false, speed: 1, used: false };
@@ -25,7 +27,7 @@ export function initAdmin(ctx) {
   }
   const tog = (k, label, p) => `<div class="row"><label for="a_${k}">${label}</label><input id="a_${k}" class="tog" data-flag="${k}" type="checkbox" ${G.adm[k] ? 'checked' : ''}>${p ? `<p>${p}</p>` : ''}</div>`;
   function menu(tab = 'Cheats') {
-    const tabs = ['Cheats', 'Cast', 'Economy', 'Online', 'Broadcast'];
+    const tabs = ['Cheats', 'Cast', 'Faces', 'Economy', 'Online', 'Broadcast'];
     let body = '';
     if (tab === 'Cheats') body = `<div class="adm">${tog('god', 'God mode', 'Nothing can kill you.')}${tog('freeze', 'Freeze the animatronics')}${tog('battery', 'Infinite flashlight')}${tog('box', 'Music box never runs down')}${tog('radar', 'Radar: show where everyone is')}${tog('free', 'Free shop')}
       <div class="row"><label for="a_speed">Game speed</label><select id="a_speed">${[0.5, 1, 2, 4, 8].map((x) => `<option value="${x}" ${G.adm.speed === x ? 'selected' : ''}>${x}×</option>`).join('')}</select></div>
@@ -34,6 +36,7 @@ export function initAdmin(ctx) {
     if (tab === 'Cast') body = G.S ? `<div class="adm"><h3>Levels (this night)</h3>${WHO.map((w) => `<div class="row"><label for="l_${w}">${ctx.NAMES[w]}</label><span><input id="l_${w}" data-lv="${w}" type="range" min="0" max="20" value="${G.S.lv[w]}"> <output>${G.S.lv[w]}</output></span></div>`).join('')}
       <h3>Move one</h3><div class="grid2"><select id="m_who">${WHO.map((w) => `<option value="${w}">${ctx.NAMES[w]}</option>`).join('')}</select><select id="m_to">${NODES.map((n) => `<option value="${n}">${n}</option>`).join('')}</select></div>
       <div class="grid2"><button class="sm" id="m_go">Send</button><button class="sm" id="m_clear">Clear the office</button><button class="sm" id="m_hall">Everyone to the hall</button><button class="sm" id="m_home">Everyone home</button></div></div>` : '<p>Start a night to use these.</p>';
+    if (tab === 'Faces') body = `<div class="adm"><p>Link each character to a Discord account. The game then shows that person's current Discord profile picture and updates it by itself within a few minutes of a change. In Discord, turn on Developer Mode (Settings, Advanced), right-click the person and choose Copy User ID. Only link people who have agreed to it.</p>${['zayed', 'bubbles', 'taffy', 'sherbet', 'ibrahim', 'gelly', 'bidoof'].map((sl) => `<div class="row"><label for="f_${sl}">${FACE_LABEL[sl]}</label><input type="text" id="f_${sl}" data-face="${sl}" inputmode="numeric" maxlength="22" placeholder="Discord user ID" autocomplete="off"></div>`).join('')}<div class="grid2"><button class="sm" id="f_save">Save links</button><button class="sm" id="f_now">Refresh pictures now</button></div><p class="hint" id="f_res"></p></div>`;
     if (tab === 'Economy') body = `<div class="adm"><div class="coinbar"><span>Coins</span><b>${ic('coin')}${stats.coins}</b></div><div class="grid2"><button class="sm" data-coin="100">+100</button><button class="sm" data-coin="1000">+1000</button><button class="sm" data-coin="10000">+10000</button><button class="sm" data-coin="0">Set to 0</button></div>
       <div class="grid2"><button class="sm" id="e_all">Unlock every night</button><button class="sm" id="e_items">Own every item</button><button class="sm" id="e_claim">Reset daily reward</button><button class="sm" id="e_stats">Clear stats</button></div></div>`;
     if (tab === 'Online') body = `<div class="adm"><p id="olist">Loading…</p><div class="btnrow"><button class="sm" id="o_refresh">Refresh</button></div>
@@ -52,6 +55,12 @@ export function initAdmin(ctx) {
     m.querySelectorAll('[data-coin]').forEach((b) => { b.onclick = () => { const n = +b.dataset.coin; if (n === 0) { stats.coins = 0; saveStats(); } else earn(n); menu('Economy'); ctx.refreshHome(); }; });
     on('e_all', () => { stats.beaten = 6; saveStats(); toast('All nights unlocked'); ctx.refreshHome(); }); on('e_items', () => { for (const u of UPGRADES) while ((stats.items[u.id] | 0) < u.tiers.length) buy(u, true); for (const c of COSMETICS) buy(c, true); toast('Owned everything'); ctx.applyCosmetics(); });
     on('e_claim', () => { stats.claim = ''; stats.streak = 0; saveStats(); toast('Daily reward reset'); }); on('e_stats', () => { stats.deaths = stats.wins = 0; stats.killers = {}; stats.seconds = 0; saveStats(); toast('Stats cleared'); });
+    if (tab === 'Faces') {
+      const res = (t) => { const e = $('#f_res'); if (e) e.textContent = t; };
+      (async () => { try { const d = await Online.rpc('admin_get_faces', { p_secret: pw }, 7000); if (!d) { res('The server did not accept the password.'); return; } for (const [sl, f] of Object.entries(d)) { const el = $('#f_' + sl); if (el) { el.value = f.id; el.dataset.was = f.id; } } res(faceStatus.configured === false ? 'The Discord bot token is not set on the server yet, so pictures cannot update.' : ''); } catch (e) { res('Could not reach the server. Check your connection and reopen this tab.'); } })();
+      on('f_save', async () => { let ok = 0, bad = 0; for (const el of m.querySelectorAll('[data-face]')) { const v = el.value.trim(); if (v === (el.dataset.was || '')) continue; if (v && !/^[0-9]{15,22}$/.test(v)) { bad++; continue; } try { const r = await Online.rpc('admin_set_face', { p_secret: pw, p_slot: el.dataset.face, p_discord_id: v || null }, 7000); if (r === true) { ok++; el.dataset.was = v; } else bad++; } catch (e) { bad++; } } res(`${ok} saved${bad ? `, ${bad} not saved (IDs are 15 to 22 digits)` : ''}. Press Refresh pictures now.`); });
+      on('f_now', async () => { res('Asking the server…'); const r = await refreshFaces(); res(r ? 'Done. New pictures appear on the characters in a moment.' : 'Could not refresh. ' + (faceStatus.error || '')); });
+    }
     if (tab === 'Online') { const load = async () => { try { const d = await Online.rpc('admin_online', { p_secret: pw }, 7000); $('#olist') && ($('#olist').innerHTML = d ? `<b>${d.total}</b> online now (${d.today} today)<br>` + d.players.slice(0, 20).map((p) => `${esc(p.id)} · ${esc(p.platform || '?')} · v${esc(p.ver || '?')} · ${esc(p.screen || '')}${p.night ? ' n' + p.night : ''}`).join('<br>') : 'The server did not accept the password. Log out and log in again.'); } catch (e) { $('#olist') && ($('#olist').textContent = 'Could not reach the server. Check your connection, then press Refresh.'); } }; load(); on('o_refresh', load); }
     if (tab === 'Broadcast') {
       const pub = async (obj) => { try { const r = await Online.rpc('admin_publish', { p_secret: pw, p_data: obj }, 8000); $('#b_res').textContent = r ? 'Published.' : 'The server refused (password?).'; } catch (e) { $('#b_res').textContent = 'Could not reach the server.'; } };
