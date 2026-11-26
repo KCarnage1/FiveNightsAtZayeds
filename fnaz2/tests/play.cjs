@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: 1100, height: 620 } });
   const errs = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
-  await p.goto('http://localhost:8766/index.html'); await p.waitForTimeout(2500);
+  await p.goto((process.env.BASE || 'http://localhost:8766') + '/index.html'); await p.waitForTimeout(2500);
   await p.screenshot({ path: process.argv[2] + '-title.png' });
   await p.evaluate(() => FNAZ2.startNight(2, { seed: 5 })); await p.waitForTimeout(1500);
   await p.screenshot({ path: process.argv[2] + '-office.png' });

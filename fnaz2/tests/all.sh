@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs every check. Needs: a static server on :8766 serving this folder, and the matchmaking server on :9000 (npm run peer).
+# Runs every check. Needs: a static server serving this folder on :8766 (or set BASE=http://localhost:PORT), and the matchmaking server on :9000 (npm run peer).
 cd "$(dirname "$0")/.."; export NODE_PATH=$(npm root -g); fail=0
 run() { echo "== $1"; shift; "$@" 2>&1 | tail -${LINES_KEPT:-6}; [ "${PIPESTATUS[0]}" = 0 ] || { echo "FAILED"; fail=1; }; }
 run lint npx eslint src

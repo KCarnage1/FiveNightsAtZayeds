@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 (async () => {
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-  const mk = async (name) => { const ctx = await b.newContext({ viewport: { width: 900, height: 520 } }); const p = await ctx.newPage(); p.errs = []; p.on('pageerror', (e) => p.errs.push(name + ' ' + e.message)); await p.goto('http://localhost:8766/index.html?peer=localhost:9000'); await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.click('#ldGo'); await p.waitForTimeout(700); return p; };
+  const mk = async (name) => { const ctx = await b.newContext({ viewport: { width: 900, height: 520 } }); const p = await ctx.newPage(); p.errs = []; p.on('pageerror', (e) => p.errs.push(name + ' ' + e.message)); await p.goto((process.env.BASE || 'http://localhost:8766') + '/index.html?peer=localhost:9000'); await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.click('#ldGo'); await p.waitForTimeout(700); return p; };
   const host = await mk('host'), guest = await mk('guest');
   await host.click('#mCoop'); await host.click('#chost'); await host.waitForSelector('.code', { timeout: 20000 });
   const code = (await host.textContent('.code')).trim(); console.log('room', code);

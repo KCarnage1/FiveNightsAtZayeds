@@ -10,7 +10,7 @@ if (!WORD) { console.error('set FNAZ_ADMIN_WORD'); process.exit(2); }
     if (name === 'admin_check') return J(a.p_secret === PW); if (name === 'admin_publish') { if (a.p_secret !== PW) return J(null); published = a.p_data; return J(1); }
     if (name === 'admin_online') return J(a.p_secret === PW ? { total: 2, today: 5, players: [{ id: 'abc', platform: 'web', ver: 'fnaz2-0.4', screen: 'title', night: 0, mins: 1, mode: 'single' }] } : null);
     if (name === 'get_announcement') return J({ v: 1, data: { id: 'x1', title: 'Hello', message: 'Server says hi' } }); return J(null); });
-  await p.goto('http://localhost:8766/index.html'); await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.click('#ldGo'); await p.waitForTimeout(1500);
+  await p.goto((process.env.BASE || 'http://localhost:8766') + '/index.html'); await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.click('#ldGo'); await p.waitForTimeout(1500);
   const coins0 = await p.evaluate(() => FNAZ2.stats.coins); console.log('coins after daily reward:', coins0); assert.ok(coins0 >= 75);
   assert.ok((await p.textContent('.news')).includes('Server says hi'), 'news shows');
   await p.evaluate(() => { FNAZ2.stats.coins += 600; });

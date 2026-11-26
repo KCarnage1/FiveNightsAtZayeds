@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
   const p = await b.newPage({ viewport: { width: 1100, height: 620 } });
   const errs = []; p.on('pageerror', (e) => errs.push('PAGE ' + e.message)); p.on('console', (m) => m.type() === 'error' && !/Failed to load resource|ERR_/.test(m.text()) && errs.push('CON ' + m.text()));
   const out = process.argv[2];
-  await p.goto('http://localhost:8766/index.html'); await p.waitForTimeout(600); await p.screenshot({ path: out + '-0load.png' });
+  await p.goto((process.env.BASE || 'http://localhost:8766') + '/index.html'); await p.waitForTimeout(600); await p.screenshot({ path: out + '-0load.png' });
   await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.screenshot({ path: out + '-1ready.png' });
   await p.click('#ldGo'); await p.waitForTimeout(2500); await p.screenshot({ path: out + '-2home.png' });
   await p.click('#mSet'); await p.waitForTimeout(400); await p.screenshot({ path: out + '-3settings.png' });

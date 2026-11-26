@@ -3,7 +3,7 @@ const { chromium } = require('playwright'); const assert = require('assert');
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: 1000, height: 560 } }); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   await p.route('**/rest/v1/rpc/*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: 'null' })); await p.route('**/functions/v1/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"faces":{}}' }));
-  await p.goto('http://localhost:8766/index.html'); await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.click('#ldGo'); await p.waitForTimeout(800);
+  await p.goto((process.env.BASE || 'http://localhost:8766') + '/index.html'); await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.click('#ldGo'); await p.waitForTimeout(800);
   await p.evaluate(() => { localStorage.removeItem('fnaz2_stats_v1'); FNAZ2.stats.lore = {}; });
   await p.evaluate(() => FNAZ2.startNight(3, { seed: 4 })); await p.waitForTimeout(600); await p.evaluate(() => { FNAZ2.G.S.cheat = { freeze: true }; });
   // night 3: the night-1..3 papers show, night-4+ papers do not

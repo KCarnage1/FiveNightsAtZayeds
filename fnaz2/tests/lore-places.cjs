@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
   const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: 1000, height: 560 } }); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   await p.route('**/rest/v1/rpc/*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: 'null' })); await p.route('**/functions/v1/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"faces":{}}' }));
-  await p.goto('http://localhost:8766/index.html'); await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.click('#ldGo'); await p.waitForTimeout(800);
+  await p.goto((process.env.BASE || 'http://localhost:8766') + '/index.html'); await p.waitForSelector('#ldGo:not([hidden])', { timeout: 60000 }); await p.click('#ldGo'); await p.waitForTimeout(800);
   await p.evaluate(() => { FNAZ2.stats.lore = {}; FNAZ2.startNight(6, { seed: 4 }); FNAZ2.G.S.cheat = { freeze: true }; }); await p.waitForTimeout(500);
   const docs = await p.evaluate(() => FNAZ2.Lore.DOCS.filter((d) => d.kind === 'paper').map((d) => ({ id: d.id, cam: d.cam })));
   let bad = 0; const SAFE = { x0: 40, x1: 780, y0: 110, y1: 440 };
