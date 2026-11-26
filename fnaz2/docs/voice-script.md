@@ -203,4 +203,4 @@ Voice: an old man, warm and gravelly, the sort of owner who knows every customer
 | Golden Abdulla | phone, promise, stage, final | 4 | 2 to 5 s |
 | Secret lines | unlocked by the case file | 1 per character | 3 to 6 s |
 
-The game currently shows the phone calls as subtitles read by the device's text-to-speech. Recorded files will replace that automatically once they are added.
+The game currently shows the phone calls as subtitles read by the device's text-to-speech, and the animatronic lines are not in the game yet. Recorded files are not played automatically: send them over and I will add playback (calls timed to the audio, and animatronic lines on the triggers above).
