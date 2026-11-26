@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.6.0
+## 0.6.1
+- Updates from inside the game: it checks for a newer published version on start and every ten minutes (and from Settings, Data, Check for updates), offers Update now, then shows what changed.
+- Story in the game itself: a four-slide introduction the first time you play, a lore line on each night's title card, a quote from whoever killed you, story tips while loading, and character descriptions that follow the lore.
 - Live profile pictures: characters can use the current Discord profile picture of the person they are based on, updated by the server every few minutes. Admin menu, Faces tab, links each character to a Discord user. Off switch in Settings.
 - Lore: the case file (Extras). Twelve hidden papers on the cameras and in the office, call transcripts, and a four-digit puzzle that unlocks the truth about Order #0. New phone-call clues and a Night 6 epilogue that reflects what you found.
 - Twelve more papers (24 in all): the party invitation, the staff cap label, the doors memo, the kitchen ledger, the telecom log and more. The truth about Order #0 now includes the costume party.

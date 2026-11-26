@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
   await p.click('#ldGo'); await p.waitForTimeout(2500); await p.screenshot({ path: out + '-2home.png' });
   await p.click('#mSet'); await p.waitForTimeout(400); await p.screenshot({ path: out + '-3settings.png' });
   await p.click('[data-tab=Gameplay]'); await p.click('#mClose'); await p.waitForTimeout(200);
-  await p.click('#mNew'); await p.waitForTimeout(3600); await p.screenshot({ path: out + '-4night.png' });
+  await p.click('#mNew'); await p.waitForSelector('#sn'); await p.screenshot({ path: out + '-story.png' }); await p.click('#ss'); await p.waitForTimeout(3600); await p.screenshot({ path: out + '-4night.png' });
   await p.waitForTimeout(5000); await p.screenshot({ path: out + '-5call.png' });
   await p.keyboard.press('Escape'); await p.waitForTimeout(300); await p.screenshot({ path: out + '-6pause.png' });
   const t0 = await p.evaluate(() => FNAZ2.G.S.t); await p.waitForTimeout(800); const t1 = await p.evaluate(() => FNAZ2.G.S.t);

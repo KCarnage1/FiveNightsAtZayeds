@@ -10,7 +10,7 @@ export const onChange = (f) => { subs.add(f); return () => subs.delete(f); };
 export function set(k, v) { cfg[k] = v; write(KEY, cfg); subs.forEach((f) => f(k, v)); }
 export function resetSettings() { Object.assign(cfg, DEFAULTS); write(KEY, cfg); subs.forEach((f) => f('*')); }
 
-const SD = { deaths: 0, wins: 0, beaten: 0, plays: 0, seconds: 0, killers: {}, best: {}, daily: {}, custom: 0, nightmare: 0, coins: 0, earned: 0, items: {}, equip: {}, claim: '', streak: 0 };
+const SD = { deaths: 0, wins: 0, beaten: 0, plays: 0, seconds: 0, killers: {}, best: {}, daily: {}, custom: 0, nightmare: 0, coins: 0, earned: 0, intro: false, lore: {}, items: {}, equip: {}, claim: '', streak: 0 };
 export const stats = Object.assign({}, SD, read(STATS, {}));
 export const saveStats = () => write(STATS, stats);
 export const unlocked = () => Math.max(1, stats.beaten + 1 > 6 ? 6 : stats.beaten + 1);

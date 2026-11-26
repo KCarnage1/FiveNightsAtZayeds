@@ -4,6 +4,7 @@ Skill: release-checklist. Status as of this commit. "Done" means checked by a te
 
 ## Build
 - [x] `scripts/build-web.sh` builds the playable folder (3.2 MB) and a cache list.
+- [x] In-game updater verified (`tests/update.cjs`): finds a newer build, offers it, clears the cache, reloads and shows what changed. The Pages build uses the commit as the build id, so every deploy is picked up by players automatically.
 - [x] Offline load verified (`tests/offline.cjs`): the home screen and a night run with no connection.
 - [x] Lint clean (`npx eslint src`).
 - [x] All automated checks pass (`tests/all.sh`): AI, debug page with peer-to-peer, full flow, two-browser co-op, shop and admin, phone audit.

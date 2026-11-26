@@ -6,6 +6,6 @@ self.addEventListener('install', (e) => {
 });
 self.addEventListener('activate', (e) => { e.waitUntil((async () => { for (const k of await caches.keys()) if (k.startsWith('fnaz2-') && k !== CACHE) await caches.delete(k); await self.clients.claim(); })()); });
 self.addEventListener('fetch', (e) => {
-  const r = e.request; if (r.method !== 'GET') return; const u = new URL(r.url); if (u.origin !== location.origin) return; // never touch the game server or the matchmaking server
+  const r = e.request; if (r.method !== 'GET') return; const u = new URL(r.url); if (u.origin !== location.origin || u.pathname.endsWith('version.json')) return; // never touch the game server or the matchmaking server
   e.respondWith((async () => { const c = await caches.open(CACHE); try { const res = await fetch(r); if (res.ok && !u.pathname.endsWith('sw.js')) c.put(r, res.clone()); return res; } catch (err) { return (await c.match(r, { ignoreSearch: true })) || (r.mode === 'navigate' ? await c.match('./') : Response.error()); } })());
 });

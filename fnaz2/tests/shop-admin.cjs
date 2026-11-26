@@ -23,7 +23,7 @@ if (!WORD) { console.error('set FNAZ_ADMIN_WORD'); process.exit(2); }
   console.log('cosmetic result: coins', await p.evaluate(() => FNAZ2.stats.coins), 'toast:', await p.evaluate(() => document.querySelector('#toast').textContent));
   await p.click('#mClose'); await p.waitForTimeout(200);
   // upgrades reach the night
-  await p.click('#mNew'); await p.waitForTimeout(500); const drain = await p.evaluate(() => FNAZ2.G.S.mods.drain); console.log('drain multiplier in night:', drain); assert.strictEqual(drain, 0.85);
+  await p.click('#mNew'); await p.click('#ss'); await p.waitForTimeout(500); const drain = await p.evaluate(() => FNAZ2.G.S.mods.drain); console.log('drain multiplier in night:', drain); assert.strictEqual(drain, 0.85);
   // admin: typing the word opens the login; wrong password refused; right one works
   await p.keyboard.press('Escape'); await p.waitForTimeout(100);
   await p.evaluate(() => FNAZ2.pause(false)); for (const ch of WORD) await p.keyboard.press(ch); await p.waitForSelector('#apw', { timeout: 3000 });

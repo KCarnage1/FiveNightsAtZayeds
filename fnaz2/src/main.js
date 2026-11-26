@@ -9,6 +9,7 @@ import * as Calls from './calls.js';
 import * as Online from './online.js';
 import { faceReady, faceCanvas } from './models/kit.js';
 import { startLiveFaces, refreshFaces } from './faces.js';
+import * as Updater from './update.js';
 import * as Shop from './shop.js';
 import { openShop, dailyReward } from './shopui.js';
 import { initCoop } from './coop.js';
@@ -53,7 +54,8 @@ function startNight(n, opts = {}) {
   if (n <= 6 && (!opts.label || opts.coop) && !opts.daily) setTimeout(() => { if (G.mode === 'play' && G.S && G.S.night === n) { Snd.ring(); setTimeout(() => { if (G.mode === 'play') Calls.start(n, $('#call')); }, 1800); } }, 2600);
   else say('Hold F or click for the flashlight. Hold M for the mask. C opens the cameras.', 6000);
 }
-function intro(label) { const d = document.createElement('div'); d.className = 'intro'; d.innerHTML = `<b>${label}</b><span>12:00 AM</span>`; document.body.appendChild(d); setTimeout(() => d.remove(), 3200); }
+const NIGHT_LINE = { 1: "Qerh Cooperations. The new location. Please do not read the old paperwork.", 2: 'The vents were the order chute. Some orders are still coming up.', 3: 'The line is still open. Keep the music playing.', 4: 'Two more have arrived. One only laughs.', 5: 'Claim Q-0007 has been reopened.', 6: 'Six o\'clock. The police are at the door.' };
+function intro(label) { const n = G.S && G.S.night, line = !G.opts.label || G.opts.coop ? NIGHT_LINE[n] || '' : ''; const d = document.createElement('div'); d.className = 'intro'; d.innerHTML = `<b>${label}</b><span>12:00 AM</span>${line ? `<em>${esc(line)}</em>` : ''}`; document.body.appendChild(d); setTimeout(() => d.remove(), line ? 4200 : 3200); }
 let hintT = 0; const say = (t, ms = 3000) => { if (!cfg.hints && ms < 5000 && !/is in the office|running|ran out/.test(t)) return; $('#hint').textContent = t; hintT = ms; };
 const toast = (t) => { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { e.hidden = true; }, 2600); };
 const fmtTime = (sec) => { const m = sec / (HOUR_SEC / 60); const h = Math.floor(m / 60); return (h === 0 ? 12 : h) + ':' + String(Math.floor(m % 60)).padStart(2, '0') + ' AM'; };
@@ -68,13 +70,14 @@ const TABS = {
   Video: [{ k: 'quality', t: 'select', l: 'Quality', o: [['low', 'Low (best for phones)'], ['medium', 'Medium'], ['high', 'High']], p: 'Lower quality renders fewer pixels. Try Low if the game stutters.' }, { k: 'fov', t: 'range', l: 'Field of view', min: 55, max: 95 }, { k: 'brightness', t: 'range', l: 'Brightness', min: 60, max: 150 }, { k: 'uiScale', t: 'range', l: 'HUD size', min: 80, max: 130 }, { k: 'shake', t: 'toggle', l: 'Screen shake' }, { k: 'flashing', t: 'toggle', l: 'Flashing effects', p: 'Turn off to remove bright flashes and flicker.' }, { k: 'fps', t: 'toggle', l: 'Show FPS' }, { t: 'button', l: 'Fullscreen', b: 'Toggle', act: () => toggleFull() }],
   Gameplay: [{ k: 'sens', t: 'range', l: 'Look sensitivity', min: 40, max: 200 }, { k: 'invert', t: 'toggle', l: 'Invert look' }, { k: 'toggleMask', t: 'toggle', l: 'Mask: tap to toggle', p: 'Off = hold to wear it.' }, { k: 'toggleLight', t: 'toggle', l: 'Flashlight: tap to toggle', p: 'Off = hold to shine it.' }, { k: 'haptics', t: 'toggle', l: 'Vibration (phones)' }, { k: 'hints', t: 'toggle', l: 'On-screen hints' }, { k: 'calls', t: 'toggle', l: 'Phone calls' }, { k: 'voice', t: 'toggle', l: 'Read calls aloud', p: 'Uses your device\'s text-to-speech voice.' }, { k: 'subtitles', t: 'toggle', l: 'Subtitles' }, { k: 'autopause', t: 'toggle', l: 'Pause when the tab loses focus' }],
   Online: [{ k: 'liveFaces', t: 'toggle', l: 'Live profile pictures', p: 'Characters can use the current Discord profile picture of the person they are based on. Your device loads the picture from Discord. Off keeps the pictures that came with the game.' }, { k: 'share', t: 'toggle', l: 'Show that I am online', p: 'Tells the developer the game is open: a random ID, the version, your device type and the screen you are on. No name, no account, no location.' }, { k: 'broker', t: 'text', l: 'Custom matchmaking server', p: 'Leave empty for the default. Format host:port, for example localhost:9000.' }, { t: 'status' }],
-  Data: [{ t: 'button', l: 'Reset settings', b: 'Reset', act: () => { resetSettings(); settings('Data'); toast('Settings reset'); } }, { t: 'button', l: 'Erase progress and stats', b: 'Erase…', danger: true, act: () => { if (confirm('Erase all nights beaten and stats?')) { resetProgress(); settings('Data'); toast('Progress erased'); if (G.mode === 'title') home(); } } }]
+  Data: [{ t: 'update' }, { t: 'button', l: 'Reset settings', b: 'Reset', act: () => { resetSettings(); settings('Data'); toast('Settings reset'); } }, { t: 'button', l: 'Erase progress and stats', b: 'Erase…', danger: true, act: () => { if (confirm('Erase all nights beaten and stats?')) { resetProgress(); settings('Data'); toast('Progress erased'); if (G.mode === 'title') home(); } } }]
 };
 function settings(tab = 'Audio') {
   const rows = TABS[tab].map((r, i) => {
     if (r.t === 'range') return `<div class="row"><label for="s${i}">${r.l}</label><span><input id="s${i}" data-k="${r.k}" type="range" min="${r.min}" max="${r.max}" value="${cfg[r.k]}"> <output>${cfg[r.k]}</output></span></div>`;
     if (r.t === 'toggle') return `<div class="row"><label for="s${i}">${r.l}</label><input id="s${i}" class="tog" data-k="${r.k}" type="checkbox" ${cfg[r.k] ? 'checked' : ''}>${r.p ? `<p>${r.p}</p>` : ''}</div>`;
     if (r.t === 'select') return `<div class="row"><label for="s${i}">${r.l}</label><select id="s${i}" data-k="${r.k}">${r.o.map(([v, n]) => `<option value="${v}" ${cfg[r.k] === v ? 'selected' : ''}>${n}</option>`).join('')}</select>${r.p ? `<p>${r.p}</p>` : ''}</div>`;
+    if (r.t === 'update') return `<div class="row"><label>Updates</label><span><button class="sm" id="updBtn">Check for updates</button></span><p id="updMsg">${Updater.dev ? 'This is a development copy. Updates apply to the published game.' : `You have version ${Online.VERSION}.`}</p></div>`;
     if (r.t === 'text') return `<div class="row"><label for="s${i}">${r.l}</label><input id="s${i}" class="sm" data-k="${r.k}" type="text" value="${esc(cfg[r.k] || '')}" style="width:170px" autocomplete="off">${r.p ? `<p>${r.p}</p>` : ''}</div>`;
     if (r.t === 'button') return `<div class="row"><label>${r.l}</label><button class="sm ${r.danger ? 'danger' : ''}" data-act="${i}">${r.b}</button></div>`;
     return `<div class="row"><label>Server</label><span id="olStatus">${Online.status.online === null ? 'not checked' : Online.status.online ? 'connected' : 'offline'}</span><p><button class="sm" id="olCheck">Check connection</button></p></div>`;
@@ -87,6 +90,7 @@ function settings(tab = 'Audio') {
   m.querySelectorAll('select').forEach((el) => { el.onchange = () => setCfg(el.dataset.k, el.value); });
   m.querySelectorAll('input[type=text]').forEach((el) => { el.onchange = () => setCfg(el.dataset.k, el.value.trim()); });
   m.querySelectorAll('[data-act]').forEach((el) => { el.onclick = () => TABS[tab][+el.dataset.act].act(); });
+  const ub = $('#updBtn'); if (ub) ub.onclick = async () => { const m = $('#updMsg'); m.textContent = 'Checking…'; const a = await Updater.check(); if (a) { m.innerHTML = `Version ${esc(a.version)} is available. <button class="sm" id="updNow">Update now</button>`; $('#updNow').onclick = Updater.applyUpdate; } else m.textContent = Updater.status.error || 'You have the latest version.'; };
   const chk = $('#olCheck'); if (chk) chk.onclick = async () => { $('#olStatus').textContent = 'checking…'; try { await Online.rpc('get_announcement', {}); } catch (e) { /* status set */ } if ($('#olStatus')) $('#olStatus').textContent = Online.status.online ? 'connected' : 'offline'; };
   $('#mClose').onclick = () => { closeModal(); if (G.paused) pauseScreen(); };
 }
@@ -112,7 +116,7 @@ function home() {
     <div class="bottom"><div class="tmenu"><button class="main" id="mNew">${stats.beaten ? 'Continue' : 'Play'}<small>Night ${u}</small></button><button id="mCoop">Co-op<small>2 players online</small></button><button id="mNights">Nights</button><button id="mCustom">Custom<small>${stats.beaten >= 6 ? 'your own night' : 'beat Night 6'}</small></button><button id="mDaily">Daily</button><button id="mShop">Shop${dly ? '<small>reward ready!</small>' : ''}</button><button id="mExtras">Extras</button><button id="mSet">Settings</button></div>
     ${newsItem ? `<div class="news"><b>${esc(newsItem.title || 'News')}</b> ${esc(String(newsItem.message || '').replace(/\s+/g, ' ').slice(0, 200))}</div>` : ''}
     <div class="foot">v${Online.VERSION} · ${stats.wins} win${stats.wins === 1 ? '' : 's'} · ${stats.deaths} death${stats.deaths === 1 ? '' : 's'}<span id="kb"> · F3 debug</span></div></div></div><div class="corner"><span class="coins" id="coins">${ic('coin')}${stats.coins}</span></div>`;
-  $('#mNew').onclick = () => startNight(u); $('#mNights').onclick = nightSelect; $('#mCustom').onclick = () => (stats.beaten >= 6 ? customNight() : toast('Beat Night 6 to unlock the Custom Night')); $('#mDaily').onclick = daily; $('#mExtras').onclick = extras; $('#mSet').onclick = () => settings(); $('#mCoop').onclick = () => coop.menu(); $('#mShop').onclick = () => openShop(ctx); $('#coins').onclick = () => openShop(ctx);
+  $('#mNew').onclick = () => maybeIntro(() => startNight(u)); $('#mNights').onclick = nightSelect; $('#mCustom').onclick = () => (stats.beaten >= 6 ? customNight() : toast('Beat Night 6 to unlock the Custom Night')); $('#mDaily').onclick = daily; $('#mExtras').onclick = extras; $('#mSet').onclick = () => settings(); $('#mCoop').onclick = () => coop.menu(); $('#mShop').onclick = () => openShop(ctx); $('#coins').onclick = () => openShop(ctx);
   s.querySelectorAll('.tmenu button').forEach((b) => b.addEventListener('pointerenter', () => Snd.click()));
   Online.beat('title', 0);
 }
@@ -122,6 +126,15 @@ function applyCosmetics() { flash.color.set(Shop.colorOf('light')); const c = Sh
 const dbg = document.createElement('div'); dbg.id = 'dbg'; dbg.hidden = true; document.body.appendChild(dbg);
 const errLog = []; addEventListener('error', (e) => errLog.push(e.message)); addEventListener('unhandledrejection', (e) => errLog.push('promise: ' + (e.reason && e.reason.message || e.reason)));
 function toggleDebug() { dbg.hidden = !dbg.hidden; }
+/* The first time someone plays: four short slides that set the story up and explain nothing. */
+const STORY = ["Abdulla's Cafeteria had one phone line.", 'On the night of the last order, the line was answered by someone who promised it would arrive.', 'It never did. By morning the building was empty, the kitchen was warm, and the phone was off the hook.', 'Years later a company called Qerh Cooperations reopened the building. New bodies. No doors.<br>You are Rashid, the night guard.<br>Please do not read the old paperwork.'];
+function maybeIntro(go) {
+  if (stats.intro) { go(); return; }
+  let i = 0; const s = $('#screen'); s.hidden = false; s.className = 'screen story';
+  const show = () => { s.innerHTML = `<div class="slide" key="${i}"><p>${STORY[i]}</p><div class="btnrow"><button class="big" id="sn">${i < STORY.length - 1 ? 'Next' : 'Begin'}</button><button class="big alt" id="ss">Skip</button></div></div>`; $('#sn').onclick = () => { i++; if (i >= STORY.length) done(); else show(); }; $('#ss').onclick = done; };
+  const done = () => { stats.intro = true; saveStats(); go(); };
+  show();
+}
 function nightSelect() {
   const u = unlocked(); let b = ''; for (let n = 1; n <= 6; n++) b += `<button data-n="${n}" ${n > u ? 'disabled' : ''}>Night ${n}</button>`;
   const s = $('#screen'); s.className = 'screen'; s.innerHTML = `<div><h2>Night select</h2><div class="nights">${b}</div><button class="big alt" id="bk">Back</button></div>`;
@@ -151,9 +164,9 @@ function customNight() {
   $('#go').onclick = () => { const o = read(); startNight(7, { levels: o, label: 'Custom Night', custom: true }); }; $('#bk').onclick = home;
 }
 const BLURB = {
-  toyZayed: 'The Camel, new body. Patience made plastic. Walks the hallway straight at you. Mask works.', toyBubbles: 'The Cat, new body. Nerve. Comes through the left vent.', toyTaffy: 'The Goat, new body. Memory. Takes the right vent.', toySherbet: 'The Falcon, new body. Hunger, freshly painted. Delivers.',
-  wZayed: 'The old Camel body from the first game. Worn, hanging jaw, one arm gone. Slow but sure.', wBubbles: 'The old Cat. The metal shows through. Left vent.', wTaffy: 'The old Goat. Right vent, and patient about it.', wSherbet: 'The old Falcon. Runs the hallway. The mask will not save you; light him up.',
-  gelly: 'Lives in the Kid\'s Cove and crawls through the ceiling into the vents. Slow to leave. (Real model coming.)', bidoof: 'Small, round, laughing. Never hurts you. Kills your flashlight. (Real model coming.)', ibrahim: 'Lives in the music box. Keep it wound or he comes out. Not one of the four. (Real model coming.)'
+  toyZayed: 'The Camel, new body. Patience. "No rush. We can wait." Walks the hallway straight at you. The mask works on him.', toyBubbles: 'The Cat, new body. Nerve. She rang the number herself. Comes through the left vent.', toyTaffy: 'The Goat, new body. Memory. Counts out an order under her breath. Takes the right vent.', toySherbet: 'The Falcon, new body. Hunger, freshly painted, and always late. Delivers.',
+  wZayed: 'The old Camel body. Worn, hanging jaw, one arm gone. They kept your place.', wBubbles: 'The old Cat. The metal shows through. Left vent, and it keeps ringing.', wTaffy: 'The old Goat. Right vent. She remembers, and she is patient about it.', wSherbet: 'The old Falcon, still on skates. Runs the hallway. The mask will not save you; light him up.',
+  gelly: 'Rides the old order chute through the ceiling vents. It was built to deliver, and it never knocks. Slow to leave.', bidoof: 'Small, round, laughing. Rings the bell for every complaint. Never hurts you. Takes your light.', ibrahim: 'Lives in the music box. On hold since the night of the order. Keep the tune wound, or the line drops. Not one of the four.'
 };
 function extras() {
   const s = $('#screen'); s.className = 'screen'; const k = Object.entries(stats.killers).sort((a, b) => b[1] - a[1])[0];
@@ -218,11 +231,12 @@ function over(win) {
   const buttons = coopMode ? (guest ? '<p class="pulse">Waiting for the host to start again…</p>' : `<button class="big" id="rt">Play again</button>`) + '<button class="big alt" id="tt">Leave</button>' : `${next}<button class="big ${next ? 'alt' : ''}" id="rt">${win ? 'Replay' : 'Try again'}</button><button class="big alt" id="tt">Menu</button>`;
   s.innerHTML = win
     ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? (Lore.has(Lore.FINAL_ID) ? 'The sun is up. You know whose order this was. The door is yours to open, Rashid.' : Lore.countFound() >= Math.round(Lore.total() * 0.6) ? 'The sun is up, and the police are at the door. You hold most of the pieces. Four numbers in the case file would tell you the rest.' : 'The sun is up. The police at the door are no longer the worst thing in the building. There is more to find in the cameras, from the first night on.') : 'The sun is up. The bodies are still. For now.'}</p>${pay}${buttons}</div>`
-    : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p><p>${hintFor(G.scareWho)}</p>${pay}${buttons}</div>`;
+    : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p>${DEATH_LINE[G.scareWho] ? `<p class="quote">${DEATH_LINE[G.scareWho]}</p>` : ''}<p>${hintFor(G.scareWho)}</p>${pay}${buttons}</div>`;
   if ($('#nx')) $('#nx').onclick = () => startNight(n + 1, { }); 
   if ($('#rt')) $('#rt').onclick = () => (coopMode ? coop.again() : startNight(n, G.opts));
   $('#tt').onclick = () => { if (coopMode) coop.leave(); home(); };
 }
+const DEATH_LINE = { toyZayed: '"No rush. We can wait."', toyBubbles: '"Do not hang up."', toyTaffy: '"Twelve cupcakes. Four candles each."', toySherbet: '"Special delivery!"', wZayed: '"We kept your place."', wBubbles: '"Pick up. Pick up."', wTaffy: '"You were supposed to remember."', wSherbet: '"Late. So late."', ibrahim: '"Thank you for holding."', gelly: '"I never knock."', bidoof: '"Complaint received!"' };
 const hintFor = (w) => ({ ibrahim: 'The music box ran out. Keep winding it from the Prize Corner camera.', wSherbet: 'Withered Sherbet runs the hallway. The mask will not stop him: shine the light down the hall.', gelly: 'Gelly comes through the vents. Wear the mask until she leaves.' }[w] || 'Put the mask on when something is in the office.');
 
 /* ---- input ---- */
@@ -420,7 +434,7 @@ canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); toast('
 setInterval(() => { const sc = G.mode === 'play' ? 'game' : G.mode; Online.beat(sc, G.S && G.mode === 'play' ? G.S.night : 0); }, 30000);
 
 /* ---- boot: the loading page ---- */
-const TIPS = ['The mask makes you look like one of them. It does not fool the Falcon.', 'Shine the flashlight down the hall: the old Falcon will turn back.', 'Wind the music box from the Prize Corner camera, and do not stop.', 'You cannot use the cameras while you wear the mask.', 'One soul. Four bodies. They do not want to be split.', 'Bidoof will not hurt you. He will only break your flashlight.', 'Qerh Cooperations thanks you for your service.'];
+const TIPS = ['The mask makes you look like one of them. It does not fool the Falcon.', 'Shine the flashlight down the hall: the old Falcon will turn back.', 'Wind the music box from the Prize Corner camera, and do not stop.', 'You cannot use the cameras while you wear the mask.', 'One soul. Four bodies. They do not want to be split.', 'Bidoof will not hurt you. He will only break your flashlight.', 'Qerh Cooperations thanks you for your service.', 'Abdulla\'s Cafeteria had one phone line. It is still ringing.', 'Papers turn up on the cameras. Click one to pick it up. They are filed in Extras.', 'Order slips have numbers. Keep them in the order the bodies were made.', 'Ibrahim has been on hold since the night of the order.', 'Nobody was hurt. Something was promised, and never kept.', 'Staff are on shift. The mask is the old staff cap.'];
 async function boot() {
   $('#ldTip').textContent = TIPS[Math.floor(Math.random() * TIPS.length)]; applyQuality(); renderer.toneMappingExposure = 1.3 * cfg.brightness / 100; document.documentElement.style.setProperty('--ui', cfg.uiScale / 100); document.body.classList.toggle('noflash', !cfg.flashing); $('#fps').hidden = !cfg.fps; player.fov = camV.fov = cfg.fov;
   const bar = (p, m) => { $('#ldBar').style.width = Math.round(p * 100) + '%'; if (m) $('#ldMsg').textContent = m; };
@@ -433,8 +447,10 @@ async function boot() {
   bar(0.9, 'Warming up the lights…'); for (const x of WHO) bots[x].root.visible = false; renderer.render(scene, player); await nap();
   bar(1, 'Ready.');
   if (!renderer.getContext()) { $('#ldWarn').hidden = false; $('#ldWarn').textContent = 'Your browser could not start 3D graphics.'; return; }
+  Updater.startUpdateChecks();
   const go = $('#ldGo'); go.hidden = false; go.focus();
-  const start = () => { startAudio(); if (matchMedia('(pointer:coarse)').matches) toggleFull(); $('#loading').classList.add('out'); setTimeout(() => $('#loading').remove(), 700); home(); const jc = new URLSearchParams(location.search).get('join'); if (jc) coop.joinLobby(jc.toUpperCase()); else if (stats.claim !== Online.dayKey()) setTimeout(() => dailyReward(ctx), 900); Online.news().then((a) => { if (a) { newsItem = a; if (G.mode === 'title' && !modalOpen()) home(); } }); };
+  const start = () => { startAudio(); if (matchMedia('(pointer:coarse)').matches) toggleFull(); $('#loading').classList.add('out'); setTimeout(() => $('#loading').remove(), 700); home(); const jc = new URLSearchParams(location.search).get('join'); if (jc) coop.joinLobby(jc.toUpperCase()); else if (stats.claim !== Online.dayKey()) setTimeout(() => dailyReward(ctx), 900); Updater.whatsNew().then((w) => { if (w) openModal(`<h2>Updated to version ${esc(w.version)}</h2>${w.notes.length ? `<ul class="notes">${w.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : '<p>Thanks for updating.</p>'}<div class="btnrow"><button class="pri" id="mClose">Continue</button></div>`); const c = $('#mClose'); if (c) c.onclick = closeModal; });
+  Online.news().then((a) => { if (a) { newsItem = a; if (G.mode === 'title' && !modalOpen()) home(); } }); };
   go.onclick = start;
   window.__bootDone = true;
 }
@@ -444,3 +460,10 @@ requestAnimationFrame(frame);
 boot();
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]peer=/.test(location.search) && location.hostname !== 'localhost') navigator.serviceWorker.register('sw.js').catch(() => {});
 window.FNAZ2 = { Lore, loreScreen, faceCanvas, refreshFaces, renderer, propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };
+
+/* the update banner: shown on every screen when a newer build is published */
+{
+  const bar = document.createElement('div'); bar.id = 'updbar'; bar.hidden = true; bar.innerHTML = '<span></span><button class="sm" id="updbarGo">Update now</button><button class="sm" id="updbarLater" aria-label="Dismiss">Later</button>'; document.body.appendChild(bar);
+  bar.querySelector('#updbarGo').onclick = Updater.applyUpdate; bar.querySelector('#updbarLater').onclick = () => { bar.hidden = true; };
+  Updater.onUpdate((s) => { if (s.available && !(G.mode === 'play' && !G.paused)) { bar.querySelector('span').textContent = `Version ${s.available.version} is ready.`; bar.hidden = false; } else if (!s.available) bar.hidden = true; });
+}
