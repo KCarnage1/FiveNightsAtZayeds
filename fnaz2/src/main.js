@@ -340,7 +340,7 @@ function placeAll() {
 const pan = (n) => (n === 'ventL' || n === 'partyL' || n === 'prize' || n === 'kids' ? -0.8 : n === 'ventR' || n === 'partyR' || n === 'game' ? 0.8 : 0);
 function apply(fx) {
   for (const f of fx) {
-    if (f.type === 'move') { (f.to.startsWith('vent') || f.to === 'ceiling' ? Snd.vent : Snd.step)(pan(f.to)); if (f.to === 'hall' && !G.cam) say('Something is in the hallway.', 2200); }
+    if (f.type === 'move') { Snd.move(f.to, pan(f.to)); if (f.to === 'hall' && !G.cam) say('Something is in the hallway.', 2200); }
     else if (f.type === 'enter') { G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); buzz(60); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office!', 3000); G.shake = 0.5; }
     else if (f.type === 'run') { Snd.clang(0); say('Withered Sherbet is running the hall! Shine the light down it!', 3000); }
     else if (f.type === 'pushed') { Snd.step(pan(f.from)); }
@@ -394,7 +394,7 @@ function frame(now) {
     let fx = [];
     if (!G.guest) { const rc = G.coop ? G.coop.remote : null; fx = step(S, dt * G.speed, { mask: G.mask, flash: G.light && !G.cam, aim, cam: rc ? rc.cam : G.cam, wind: rc ? rc.wind : G.wind, coop: !!G.coop }); if (G.coop) coop.hostTick(dt, fx); } else coop.guestTick(dt);
     if (admin) admin.frame();
-    apply(fx); Snd.box(S.box, dt); Snd.hum(0.04 + (G.cam ? 0.02 : 0));
+    apply(fx); Snd.box(S.box, dt); Snd.hum(0.04 + (G.cam ? 0.02 : 0)); Snd.frame(dt, !!(G.light && !G.cam), S.battery, G.mask, S.pos);
     if (G.mask) { G.breathT -= dt; if (G.breathT <= 0) { Snd.breath(); G.breathT = 1.4; } }
     $('#maskOv').classList.toggle('on', S.mask > 0.5); $('#bWind').classList.toggle('on', G.wind && !!G.cam);
     updateHud(); if (G.cam) drawMini();
