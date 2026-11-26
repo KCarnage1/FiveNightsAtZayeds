@@ -13,5 +13,7 @@ export function resetSettings() { Object.assign(cfg, DEFAULTS); write(KEY, cfg);
 const SD = { deaths: 0, wins: 0, beaten: 0, plays: 0, seconds: 0, killers: {}, best: {}, daily: {}, custom: 0, nightmare: 0, coins: 0, earned: 0, intro: false, lore: {}, items: {}, equip: {}, claim: '', streak: 0 };
 export const stats = Object.assign({}, SD, read(STATS, {}));
 export const saveStats = () => write(STATS, stats);
-export const unlocked = () => Math.max(1, stats.beaten + 1 > 6 ? 6 : stats.beaten + 1);
+/* Nights 3 to 6 are built but not released yet: only the first OPEN_NIGHTS can be played. */
+export const OPEN_NIGHTS = 2;
+export const unlocked = () => Math.min(OPEN_NIGHTS, Math.max(1, stats.beaten + 1));
 export function resetProgress() { Object.assign(stats, JSON.parse(JSON.stringify(SD))); saveStats(); }

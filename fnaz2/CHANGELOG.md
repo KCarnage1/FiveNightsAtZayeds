@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.7.0
+- First public release: Nights 1 and 2 are playable. Nights 3 to 6, the Custom Night and the Daily challenge are marked coming soon.
+
 ## 0.6.1
 - Updates from inside the game: it checks for a newer published version on start and every ten minutes (and from Settings, Data, Check for updates), offers Update now, then shows what changed.
 - Story in the game itself: a four-slide introduction the first time you play, a lore line on each night's title card, a quote from whoever killed you, story tips while loading, and character descriptions that follow the lore.

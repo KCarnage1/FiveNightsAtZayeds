@@ -27,13 +27,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build the web version
         run: ./scripts/build-web.sh _site "${GITHUB_SHA::8}"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: fnaz2/package-lock.json
-      - name: Build Five Nights at Zayed's 2 (served under /fnaz2/)
-        run: ./fnaz2/scripts/build-web.sh "$PWD/_site/fnaz2" "${GITHUB_SHA::8}"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

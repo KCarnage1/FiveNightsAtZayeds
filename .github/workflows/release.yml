@@ -43,6 +43,7 @@ jobs:
           --ignore="^/rust"
           --ignore="^/tests"
           --ignore="^/scripts"
+          --ignore="^/fnaz2"
           --out=dist
 
       - name: Zip
@@ -99,6 +100,7 @@ jobs:
           --ignore="^/rust"
           --ignore="^/tests"
           --ignore="^/scripts"
+          --ignore="^/fnaz2"
           --out=dist
 
       # Apple Silicon refuses to start an app whose signature is missing or broken, so sign it ad hoc.

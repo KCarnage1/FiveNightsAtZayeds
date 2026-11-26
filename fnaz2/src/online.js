@@ -2,7 +2,7 @@
  * announcement. Everything else (like the daily challenge and share codes) works with no server at all. */
 import { cfg } from './settings.js';
 const BASE = 'https://vycivbylkaztscqfqlzj.supabase.co/rest/v1/rpc/', KEY = 'sb_publishable_FuU_RDncjVu_suWe1P1EkA_HOvhiOgc';
-export const VERSION = '0.6.1';
+export const VERSION = '0.7.0';
 export const status = { online: null, lastNews: null, lastBeat: 0 };
 let pid = ''; try { pid = localStorage.getItem('fnaz_pid') || ''; if (!/^[A-Za-z0-9-]{8,40}$/.test(pid)) { pid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now().toString(36)).replace(/[^A-Za-z0-9-]/g, '').slice(0, 36); localStorage.setItem('fnaz_pid', pid); } } catch (e) { pid = 'anon' + Math.random().toString(36).slice(2, 10); }
 

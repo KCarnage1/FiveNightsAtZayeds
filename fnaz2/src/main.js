@@ -4,7 +4,7 @@ import { buildZayed, animate } from './models/cast.js';
 import { buildIbrahim, buildGelly, buildBidoof } from './models/extras.js';
 import { newNight, step, CAST, WHO, HOUR_SEC } from './ai.js';
 import { S as Snd, start as startAudio } from './audio.js';
-import { cfg, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings, resetProgress } from './settings.js';
+import { cfg, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings, resetProgress, OPEN_NIGHTS } from './settings.js';
 import * as Calls from './calls.js';
 import * as Online from './online.js';
 import { faceReady, faceCanvas } from './models/kit.js';
@@ -113,10 +113,10 @@ function home() {
   const u = unlocked(), s = $('#screen'); s.hidden = false; s.className = 'screen titlebg';
   const dly = stats.claim !== Online.dayKey();
   s.innerHTML = `<div class="title"><div class="top"><h1 class="logo">Five Nights<br><em>at Zayed's 2</em></h1><p class="tag1">One soul, four bodies.</p></div>
-    <div class="bottom"><div class="tmenu"><button class="main" id="mNew">${stats.beaten ? 'Continue' : 'Play'}<small>Night ${u}</small></button><button id="mCoop">Co-op<small>2 players online</small></button><button id="mNights">Nights</button><button id="mCustom">Custom<small>${stats.beaten >= 6 ? 'your own night' : 'beat Night 6'}</small></button><button id="mDaily">Daily</button><button id="mShop">Shop${dly ? '<small>reward ready!</small>' : ''}</button><button id="mExtras">Extras</button><button id="mSet">Settings</button></div>
+    <div class="bottom"><div class="tmenu"><button class="main" id="mNew">${stats.beaten ? 'Continue' : 'Play'}<small>Night ${u}</small></button><button id="mCoop">Co-op<small>2 players online</small></button><button id="mNights">Nights</button><button id="mCustom">Custom<small>coming soon</small></button><button id="mDaily">Daily<small>coming soon</small></button><button id="mShop">Shop${dly ? '<small>reward ready!</small>' : ''}</button><button id="mExtras">Extras</button><button id="mSet">Settings</button></div>
     ${newsItem ? `<div class="news"><b>${esc(newsItem.title || 'News')}</b> ${esc(String(newsItem.message || '').replace(/\s+/g, ' ').slice(0, 200))}</div>` : ''}
     <div class="foot">v${Online.VERSION} · ${stats.wins} win${stats.wins === 1 ? '' : 's'} · ${stats.deaths} death${stats.deaths === 1 ? '' : 's'}<span id="kb"> · F3 debug</span></div></div></div><div class="corner"><span class="coins" id="coins">${ic('coin')}${stats.coins}</span></div>`;
-  $('#mNew').onclick = () => maybeIntro(() => startNight(u)); $('#mNights').onclick = nightSelect; $('#mCustom').onclick = () => (stats.beaten >= 6 ? customNight() : toast('Beat Night 6 to unlock the Custom Night')); $('#mDaily').onclick = daily; $('#mExtras').onclick = extras; $('#mSet').onclick = () => settings(); $('#mCoop').onclick = () => coop.menu(); $('#mShop').onclick = () => openShop(ctx); $('#coins').onclick = () => openShop(ctx);
+  $('#mNew').onclick = () => maybeIntro(() => startNight(u)); $('#mNights').onclick = nightSelect; $('#mCustom').onclick = () => toast('The Custom Night is coming soon'); $('#mDaily').onclick = () => toast('The Daily challenge is coming soon'); $('#mExtras').onclick = extras; $('#mSet').onclick = () => settings(); $('#mCoop').onclick = () => coop.menu(); $('#mShop').onclick = () => openShop(ctx); $('#coins').onclick = () => openShop(ctx);
   s.querySelectorAll('.tmenu button').forEach((b) => b.addEventListener('pointerenter', () => Snd.click()));
   Online.beat('title', 0);
 }
@@ -137,9 +137,11 @@ function maybeIntro(go) {
 }
 function nightSelect() {
   const u = unlocked(); let b = ''; for (let n = 1; n <= 6; n++) b += `<button data-n="${n}" ${n > u ? 'disabled' : ''}>Night ${n}</button>`;
-  const s = $('#screen'); s.className = 'screen'; s.innerHTML = `<div><h2>Night select</h2><div class="nights">${b}</div><button class="big alt" id="bk">Back</button></div>`;
+  const s = $('#screen'); s.className = 'screen'; s.innerHTML = `<div><h2>Night select</h2><div class="nights">${b}</div><p class="hint">Nights ${OPEN_NIGHTS + 1} to 6 are coming soon.</p><button class="big alt" id="bk">Back</button></div>`;
   s.querySelectorAll('.nights button').forEach((el) => { el.onclick = () => startNight(+el.dataset.n); }); $('#bk').onclick = home;
 }
+/* kept for the release of nights 3 to 6 */
+// eslint-disable-next-line no-unused-vars
 function daily() {
   const key = Online.dayKey(), setup = Online.dailySetup(key), done = stats.daily[key];
   const s = $('#screen'); s.className = 'screen';
@@ -148,6 +150,7 @@ function daily() {
 }
 const CUSTOM_KEY = 'fnaz2_custom';
 function loadCustom() { try { const v = JSON.parse(localStorage.getItem(CUSTOM_KEY)); if (v) return v; } catch (e) { /* none */ } const o = {}; ORDER.forEach((w) => { o[w] = 5; }); return o; }
+// eslint-disable-next-line no-unused-vars
 function customNight() {
   const lv = loadCustom(), s = $('#screen'); s.className = 'screen';
   s.innerHTML = `<div class="panel"><h2>Custom night</h2><div class="cust">${ORDER.map((w, i) => `<label for="c${i}">${NAMES[w]}</label><input id="c${i}" data-w="${w}" type="range" min="0" max="20" value="${lv[w] || 0}"><output>${lv[w] || 0}</output>`).join('')}</div>
@@ -227,10 +230,10 @@ function over(win) {
   const coopMode = !!G.coop, guest = !!G.guest;
   const pay = cheated ? '<p class="hint">Admin powers were used: no coins or progress for this run.</p>' : rw.total ? `<p>${rw.parts.map(([l, v]) => `${l} +${v}`).join(' · ')} → <b>${ic('coin')}+${rw.total}</b></p>` : '';
   const s = $('#screen'); s.hidden = false; s.className = 'screen';
-  const next = win && n < 6 && !G.opts.label ? `<button class="big" id="nx">Night ${n + 1}</button>` : '';
+  const next = win && n < OPEN_NIGHTS && !G.opts.label ? `<button class="big" id="nx">Night ${n + 1}</button>` : '';
   const buttons = coopMode ? (guest ? '<p class="pulse">Waiting for the host to start again…</p>' : `<button class="big" id="rt">Play again</button>`) + '<button class="big alt" id="tt">Leave</button>' : `${next}<button class="big ${next ? 'alt' : ''}" id="rt">${win ? 'Replay' : 'Try again'}</button><button class="big alt" id="tt">Menu</button>`;
   s.innerHTML = win
-    ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? (Lore.has(Lore.FINAL_ID) ? 'The sun is up. You know whose order this was. The door is yours to open, Rashid.' : Lore.countFound() >= Math.round(Lore.total() * 0.6) ? 'The sun is up, and the police are at the door. You hold most of the pieces. Four numbers in the case file would tell you the rest.' : 'The sun is up. The police at the door are no longer the worst thing in the building. There is more to find in the cameras, from the first night on.') : 'The sun is up. The bodies are still. For now.'}</p>${pay}${buttons}</div>`
+    ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? (Lore.has(Lore.FINAL_ID) ? 'The sun is up. You know whose order this was. The door is yours to open, Rashid.' : Lore.countFound() >= Math.round(Lore.total() * 0.6) ? 'The sun is up, and the police are at the door. You hold most of the pieces. Four numbers in the case file would tell you the rest.' : 'The sun is up. The police at the door are no longer the worst thing in the building. There is more to find in the cameras, from the first night on.') : 'The sun is up. The bodies are still. For now.'}${win && n >= OPEN_NIGHTS && !G.opts.label ? ' More nights are coming soon.' : ''}</p>${pay}${buttons}</div>`
     : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p>${DEATH_LINE[G.scareWho] ? `<p class="quote">${DEATH_LINE[G.scareWho]}</p>` : ''}<p>${hintFor(G.scareWho)}</p>${pay}${buttons}</div>`;
   if ($('#nx')) $('#nx').onclick = () => startNight(n + 1, { }); 
   if ($('#rt')) $('#rt').onclick = () => (coopMode ? coop.again() : startNight(n, G.opts));
