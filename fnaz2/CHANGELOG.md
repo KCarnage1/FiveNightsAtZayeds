@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.1
+- A first-night tutorial that teaches the vents, the light, the mask, the cameras and the music box by doing, and never repeats.
+- Accessibility: text size, high-contrast HUD, shape and text cues, sound captions with a direction arrow, and an Assist option (a quarter more time before something strikes).
+- Nights 1 and 2 retuned: Night 1 is a gentle tutorial, Night 2 introduces the vents and the Withered Falcon, and there is always something to react to. No two threats can stack on you.
+- Richer generated sound: room tone, vent clanks, footsteps with distance, flashlight buzz, mask breathing with a heartbeat, a layered jumpscare and a master limiter.
+- Atmosphere: flashlight beam with dust, office light flicker, flickering signs, camera grain, scan band and a glitch when something moves.
+- Faster: each animatronic is drawn with far fewer draw calls on the title screen and stage camera.
+- Fixed: deaths were counted every frame on the game-over screen; damaged saves could crash the game; the Night 1 and 2 phone call could start while paused; held keys stuck after losing focus; a guest could be stuck in the lobby when the host left.
+- Story text polished for Nights 1 and 2, with a clue pointing to a paper on the cameras in each call.
+
 ## 0.7.0
 - First public release: Nights 1 and 2 are playable. Nights 3 to 6, the Custom Night and the Daily challenge are marked coming soon.
 
