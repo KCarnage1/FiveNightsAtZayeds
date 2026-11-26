@@ -53,7 +53,7 @@ An order that can be neither cancelled nor completed **split into four things it
 ### The second wave of papers (added later)
 | Paper | Night | Where | What it reveals |
 |---|---|---|---|
-| Birthday invitation | 1 | Party Room 2 | The party: a camel, a cat, a goat, a falcon; "from the four of us" |
+| Birthday invitation | 1 | Party Room 2 | The party: a camel, a cat, a goat, a falcon; "from the four of us". The night 1 call points at Party Room 2; the night 2 call points at the left vent slip. Slip No. 4 says "four guests" (the party is four friends, twelve is the cupcakes) |
 | Label in the Zayed mask | 2 | Your office | The mask is the old staff cap: staff are "on shift", so orders are asked for, not handed back. It does not work on the hungry or those still holding |
 | Qerh memo: the doors | 3 | Your office | "Open door policy": the order must be able to arrive. The cap and flashlight are issued without telling the guard why |
 | Cupcake recipe card | 3 | Prize Corner | Four candles, one for each who waits. "A promise is a recipe too" |
@@ -62,7 +62,7 @@ An order that can be neither cancelled nor completed **split into four things it
 | Letter from Salem | 4 | Game Area | Salem built the mascots, named after the four who ordered; "that phone rings a little too clearly" |
 | Receipt: roller skates | 4 | Game Area | The Falcon's skates; "fast, but always late" |
 | Kitchen ledger | 5 | Parts & Service | Order #0 not delivered; paid in advance with one promise |
-| Staff schedule | 5 | Prize Corner | R. on break 5:55 to 6:20; Abdulla kept the kitchen open; the old number ring at the counter |
+| Staff schedule | 5 | Prize Corner | R. on break 6:00 to 6:20; Abdulla kept the kitchen open; the old number ring at the counter |
 | Telecom log | 5 | Main Hallway | 3,214 calls, always 5:58 pm, always answered on Extension 2, but the kitchen has no phone |
 | Claim file cover note | 5 | Parts & Service | Why Qerh does not want the order delivered: the building cannot be sold while it is open. Close the file, or close the witness |
 | Rashid's own note | 6 | Your office | "It was only ever a cake. I think a promise is bigger than a cake." |

@@ -15,28 +15,30 @@ For voice actors. Every line is in the game's lore (see `lore-bible.md`). Record
 Qerh Cooperations claims adjuster. Mid-thirties to fifties, friendly, a little nervous, always trying to sound like this is a normal job. He calls from his desk at night. Record every call as one continuous take, then split. Add phone-line filter (effect).
 
 ### Night 1
-*Direction:* Warm, upbeat, a little rehearsed, like a man reading a welcome script he has read many times. Smile in the voice. Slow down on "Do not go looking for them."
+*Direction:* Warm, upbeat, a little rehearsed, like a man reading a welcome script he has read many times. Smile in the voice. Slow down on "Do not go looking for them." Go quiet and flat on "Nobody ever cleared the table."
 
-1.1  Hello? Hello, yoo-hoo! Welcome to your first night at the new Zayed's, Rashid. I'm the phone guy from Qerh Cooperations.
+1.1  Hello? Yoo-hoo! Welcome to your first night at the new Zayed's, Rashid. I'm the phone guy at Qerh Cooperations.
 
-1.2  You may have heard about the old place. Forget it. This is the new location. Brand new bodies. Shiny. Friendly.
+1.2  You may have heard about the old place. Forget it. New location. New bodies. Shiny. Friendly.
 
-1.3  We took the doors away. Insurance reasons, and also a lot of broken hinges. Use your flashlight down the hall, and if anything walks in, put the Zayed mask on. They think you are one of them.
+1.3  We took the doors away. Insurance reasons, and a lot of broken hinges. Flashlight down the hall. If anything walks in, wear the Zayed mask. They think you are one of them.
 
-1.4  The new bodies are called the Toys. The old ones are in Parts and Service. Do not go looking for them.
+1.4  The new bodies are the Toys. The old ones are in Parts and Service. Do not go looking for them.
 
-1.5  One more thing from Qerh Cooperations. There is old paperwork taped up around the building, left over from before. Do not read it. If you do read it, do not click on anything you find on the cameras.
+1.5  There is old paperwork taped up around the building. Do not read it, and do not click on anything you find on the cameras. Party Room 2 is still set for a party. Nobody ever cleared the table.
 
 ### Night 2
 *Direction:* Slightly tired, trying to stay cheerful. A breath before "Some orders are still coming up." Lower the voice, like he is looking over his shoulder.
 
-2.1  Hello! Night two. You made it. I'm honestly relieved, the paperwork was getting heavy.
+2.1  Hello! Night two. You made it. I'm honestly relieved. The paperwork was getting heavy.
 
-2.2  Two air vents open into your office, left and right. Something small and fast will use them. Mask on when it arrives, and it will leave.
+2.2  Two air vents open into your office. Something small will use them. Put the mask on when it arrives, and it will leave.
 
-2.3  Those vents are older than the building. They were the order chute at the old cafeteria. Food went down, orders came up. Some orders are still coming up.
+2.3  Those vents are older than the building. They were the order chute at the old cafeteria. Food went down. Orders came up. Some orders are still coming up.
 
-2.4  The old bodies are awake now too. The Withered ones. The Falcon is the worst of them. He runs the hallway, and no mask will stop him. Light. Down the hall. Remember that.
+2.4  Things get left in the left vent. Check it on the cameras. If it is a slip, read it to the last line.
+
+2.5  The old bodies are awake now too. The Withered. The Falcon is the worst. He runs the hallway, and no mask will stop him. Light. Down the hall. Remember that.
 
 ### Night 3
 *Direction:* Quieter, closer to the mic. Gentle and sad on the hold-music line. Leave a long pause before "Do not let it stop."
@@ -196,7 +198,7 @@ Voice: an old man, warm and gravelly, the sort of owner who knows every customer
 ## Part 3: Line IDs, triggers and durations (for the sound team)
 | Character | Trigger in the game | Count | Target length |
 |---|---|---|---|
-| Phone guy | Start of nights 1 to 5 | 5 calls (22 lines) | 20 to 55 s per call |
+| Phone guy | Start of nights 1 to 5 | 5 calls (25 lines) | 20 to 55 s per call |
 | Each Toy / Withered body | idle, arrival, in the office, leaves, jumpscare | 5 per body | 1.5 to 4 s |
 | Ibrahim | box wound, box low, box empty, coming out, jumpscare | 6 | 1 to 4 s |
 | Gelly, Bidoof | idle, arrival, in the office, leaves, jumpscare | 5 each | 1 to 3 s |
