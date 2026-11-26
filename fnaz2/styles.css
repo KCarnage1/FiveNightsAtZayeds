@@ -182,3 +182,43 @@ body.cam-on #gl{filter:grayscale(1) contrast(1.25) brightness(1.2)}
 #updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));z-index:65;display:flex;gap:10px;align-items:center;background:#10091a;border:1px solid #ffd24a88;border-radius:10px;padding:8px 12px;font-size:14px}
 #updbar[hidden]{display:none}
 .notes{margin:8px 0 0;padding-left:20px;line-height:1.5}.notes li{margin:4px 0}
+
+/* ---------- onboarding and accessibility: text size, high contrast, shape cues, captions, tutorial ---------- */
+:root{--tx:1}
+.m label{font-size:calc(11px * var(--tx))}.m label em{font-style:normal;font-weight:700;letter-spacing:.04em}
+.clock b{font-size:calc(34px * var(--tx))}.clock span{font-size:calc(14px * var(--tx))}
+#hint{font-size:calc(15px * var(--tx));opacity:.9}
+#call .txt{font-size:calc(15px * var(--tx))}
+.meters{width:min(calc(220px * var(--tx)),40vw);max-width:min(300px,46vw)}
+/* danger badge and low meters: a shape and a word, not just red */
+#danger{display:flex;align-items:center;gap:6px;background:#000d;border:2px solid #fff;border-radius:6px;padding:4px 8px;font:800 calc(12px * var(--tx))/1.2 system-ui;color:#fff}
+#danger[hidden]{display:none}#danger svg{width:20px;height:18px;flex:none;color:#ffd24a}
+.m u.low{background:repeating-linear-gradient(45deg,#e8453c 0 6px,#fff 6px 10px)!important}
+body.cues .m i{border:1px solid #fff9}
+/* tutorial card, under the meters at the left */
+#tut{pointer-events:auto;background:#0a0610ee;border:1px solid #ffd24a;border-radius:10px;padding:8px 10px;color:#fff;font-size:calc(13px * var(--tx));line-height:1.35;animation:rise .35s both}
+#tut[hidden]{display:none}
+#tut .th{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#ffd24a;font-weight:800;margin-bottom:2px}#tut .th span{color:#fff;font-weight:600;margin-left:4px}#tut .ttl{display:none}
+#tut ul{list-style:none;margin:0 0 4px;padding:0;display:grid;gap:1px}#tut li{display:flex;gap:6px;opacity:.8}#tut li i{font-style:normal;width:1.1em;flex:none;text-align:center}
+#tut li.now{opacity:1;font-weight:800;color:#ffd24a}#tut li.ok{opacity:.8}
+#tut p{margin:4px 0 6px;max-width:none;opacity:1;text-align:left}
+#tut .sm{min-height:44px;min-width:44px;padding:0 12px;background:#ffffff1a;color:#fff;border:1px solid #fff6;border-radius:8px;font:700 calc(13px * var(--tx)) system-ui;cursor:pointer}
+/* sound captions */
+#caps{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(84px + 36px * var(--tx) + env(safe-area-inset-bottom));display:grid;gap:4px;justify-items:center;width:min(420px,70vw);pointer-events:none}
+.cap{display:flex;align-items:center;gap:8px;background:#000e;color:#fff;border:1px solid #fff8;border-radius:8px;padding:4px 12px;font:700 calc(15px * var(--tx)) system-ui;animation:rise .2s both}
+.cap .arr{font-size:1.3em;line-height:1;color:#ffd24a;min-width:1.2em;text-align:center}
+
+/* high contrast */
+body.hc .clock,body.hc .m,body.hc #hint,body.hc #call,body.hc .cap{background:#000;color:#fff;border:2px solid #fff;border-radius:8px;padding:6px 10px;text-shadow:none}
+body.hc .m i{height:14px;background:#000;border:2px solid #fff}body.hc .m u{background:#fff!important}body.hc .m u.low{background:repeating-linear-gradient(45deg,#000 0 5px,#fff 5px 10px)!important}
+body.hc .m label,body.hc .clock span{opacity:1}
+body.hc .act{background:#000;border:2px solid #fff;color:#fff}body.hc .act.on,body.hc .act:active{background:#fff;color:#000}
+body.hc #tut{background:#000;border:2px solid #fff}body.hc #tut li{opacity:1}body.hc #tut li.now,body.hc #tut .th{color:#fff}
+body.hc #hint:empty{display:none}
+@media (max-height:520px){
+  #tut{font-size:calc(11px * var(--tx));padding:3px 8px 5px}#tut ul{display:none}#tut p{margin:0}#tut .ttl{display:inline}
+}
+.pausebtn{top:calc(52px + 26px * var(--tx) + env(safe-area-inset-top))}
+@media (max-height:520px){.pausebtn{top:calc(36px + 32px * var(--tx) + env(safe-area-inset-top))}}
+body.hc #hint{left:50%;right:auto;transform:translateX(-50%);white-space:nowrap}
+body.hc .pausebtn{background:#000;border:2px solid #fff}

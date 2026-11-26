@@ -46,7 +46,7 @@ export function rand(S) { S.rs = (S.rs + 0x6D2B79F5) >>> 0; let t = S.rs; t = Ma
 export function newNight(night, seed = 1, opts = {}) {
   const lv = {}; WHO.forEach((w) => { lv[w] = opts.levels ? opts.levels[w] || 0 : LEVELS[w][Math.min(night, 6) - 1]; });
   const S = { night, rs: seed >>> 0, t: 0, hour: 0, lv, pos: {}, acc: {}, since: {}, hold: {}, box: 100, boxOut: 0, battery: 100, flashDead: 0, flashOn: false, aimedAt: null, aimT: 0,
-    mods: Object.assign({ drain: 1, charge: 1, box: 1, revive: 0, maskSpeed: 7 }, opts.mods || {}), mask: 0, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
+    mods: Object.assign({ drain: 1, charge: 1, box: 1, revive: 0, maskSpeed: 7, strike: 1 }, opts.mods || {}), mask: 0, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
   WHO.forEach((w) => { S.pos[w] = CAST[w].home; S.acc[w] = rand(S) * CAST[w].every; S.since[w] = 0; });
   return S;
 }
@@ -97,7 +97,8 @@ export function step(S, dt, input) {
       S.offT[w] = (S.offT[w] || 0) + dt;
       if (def.kind === 'nuisance') { S.flashDead = Math.max(S.flashDead, 1.5); if (masked && S.offT[w] > 1.2) leave(S, w, fx, 'main'); else if (S.offT[w] > 14) leave(S, w, fx, 'hall'); continue; }
       if (masked) { if (S.offT[w] > 1.0 + rand(S) * 1.2) leave(S, w, fx, def.kind === 'crawler' ? 'ceiling' : 'main'); }
-      else if (S.offT[w] > 3.4 - Math.min(1.2, lvl * 0.06)) { if (!S.inv) { if (revive(S, w, fx)) continue; S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
+      // strike: assist multiplier from settings (1 = normal, 1.25 = a quarter more time before they strike)
+      else if (S.offT[w] > (3.4 - Math.min(1.2, lvl * 0.06)) * S.mods.strike) { if (!S.inv) { if (revive(S, w, fx)) continue; S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
       continue;
     }
     S.acc[w] += dt;
