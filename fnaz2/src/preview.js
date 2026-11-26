@@ -13,7 +13,7 @@ const who = Object.keys(SPEC), bots = [];
 const cam = new THREE.PerspectiveCamera(q.get('fov') ? +q.get('fov') : 38, W / H, .1, 100);
 const view = q.get('view') || 'all';
 if (view === 'all') { cam.position.set(0, 3.4, 10.5); cam.lookAt(0, 1.2, -1.5); }
-else { const [x, z] = view.split(',').map(Number); cam.position.set(x, 1.95, z + (q.get('d') ? +q.get('d') : 3.6)); cam.lookAt(x, 1.95, z); }
+else { const [x, z] = view.split(',').map(Number); cam.position.set(x, +(q.get('y') || 1.2), z + (q.get('d') ? +q.get('d') : 3.6)); cam.lookAt(x, +(q.get('ly') || 1.2), z); }
 window.__ready = false;
 let n = 0; 
 function frame() { bots.forEach((b) => animate(b, .016)); r.render(scene, cam); if (++n === 30) window.__ready = true; requestAnimationFrame(frame); }

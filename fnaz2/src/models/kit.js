@@ -69,6 +69,20 @@ export function lathe(profile, mat, seg = 40) {
   return new THREE.Mesh(new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), seg), mat);
 }
 
+/* A lathe whose outline is a smooth curve through the given [radius, y] points (no visible facets). */
+export function smoothLathe(points, mat, seg = 56, res = 48) {
+  const curve = new THREE.SplineCurve(points.map(([r, y]) => new THREE.Vector2(r, y)));
+  return new THREE.Mesh(new THREE.LatheGeometry(curve.getPoints(res).map((v) => new THREE.Vector2(Math.max(0, v.x), v.y)), seg), mat);
+}
+/* Puts a soft edge on a cut-out photo so it blends into the head instead of looking pasted on. */
+export function featherTexture(tex, feather = 0.14) {
+  const out = new THREE.CanvasTexture(document.createElement('canvas')); out.colorSpace = THREE.SRGBColorSpace; out.anisotropy = 8;
+  const build = () => { const img = tex.image; if (!img || !img.width) return; const c = out.image; c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+    const m = document.createElement('canvas'); m.width = c.width; m.height = c.height; const mg = m.getContext('2d'); mg.drawImage(img, 0, 0); mg.globalCompositeOperation = 'source-in'; mg.filter = `blur(${Math.round(c.width * feather * 0.5)}px)`; mg.drawImage(img, 0, 0);
+    g.globalCompositeOperation = 'destination-in'; g.filter = `blur(${Math.round(c.width * feather * 0.35)}px)`; g.drawImage(m, 0, 0); g.filter = 'none'; out.needsUpdate = true; };
+  if (tex.image && tex.image.width) build(); else { const prev = tex.onUpdate; tex.onUpdate = () => { build(); tex.onUpdate = prev; }; const iv = setInterval(() => { if (tex.image && tex.image.width) { clearInterval(iv); build(); } }, 80); setTimeout(() => clearInterval(iv), 9000); }
+  return out;
+}
 export const loadFace = (() => {
   const L = new THREE.TextureLoader(), mem = {};
   return (name) => mem[name] || (mem[name] = L.load('assets/faces/' + name + '.png', (t) => { t.colorSpace = THREE.SRGBColorSpace; }));
@@ -77,7 +91,7 @@ export const loadFace = (() => {
 /* The real face, mapped onto a dome that sits just outside the head sphere. */
 export function faceDome(head, tex, { r = 0.322, y = 0.3, z = 0, aspect = 1 } = {}) {
   const w = Math.min(2.4, 1.75 * aspect);
-  const m = new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.45, roughness: 0.7, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0 });
+  const ft = featherTexture(tex); const m = new THREE.MeshStandardMaterial({ map: ft, transparent: true, alphaTest: 0.04, depthWrite: false, roughness: 0.7, emissive: 0xffffff, emissiveMap: ft, emissiveIntensity: 0, polygonOffset: true, polygonOffsetFactor: -2 });
   const f = new THREE.Mesh(new THREE.SphereGeometry(r, 40, 32, Math.PI / 2 - w / 2, w, Math.PI / 2 - 0.875, 1.75), m);
   f.position.set(0, y, z); head.add(f);
   return f;

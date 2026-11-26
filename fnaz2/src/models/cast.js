@@ -1,95 +1,122 @@
 import * as THREE from 'three';
-import { fur, plastic, metal, matte, mesh, group, limb, lathe, loadFace, faceDome } from './kit.js';
+import { fur, plastic, metal, matte, mesh, group, limb, smoothLathe, canvasTex, loadFace, faceDome } from './kit.js';
 
 /* The Zayeds. One soul, four bodies: the Camel (patience), the Cat (nerve), the Goat (memory) and the Falcon (hunger).
- * "withered" = the old bodies from the first game, worn and broken. "toy" = the newer bodies the soul was moved into. */
+ * "withered" = the old bodies from the first game, worn and broken. "toy" = the newer, shinier bodies the soul was moved into.
+ * Proportions follow a cartoon animatronic: a big round head on a pear-shaped body, thin jointed limbs, big shoes. */
 export const SPEC = {
-  zayed:   { kind: 'camel',  face: 'zayed',   fur: '#c99556', toy: '#e0b56c', tie: 0xb3262e, word: 'ZAYED' },
-  bubbles: { kind: 'cat',    face: 'bubbles', fur: '#e58fb0', toy: '#ff8cc0', tie: 0x2d5fd0, word: 'BUBBLES' },
-  taffy:   { kind: 'goat',   face: 'taffy',   fur: '#e9dcc2', toy: '#fff1d0', tie: 0x2f9a58, word: 'TAFFY', stripes: 'rgba(200,120,150,.35)' },
-  sherbet: { kind: 'falcon', face: 'sherbet', fur: '#9a7a52', toy: '#c9a36a', tie: 0xe8872b, word: 'SHERBET', spots: 'rgba(60,40,20,.45)' }
+  zayed:   { kind: 'camel',  face: 'zayed',   fur: '#c99556', toy: '#e2b46a', belly: '#f4e3bd', tie: 0xb3262e, word: 'ZAYED' },
+  bubbles: { kind: 'cat',    face: 'bubbles', fur: '#d9809f', toy: '#ff8cc0', belly: '#ffe0ee', tie: 0x2d5fd0, word: 'BUBBLES' },
+  taffy:   { kind: 'goat',   face: 'taffy',   fur: '#e3d6bd', toy: '#fff0d4', belly: '#ffd9e6', tie: 0x2f9a58, word: 'TAFFY' },
+  sherbet: { kind: 'falcon', face: 'sherbet', fur: '#93714a', toy: '#c9a36a', belly: '#f1dcae', tie: 0xe8872b, word: 'SHERBET' }
 };
+
+const J = (parent, pos, r, mat) => mesh(new THREE.SphereGeometry(r, 18, 14), mat, parent, pos); // a ball joint
+
+function bellyEmblem(color, word, toy) {
+  return canvasTex(256, 256, (g, W, H) => {
+    g.fillStyle = color; g.fillRect(0, 0, W, H);
+    if (toy) { g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(W * .38, H * .3, 60, 34, -.5, 0, 7); g.fill(); }
+    g.fillStyle = toy ? '#6a2a8a' : 'rgba(60,40,30,.55)'; g.font = '800 44px system-ui,sans-serif'; g.textAlign = 'center'; g.fillText(word, W / 2, H * .62);
+    g.fillStyle = toy ? '#ffd24a' : 'rgba(80,60,40,.5)'; for (let i = 0; i < 5; i++) { const x = W * (.2 + i * .15), y = H * .78; g.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 7 : 16; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } g.closePath(); g.fill(); }
+  });
+}
 
 export function buildZayed(who, variant = 'withered') {
   const s = SPEC[who], toy = variant === 'toy';
-  const skin = toy ? plastic(s.toy) : fur(s.fur, { spots: s.spots, stripes: s.stripes, grime: .3 });
-  const dark = matte(toy ? 0x1b1722 : 0x120e0c, .6), tieM = toy ? plastic(s.tie, { rough: .2 }) : matte(s.tie, .7);
-  const bone = metal(toy ? 0xcfd3da : 0x777b82, toy ? .25 : .55);
-  const root = group(null, null, who + '-' + variant);
-  const body = group(root);
-  const T = toy ? 1.06 : 1; // toys are a little rounder and neater
+  const skin = toy ? plastic(s.toy, { rough: .32 }) : fur(s.fur, { grime: .35, bump: .8 });
+  const shoe = toy ? plastic(s.tie, { rough: .25 }) : matte(0x3a2a22, .8);
+  const dark = matte(0x16111a, .55), bone = metal(toy ? 0xd7dbe2 : 0x7a7e86, toy ? .22 : .55), white = toy ? plastic(0xfff6e6, { rough: .3 }) : matte(0xd9ccb0, .85);
+  const tieM = toy ? plastic(s.tie, { rough: .2 }) : matte(s.tie, .7);
+  const root = group(null, null, who + '-' + variant), body = group(root);
 
-  // legs + feet
+  // legs: thigh, knee ball, shin, big rounded shoe
   for (const sx of [-1, 1]) {
-    limb(body, [sx * .2, .62, 0], [sx * .2, .16, .02], .13 * T, .11 * T, skin);
-    mesh(new THREE.SphereGeometry(.19, 20, 14), skin, body, [sx * .2, .1, .1], 0, [1, .55, 1.5]);
+    limb(body, [sx * .15, .66, 0], [sx * .15, .38, .015], .08, .07, skin); J(body, [sx * .15, .38, .015], .08, bone);
+    limb(body, [sx * .15, .38, .015], [sx * .15, .13, 0], .066, .06, skin);
+    const f = mesh(new THREE.SphereGeometry(.13, 22, 16), shoe, body, [sx * .15, .075, .075], 0, [1, .55, 1.6]); f.castShadow = true;
   }
-  // torso: lathe so it has a real waist and chest
-  const torso = lathe([[0, .55], [.32 * T, .6], [.43 * T, .85], [.42 * T, 1.1], [.36 * T, 1.38], [.2, 1.56], [0, 1.6]], skin);
-  body.add(torso); torso.castShadow = true;
-  mesh(new THREE.SphereGeometry(.4 * T, 24, 16, 0, Math.PI * 2, .55, .9), matte(toy ? 0xfff4e0 : 0xd9ccb0, .8), body, [0, .98, .03], [Math.PI / 2 - .2, 0, 0], [.9, 1, .5]);
-  mesh(new THREE.ConeGeometry(.07, .17, 12), tieM, body, [-.07, 1.4, .34], [Math.PI, 0, -.9]);
-  mesh(new THREE.ConeGeometry(.07, .17, 12), tieM, body, [.07, 1.4, .34], [Math.PI, 0, .9]);
-  mesh(new THREE.SphereGeometry(.06, 12, 10), tieM, body, [0, 1.4, .35]);
-  mesh(new THREE.CylinderGeometry(.11, .14, .34, 20), toy ? skin : bone, body, [0, 1.6, 0]);
+  // torso: a smooth pear (wide hips, narrow chest)
+  const torso = smoothLathe([[0, .55], [.2, .58], [.3, .7], [.33, .9], [.3, 1.1], [.24, 1.3], [.15, 1.42], [.09, 1.5], [0, 1.52]], skin, 64, 56); torso.rotation.y = Math.PI; body.add(torso); torso.castShadow = true; // seam at the back
+  // belly: a lighter panel with an emblem (toy) or a torn-open hatch showing the metal ribs (withered)
+  if (toy) { const emb = mesh(new THREE.SphereGeometry(.27, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhysicalMaterial({ map: bellyEmblem(s.belly, s.word, true), roughness: .35, clearcoat: .6 }), body, [0, .92, .06], [Math.PI / 2, 0, 0], [1, .55, 1.2]); emb.castShadow = false; }
+  else {
+    mesh(new THREE.CylinderGeometry(.17, .2, .08, 20), dark, body, [0, .93, .26], [Math.PI / 2, 0, 0], [1, 1, 1]);
+    for (let i = -2; i <= 2; i++) limb(body, [i * .055, 1.07, .3], [i * .06, .8, .3], .012, .012, bone);
+    for (const y of [.88, .98]) limb(body, [-.14, y, .3], [.14, y, .3], .011, .011, bone);
+    for (let i = 0; i < 3; i++) limb(body, [.1 + i * .02, .8, .3], [.17 + i * .05, .62 - i * .03, .3], .006, .004, matte(0x2a2420, .6));
+  }
+  // neck joint and bow tie wrapped around it
+  J(body, [0, 1.52, 0], .085, bone);
+  for (const sx of [-1, 1]) mesh(new THREE.SphereGeometry(.07, 18, 12), tieM, body, [sx * .095, 1.47, .12], [0, sx * .5, sx * -.25], [1.5, .8, .5]);
+  J(body, [0, 1.47, .15], .04, tieM);
 
-  // arms: shoulder / elbow / wrist so they can bend
+  // arms: shoulder ball, upper arm, elbow ball, forearm, mitten hand with a thumb
   const arms = {};
   for (const [side, sx] of [['L', -1], ['R', 1]]) {
-    const sh = group(body, [sx * .46, 1.42, 0], 'arm' + side);
-    mesh(new THREE.SphereGeometry(.15 * T, 18, 14), skin, sh);
-    limb(sh, [0, 0, 0], [sx * .08, -.34, .04], .1 * T, .085 * T, skin);
-    const el = group(sh, [sx * .08, -.34, .04], 'elbow' + side);
-    const broken = !toy && side === 'R' && who !== 'taffy';
-    if (broken) { limb(el, [0, 0, 0], [0, -.34, .1], .035, .03, bone); mesh(new THREE.SphereGeometry(.05, 10, 8), bone, el, [0, -.36, .11]); for (let k = -1; k <= 1; k++) limb(el, [0, -.36, .11], [k * .04, -.5, .15], .01, .006, bone); }
-    else { limb(el, [0, 0, 0], [0, -.3, .1], .08 * T, .07 * T, skin); const hand = mesh(new THREE.SphereGeometry(.1, 14, 12), toy ? plastic(0xfff4e0) : matte(0xd9ccb0, .85), el, [0, -.38, .12], 0, [1, 1.2, .8]); for (let k = -1; k <= 1; k++) mesh(new THREE.CapsuleGeometry(.018, .09, 4, 8), hand.material, el, [k * .04, -.48, .14]); }
-    arms[side] = sh; sh.userData.rest = [0, 0, sx * .12];
-    sh.rotation.z = sx * .12;
+    const sh = group(body, [sx * .31, 1.3, 0], 'arm' + side); J(sh, [0, 0, 0], .095, skin);
+    limb(sh, [0, 0, 0], [sx * .06, -.26, .03], .06, .052, skin); const el = group(sh, [sx * .06, -.26, .03], 'elbow' + side); J(el, [0, 0, 0], .06, bone);
+    const gone = !toy && side === 'R' && who !== 'taffy';
+    if (gone) { limb(el, [0, 0, 0], [0, -.26, .08], .03, .026, bone); J(el, [0, -.27, .085], .04, dark); for (let k = -1; k <= 1; k++) limb(el, [0, -.27, .085], [k * .045, -.42, .13], .01, .006, bone); }
+    else { limb(el, [0, 0, 0], [0, -.24, .08], .052, .046, skin); const h = mesh(new THREE.SphereGeometry(.075, 18, 14), white, el, [0, -.31, .1], 0, [1, 1.25, .8]); mesh(new THREE.SphereGeometry(.032, 10, 8), white, el, [sx * -.06, -.28, .11]); h.castShadow = true; }
+    arms[side] = sh; sh.rotation.z = sx * .1; sh.userData.rest = [0, 0, sx * .1];
   }
 
-  // head: sphere, muzzle, jaw, eyes behind the photo face
-  const head = group(body, [0, 1.66, 0], 'head');
-  mesh(new THREE.SphereGeometry(.3 * T, 36, 28), skin, head, [0, .3, 0]);
-  const jaw = group(head, [0, .08, .06], 'jaw');
-  mesh(new THREE.SphereGeometry(.2 * T, 24, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), skin, jaw, [0, .04, .12], 0, [1, .8, 1.2]);
-  mesh(new THREE.SphereGeometry(.17, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), dark, jaw, [0, .045, .12], [Math.PI, 0, 0], [1, .5, 1.1]);
-  for (let i = 0; i < 9; i++) { const a = -0.75 + i * .19; mesh(new THREE.ConeGeometry(.018, .06, 6), matte(toy ? 0xffffff : 0xcfc7a5, .45), jaw, [Math.sin(a) * .16, .075, .12 + Math.cos(a) * .16 * .9], [Math.PI, 0, 0]); }
-  if (!toy) { // withered: the jaw hangs loose
-    jaw.rotation.x = .22; jaw.userData.rest = .22;
-  }
-  const face = faceDome(head, loadFace(s.face), { aspect: .72 });
-  const extras = kindExtras(s.kind, head, skin, dark, toy, who, body);
-  if (toy) toyDetails(head, who, s); else { wear(root, body, head, bone, dark, who); tornHead(head, who, bone, dark); }
+  // head: a big round cartoon head with a wide cheek, the real face on its front, a lower jaw with teeth
+  const head = group(body, [0, 1.55, 0], 'head');
+  mesh(new THREE.SphereGeometry(.35, 44, 32), skin, head, [0, .33, 0], 0, [1.08, .95, 1]);
+  const jaw = group(head, [0, .07, .08], 'jaw');
+  mesh(new THREE.SphereGeometry(.2, 28, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), skin, jaw, [0, .02, .13], 0, [1.1, .7, 1.1]);
+  mesh(new THREE.SphereGeometry(.175, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), dark, jaw, [0, .03, .13], [Math.PI, 0, 0], [1.1, .45, 1.05]);
+  for (let i = 0; i < 9; i++) { const a = -0.8 + i * .2; mesh(new THREE.ConeGeometry(.016, .05, 6), matte(toy ? 0xffffff : 0xcfc7a5, .45), jaw, [Math.sin(a) * .185, .045, .13 + Math.cos(a) * .17], [Math.PI, 0, 0]); }
+  if (!toy) { jaw.rotation.x = .26; jaw.userData.rest = .26; }
+  const face = faceDome(head, loadFace(s.face), { r: .362, y: .35, z: 0, aspect: .74 });
+  const extras = kindExtras(s.kind, head, skin, dark, toy, who, body, white);
+  if (toy) toyDetails(head, who, body); else tornHead(head, who, bone, dark);
   return { root, body, head, jaw, face, armL: arms.L, armR: arms.R, who, variant, kind: s.kind, toy, extras, t: Math.random() * 100 };
 }
 
-function kindExtras(kind, head, skin, dark, toy, who, body) {
-  const inner = toy ? plastic(0xffb7cf) : matte(0x8c5a52, .9);
+function kindExtras(kind, head, skin, dark, toy, who, body, white) {
+  const inner = toy ? plastic(0xffb7cf, { rough: .4 }) : matte(0x8c5a52, .9);
   if (kind === 'camel') {
-    mesh(new THREE.SphereGeometry(.34, 24, 18), skin, body, [0, 1.52, -.3], 0, [.9, .85, 1]); // hump
-    for (const sx of [-1, 1]) { mesh(new THREE.SphereGeometry(.09, 14, 10), skin, head, [sx * .26, .56, 0], [0, 0, sx * .6], [1, 1.5, .5]); mesh(new THREE.SphereGeometry(.05, 12, 8), inner, head, [sx * .26, .56, .03], [0, 0, sx * .6], [1, 1.4, .3]); }
-    mesh(new THREE.CylinderGeometry(.16, .2, .2, 20), matte(0xb3262e, .6), head, [0, .66, 0]);
-    mesh(new THREE.CylinderGeometry(.015, .015, .12, 8), matte(0xe0c25a, .4), head, [0, .8, 0]);
+    mesh(new THREE.SphereGeometry(.3, 26, 18), skin, body, [0, 1.28, -.3], 0, [.95, 1, 1.05]); // hump
+    for (const sx of [-1, 1]) { mesh(new THREE.SphereGeometry(.11, 18, 12), skin, head, [sx * .33, .58, -.02], [0, 0, sx * .5], [1, 1.5, .55]); mesh(new THREE.SphereGeometry(.065, 14, 10), inner, head, [sx * .335, .58, .02], [0, 0, sx * .5], [1, 1.4, .3]); }
+    mesh(new THREE.CylinderGeometry(.15, .19, .2, 24), matte(0xb3262e, .5), head, [0, .72, -.02]); mesh(new THREE.TorusGeometry(.19, .012, 8, 24), matte(0xffd24a, .35), head, [0, .64, -.02], [Math.PI / 2, 0, 0]);
+    mesh(new THREE.CylinderGeometry(.012, .012, .12, 8), matte(0xe0c25a, .4), head, [0, .85, -.02]);
   } else if (kind === 'cat') {
-    for (const sx of [-1, 1]) { mesh(new THREE.ConeGeometry(.12, .3, 4), skin, head, [sx * .2, .62, 0], [0, Math.PI / 4, sx * -.28]); mesh(new THREE.ConeGeometry(.07, .2, 4), inner, head, [sx * .2, .6, .05], [0, Math.PI / 4, sx * -.28]); for (let w = 0; w < 3; w++) limb(head, [sx * .12, .2 - w * .02, .27], [sx * (.38), .24 - w * .07, .29], .005, .003, matte(0xffffff)); }
-    mesh(new THREE.TorusGeometry(.32, .06, 10, 24, Math.PI * 1.3), skin, body, [0, .7, -.4], [Math.PI / 2.6, 0, 1.2]);
+    for (const sx of [-1, 1]) { mesh(new THREE.ConeGeometry(.14, .34, 4), skin, head, [sx * .24, .7, -.02], [0, Math.PI / 4, sx * -.3]); mesh(new THREE.ConeGeometry(.08, .24, 4), inner, head, [sx * .24, .67, .02], [0, Math.PI / 4, sx * -.3]); for (let w = 0; w < 3; w++) limb(head, [sx * .15, .2 - w * .025, .3], [sx * .46, .26 - w * .09, .32], .005, .003, matte(0xffffff, .3)); }
+    mesh(new THREE.SphereGeometry(.04, 12, 8), matte(0xff5a8a, .4), head, [0, .22, .35], 0, [1.2, .8, .8]);
+    const tail = new THREE.CatmullRomCurve3([new THREE.Vector3(0, .62, -.28), new THREE.Vector3(0, .5, -.6), new THREE.Vector3(.1, .9, -.7), new THREE.Vector3(.04, 1.2, -.55)]); mesh(new THREE.TubeGeometry(tail, 24, .05, 10), skin, body);
   } else if (kind === 'goat') {
-    for (const sx of [-1, 1]) { mesh(new THREE.TorusGeometry(.14, .035, 10, 20, Math.PI * 1.15), matte(toy ? 0xf0e0c0 : 0x8a7a5a, .4), head, [sx * .17, .62, -.02], [0, 0, sx > 0 ? .2 : Math.PI - .2]); mesh(new THREE.SphereGeometry(.07, 12, 8), skin, head, [sx * .3, .4, 0], [0, 0, sx * -.9], [1.5, .5, .7]); }
-    mesh(new THREE.ConeGeometry(.05, .2, 8), skin, head, [0, -.02, .3], [Math.PI, 0, 0]);
+    for (const sx of [-1, 1]) { mesh(new THREE.TorusGeometry(.15, .04, 10, 22, Math.PI * 1.2), matte(toy ? 0xf3e2c0 : 0x8a7a5a, .4), head, [sx * .2, .68, -.02], [0, 0, sx > 0 ? .1 : Math.PI - .1]); mesh(new THREE.SphereGeometry(.085, 14, 10), skin, head, [sx * .38, .42, 0], [0, 0, sx * -.9], [1.6, .5, .7]); }
+    mesh(new THREE.ConeGeometry(.055, .22, 10), white, head, [0, -.03, .32], [Math.PI, 0, 0]);
   } else {
-    mesh(new THREE.ConeGeometry(.07, .2, 8), matte(toy ? 0xffc548 : 0xb98a2e, .35), head, [0, .22, .4], [Math.PI / 2, 0, 0]);
-    for (let i = 0; i < 5; i++) mesh(new THREE.ConeGeometry(.04, .24 - Math.abs(i - 2) * .03, 6), skin, head, [(i - 2) * .06, .64, -.04 - Math.abs(i - 2) * .02], [-.3 - Math.abs(i - 2) * .08, 0, (i - 2) * -.18]);
-    for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) mesh(new THREE.BoxGeometry(.015, .5 - i * .05, .12), skin, body, [sx * (.5 + i * .05), 1.1 - i * .09, -.12], [0, sx * .3, sx * (.5 + i * .1)]);
+    mesh(new THREE.ConeGeometry(.085, .26, 10), matte(toy ? 0xffc548 : 0xb98a2e, .3), head, [0, .17, .4], [Math.PI / 2, 0, 0]);
+    for (let i = 0; i < 5; i++) mesh(new THREE.ConeGeometry(.045, .26 - Math.abs(i - 2) * .035, 6), skin, head, [(i - 2) * .07, .7, -.05 - Math.abs(i - 2) * .02], [-.3 - Math.abs(i - 2) * .08, 0, (i - 2) * -.2]);
+    for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) mesh(new THREE.BoxGeometry(.016, .5 - i * .06, .13), skin, body, [sx * (.5 + i * .06), 1.0 - i * .1, -.1], [0, sx * .3, sx * (.5 + i * .12)]);
   }
   return {};
 }
 
-/* Withered extras: torn patches, a bare endoskeleton chest, bent wires. */
-function wear(root, body, head, bone, dark, who) {
-  const wire = matte(0x2a2420, .6);
-  mesh(new THREE.BoxGeometry(.16, .22, .05), bone, body, [.16, 1.1, .39], [0, 0, .15]);
-  for (let i = 0; i < 4; i++) limb(body, [.1 + i * .03, 1.0, .4], [.12 + i * .06, .8 - i * .03, .44], .008, .006, wire);
-  mesh(new THREE.SphereGeometry(.055, 10, 8), dark, head, [-.13, .24, .27], 0, [1, 1, .4]); // a dead eye socket
+/* Toy bodies: rosy cheeks outside the photo, a gloss highlight and a different party piece for each character. */
+const onHead = (r, up, around) => [Math.sin(around) * Math.cos(up) * r, 0.33 + Math.sin(up) * r, Math.cos(around) * Math.cos(up) * r];
+function toyDetails(head, who, body) {
+  const blush = new THREE.MeshStandardMaterial({ color: 0xff4a80, roughness: .5, emissive: 0xff2060, emissiveIntensity: .3, polygonOffset: true, polygonOffsetFactor: -3 });
+  for (const sx of [-1, 1]) { const ar = sx * 1.0, [x, y, z] = onHead(.352, -0.14, ar); const c = mesh(new THREE.CircleGeometry(.07, 24), blush, head, [x, y, z]); c.rotation.set(0.12, ar, 0); c.castShadow = false; }
+  const gold = plastic(0xffd24a, { rough: .2 }), pink = plastic(0xff6aa8, { rough: .2 });
+  if (who === 'bubbles') { mesh(new THREE.ConeGeometry(.12, .3, 18), pink, head, [0.02, .86, -.06], [-.12, 0, .18]); mesh(new THREE.SphereGeometry(.035, 10, 8), gold, head, [.05, 1.01, -.08]); }
+  if (who === 'taffy') for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; mesh(new THREE.SphereGeometry(.04, 10, 8), plastic([0xff7aa0, 0xfff1a0, 0x9ae0ff][i % 3], { rough: .3 }), head, [Math.sin(a) * .29, .68, Math.cos(a) * .29 - .02]); }
+  if (who === 'sherbet') { for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; mesh(new THREE.ConeGeometry(.035, .09, 6), gold, head, [Math.sin(a) * .15, .78, Math.cos(a) * .15 - .02]); } mesh(new THREE.CylinderGeometry(.16, .16, .045, 18), gold, head, [0, .74, -.02]); }
+  if (who === 'zayed') mesh(new THREE.SphereGeometry(.035, 10, 8), gold, head, [0, .87, -.02]);
+  mesh(new THREE.CircleGeometry(.055, 18), matte(0xffd24a, .35), body, [.14, 1.18, .29]).rotation.y = .3; // delivery badge
+}
+
+/* Withered bodies: torn fur on the head over bare metal, loose wires, an empty socket. */
+function tornHead(head, who, bone, dark) {
+  mesh(new THREE.SphereGeometry(.15, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), bone, head, [.24, .46, .12], [.5, 0, -.9], [1, .5, 1]);
+  mesh(new THREE.TorusGeometry(.1, .013, 6, 16), dark, head, [.24, .44, .14], [.5, .6, 0]);
+  for (let i = 0; i < 3; i++) limb(head, [.24 + i * .02, .46, .22], [.35 + i * .04, .33 - i * .05, .27], .006, .004, matte(0x2a2420, .6));
+  mesh(new THREE.SphereGeometry(.03, 8, 6), matte(0xd0453a, .4), head, [-.31, .2, .1]);
 }
 
 /* Procedural motion: idle sway, a chewing jaw, and the scare shake. */
@@ -105,38 +132,6 @@ export function animate(b, dt, mode = 'idle') {
   const sway = Math.sin(t * .8), twitch = Math.max(0, Math.sin(t * 2.3 + Math.sin(t * .7) * 3) - .92) * 12;
   b.body.rotation.z = sway * .015; b.body.rotation.x = b.toy ? 0 : .05 + Math.sin(t * .5) * .01;
   b.head.rotation.set(Math.sin(t * .6) * .04, Math.sin(t * .4) * .25 + twitch * .1, Math.sin(t * .9) * .03 + twitch * .05);
-  b.jaw.rotation.x = (b.toy ? 0 : .22) + Math.max(0, Math.sin(t * 1.7)) * (b.toy ? .15 : .1);
+  b.jaw.rotation.x = (b.toy ? 0 : .26) + Math.max(0, Math.sin(t * 1.7)) * (b.toy ? .15 : .1);
   b.armL.rotation.x = Math.sin(t * .9) * .05; b.armR.rotation.x = Math.sin(t * .9 + 1) * .05;
-}
-
-/* A point on the head's surface: theta up from the equator, phi around (0 = straight ahead). */
-const onHead = (r, up, around) => [Math.sin(around) * Math.cos(up) * r, 0.3 + Math.sin(up) * r, Math.cos(around) * Math.cos(up) * r];
-
-/* The Toy bodies: painted rosy cheeks, a glossy sheen, and a different party piece for each (the Zayeds' own twist). */
-function toyDetails(head, who, s) {
-  const blush = new THREE.MeshStandardMaterial({ color: 0xff4a80, roughness: .5, emissive: 0xff2060, emissiveIntensity: .3, polygonOffsetFactor: -2, polygonOffset: true });
-  for (const sx of [-1, 1]) { const ar = sx * 0.98, [x, y, z] = onHead(.326, -0.12, ar); const c = mesh(new THREE.CircleGeometry(.07, 24), blush, head, [x, y, z]); c.rotation.set(0.12, ar, 0); c.castShadow = false; } // outside the photo, on each cheek
-  const gold = plastic(0xffd24a, { rough: .2 }), pink = plastic(0xff6aa8, { rough: .2 });
-  if (who === 'bubbles') { // a party hat with a pom-pom
-    mesh(new THREE.ConeGeometry(.12, .3, 16), pink, head, [0.0, .72, -.04], [-.12, 0, .18]); mesh(new THREE.SphereGeometry(.035, 10, 8), gold, head, [.03, .85, -.07]);
-    for (const sx of [-1, 1]) for (let k = 0; k < 2; k++) { const [x, y, z] = onHead(.33, 0.18 + k * .1, sx * 0.55); mesh(new THREE.CylinderGeometry(.002, .002, .08, 4), matte(0xffffff, .3), head, [x + sx * .04, y, z], [0, 0, sx * 1.2]); }
-  }
-  if (who === 'taffy') { // a flower crown
-    for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; mesh(new THREE.SphereGeometry(.035, 10, 8), plastic([0xff7aa0, 0xfff1a0, 0x9ae0ff][i % 3], { rough: .3 }), head, [Math.sin(a) * .25, .6, Math.cos(a) * .25]); }
-  }
-  if (who === 'sherbet') { // a small gold crown
-    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; mesh(new THREE.ConeGeometry(.03, .08, 6), gold, head, [Math.sin(a) * .13, .68, Math.cos(a) * .13 - .02]); }
-    mesh(new THREE.CylinderGeometry(.14, .14, .04, 16), gold, head, [0, .64, -.02]);
-  }
-  if (who === 'zayed') { mesh(new THREE.SphereGeometry(.03, 10, 8), gold, head, [.0, .83, 0]); } // a gold tassel on the fez
-  // a "ZAYED EXPRESS" delivery sash-badge on every Toy
-  mesh(new THREE.CircleGeometry(.06, 16), matte(0xffd24a, .35), head.parent, [.2, 1.1, .4]).rotation.y = .3;
-}
-
-/* The Withered bodies: torn fur on the head over bare metal, a loose wire, a chewed ear. */
-function tornHead(head, who, bone, dark) {
-  mesh(new THREE.SphereGeometry(.14, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), bone, head, [.2, .42, .12], [.5, 0, -.9], [1, .5, 1]);
-  mesh(new THREE.TorusGeometry(.09, .012, 6, 14), dark, head, [.2, .4, .14], [.5, .6, 0]);
-  for (let i = 0; i < 3; i++) limb(head, [.2 + i * .02, .42, .2], [.3 + i * .04, .3 - i * .05, .25], .006, .004, matte(0x2a2420, .6));
-  mesh(new THREE.SphereGeometry(.03, 8, 6), matte(0xd0453a, .4), head, [-.28, .18, .1]); // a stain
 }
