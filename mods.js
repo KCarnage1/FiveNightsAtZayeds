@@ -461,6 +461,6 @@
   const isAdminWord = (w) => { w = String(w || '').trim().toLowerCase(); return w.length === CODE_H.length && H32(w) === CODE_H[CODE_H.length - 1]; };
   const adminApi = { get: () => admin.pw, set: async (pw) => { admin.pw = pw; if (admin.remembered && nativeKey) await nativeKey.save(pw).catch(() => {}); }, forget() { admin.pw = ''; admin.remembered = false; if (nativeKey) nativeKey.save('').catch(() => {}); } };
 
-  window.FNAZMOD = { flags, speed, earn, hour, setEvent, event: () => event, eventOn, word: isAdminWord, admin: adminApi, won, toggle, mod, give, wear(sec) { maskT = sec; }, save: () => save, reset() { maskT = 0; sprayT = 0; } };
+  window.FNAZMOD = { summon, toast, flags, speed, earn, hour, setEvent, event: () => event, eventOn, word: isAdminWord, admin: adminApi, won, toggle, mod, give, wear(sec) { maskT = sec; }, save: () => save, reset() { maskT = 0; sprayT = 0; } };
   refreshShop();
 })();

@@ -56,12 +56,37 @@
   setInterval(() => { const h = NET && NET.h; const s = h && h.y ? h.y.screen + ':' + (h.y.running ? h.y.night : 0) : ''; if (s && s !== lastScreen) { lastScreen = s; setTimeout(beat, 800); } }, 2000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
 
+  /* ---------- watching and events (same switch as the online status) ----------
+   * While a night is running, a short summary of it goes to the server every 3 seconds, and the developer can send a few
+   * fixed events back: a message, an animatronic at the door, a burst of speed, a gift of coins. Nothing else can be sent. */
+  const M = () => window.FNAZMOD, SUMMON = ['zayed', 'bubbles', 'taffy', 'sherbet'];
+  const room = (a) => (a ? (a.office ? '*' : '') + (a.room || '') : '');
+  setInterval(() => {
+    const y = NET && NET.h && NET.h.y; if (!sharing() || document.hidden || !y || !y.running || !y.ai) return;
+    const ai = y.ai, p = SUMMON.map((w) => (w === 'sherbet' ? (ai.sherbet.running ? 'running' : 'stage ' + ai.sherbet.stage) : room(ai[w])));
+    rpc('report_state', { p_id: pid, p_state: { n: Math.round(y.night) || 0, h: y.hour, p } }, 4000).catch(() => {});
+  }, 3000);
+  let since = null;
+  const num = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || lo));
+  function run(c) {
+    const m = M(), a = c.args || {}; if (!m) return;
+    if (c.kind === 'msg' && typeof a.text === 'string') m.toast('Message from the developer: ' + a.text.slice(0, 160));
+    else if (c.kind === 'summon' && SUMMON.includes(a.who)) m.summon(a.who);
+    else if (c.kind === 'speed') { const old = m.mod.speed; m.mod.speed = num(a.mult, 0.5, 3); setTimeout(() => { m.mod.speed = old; }, num(a.sec, 1, 60) * 1000); }
+    else if (c.kind === 'give') m.toast('A gift from the developer: ' + (m.give({ coins: num(a.coins, 0, 500) }) || 'nothing'));
+  }
+  async function poll() {
+    if (!sharing() || document.hidden) return;
+    try { const r = await rpc('get_commands', { p_id: pid, p_since: since }, 5000); if (r) { if (since !== null) r.cmds.forEach(run); since = r.last; } } catch (e) { /* offline */ }
+  }
+  poll(); setInterval(poll, 3000);
+
   /* ---------- Settings: the switch ---------- */
   const settings = document.querySelector('#settings .settings');
   if (settings) {
     const row = document.createElement('div');
     row.className = 'set-row';
-    row.innerHTML = '<label for="setShare">Show that I am online</label><input id="setShare" type="checkbox"><span></span><p class="hint">Tells the developer that the game is open: a random ID, the version, your device type and the screen you are on. No name, no account and no location.</p>';
+    row.innerHTML = '<label for="setShare">Show that I am online</label><input id="setShare" type="checkbox"><span></span><p class="hint">Tells the developer that the game is open: a random ID, the version, your device type and the screen you are on, and during a night, the hour and where the animatronics are. The developer can send messages and events (an animatronic at your door, a gift) while you play. No name, no account, no location, no screen capture. Turn it off to opt out of all of it.</p>';
     settings.insertBefore(row, settings.children[2] || null);
     const box = row.querySelector('#setShare');
     box.checked = sharing();
@@ -96,13 +121,21 @@
         $l('#lvTotal').textContent = d.total + (d.today > d.total ? ' · ' + d.today + ' today' : '');
         const count = (key, f) => { const m = {}; for (const p of d.players) { const k = f ? f(p) : p[key] || '?'; m[k] = (m[k] || 0) + 1; } return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<span>${n} ${k}</span>`).join(''); };
         $l('#lvChips').innerHTML = d.players.length ? count('platform') + count('ver', (p) => 'v' + (p.ver || '?')) + count('mode') : '';
-        $l('#lvList').innerHTML = d.players.length ? d.players.map((p) => `<div><b>${p.id}</b><span>${p.platform || '?'} · v${p.ver || '?'}</span><span>${nightText(p)}${p.mode === 'online' ? ' · online room' : ''}</span><i>${p.mins}m</i></div>`).join('') : '<em>Nobody has the game open right now.</em>';
+        const st = (p) => (p.state ? `Night ${p.state.n}, ${p.state.h || 12} AM · Camel ${p.state.p[0] || '-'}, Cat ${p.state.p[1] || '-'}, Goat ${p.state.p[2] || '-'}, Falcon ${p.state.p[3] || '-'}` : '');
+        const tools = (t) => `<span class="lv-tools" data-t="${t}">${['zayed', 'bubbles', 'taffy', 'sherbet'].map((w) => `<button type="button" data-k="summon" data-who="${w}">${{ zayed: 'Camel', bubbles: 'Cat', taffy: 'Goat', sherbet: 'Falcon' }[w]}</button>`).join('')}<button type="button" data-k="msg">Message</button><button type="button" data-k="speed">Fast 10s</button><button type="button" data-k="give">+50 coins</button></span>`;
+        $l('#lvList').innerHTML = (d.players.length ? `<div class="lv-all"><b>Everyone</b>${tools('all')}</div>` + d.players.map((p) => `<div><b>${p.id}</b><span>${p.platform || '?'} · v${p.ver || '?'}</span><span>${nightText(p)}${p.mode === 'online' ? ' · online room' : ''}</span><i>${p.mins}m</i>${p.state ? `<small class="lv-state">${st(p)}</small>` : ''}${tools(p.pid)}</div>`).join('') : '<em>Nobody has the game open right now.</em>');
         $l('#lvNote').textContent = 'Anonymous: a short ID, never a name. Updates every few seconds.';
       } catch (e) { $l('#lvNote').textContent = 'Could not reach the server.'; }
       finally { busy = false; }
     }
     const start = () => { clearInterval(timer); refresh(); timer = setInterval(() => { if (panel.hidden) { clearInterval(timer); return; } refresh(); }, 4000); };
     panel.addEventListener('fnaz:open', start);
+    $l('#lvList').addEventListener('click', async (e) => {
+      const b = e.target.closest('button[data-k]'); if (!b) return; const t = b.closest('.lv-tools').dataset.t, k = b.dataset.k, pw = FNAZMOD.admin.get();
+      const args = k === 'summon' ? { who: b.dataset.who } : k === 'speed' ? { mult: 2, sec: 10 } : k === 'give' ? { coins: 50 } : { text: (prompt('Message to show:') || '').trim() };
+      if (k === 'msg' && !args.text) return;
+      try { const r = await rpc('admin_send', { p_secret: pw, p_target: t, p_kind: k, p_args: args }, 6000); $l('#lvNote').textContent = r ? 'Sent.' : 'The server refused (password?).'; } catch (err) { $l('#lvNote').textContent = 'Could not reach the server.'; }
+    });
     $l('#lvChange').addEventListener('click', async () => {
       const o = $l('#lvOld').value, n = $l('#lvNew').value, m = $l('#lvPw');
       if (n.length < 12) { m.textContent = 'The new password needs 12 or more characters.'; return; }
