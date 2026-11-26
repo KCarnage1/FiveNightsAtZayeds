@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { canvasTex, matte, mesh, group } from './models/kit.js';
 import { loadProp } from './models/props.js';
 import { KIND, floorTexture, wallMaterial, tileUV, decorate } from './decor.js';
+import { mergeByMaterial } from './models/merge.js';
 
 /* The pizzeria. +z is toward the player, -z runs away down the hallway into the main hall.
  * Rooms are boxes with doorway gaps; vents are low ducts that open into the office's side walls. */
@@ -27,7 +28,6 @@ const GAPS = [
   ['x', -9, -0.9, 0.1], ['x', 9, -0.9, 0.1], ['x', -3, -0.9, 0.1], ['x', 3, -0.9, 0.1]
 ];
 const T = 0.18;
-const inGap = (axis, c, lo, hi) => GAPS.some((g) => g[0] === axis && Math.abs(g[1] - c) < 0.05 && lo >= g[2] - 0.01 && hi <= g[3] + 0.01);
 
 export const CAMS = {
   stage: { pos: [0, 2.8, -13], look: [0, 1.3, -20], name: 'Show Stage', room: 'main' },
@@ -45,7 +45,6 @@ export const CAMS = {
 
 export function buildMap(scene) {
   const lights = {};
-  const checker = (a, b) => canvasTex(128, 128, (g, w, h) => { g.fillStyle = a; g.fillRect(0, 0, w, h); g.fillStyle = b; for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) if ((x + y) % 2) g.fillRect(x * 32, y * 32, 32, 32); }, { repeat: true });
   for (const [id, r] of Object.entries(ROOMS)) {
     const [x0, z0, x1, z1] = r.b, w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, g = group(scene, null, 'room-' + id);
     const kind = KIND[id] || 'party'; const ft = floorTexture(kind, w, d);
@@ -69,6 +68,7 @@ export function buildMap(scene) {
       }
     };
     wallSide('z', z0, x0, x1); wallSide('z', z1, x0, x1); wallSide('x', x0, z0, z1); wallSide('x', x1, z0, z1);
+    mergeByMaterial(g, { castShadow: false }); // the room's walls become one mesh
     if (!id.startsWith('vent')) {
       const L = new THREE.PointLight(0xffd9a8, 0, 22, 1.6); L.position.set(cx, Math.min(r.h - .5, 3), cz); g.add(L); lights[id] = L;
     } else { const L = new THREE.PointLight(0x9fb2ff, 0, 9, 1.8); L.position.set(cx, .8, cz); g.add(L); lights[id] = L; }
@@ -91,7 +91,7 @@ function props(scene) {
   mesh(new THREE.PlaneGeometry(2.2, .55), new THREE.MeshStandardMaterial({ map: sign, emissive: 0x442211, emissiveMap: sign, emissiveIntensity: .6 }), scene, [-2.3, 2.5, 2.4], [0, Math.PI, 0]);
   // the stage in the main hall
   mesh(new THREE.BoxGeometry(9, .4, 3), matte(0x3a2a4a, .6), scene, [0, .2, -20]);
-  const curtainL = mesh(new THREE.BoxGeometry(1.8, 4, .2), red, scene, [-4, 2, -21.8]); mesh(new THREE.BoxGeometry(1.8, 4, .2), red, scene, [4, 2, -21.8]);
+  mesh(new THREE.BoxGeometry(1.8, 4, .2), red, scene, [-4, 2, -21.8]); mesh(new THREE.BoxGeometry(1.8, 4, .2), red, scene, [4, 2, -21.8]);
   // tables with party hats in the party rooms and main hall
   for (const [x, z] of [[-12, -7], [-12, -2.5], [12, -7], [12, -2.5], [-4, -16], [4, -16], [0, -14.5]]) { const g = stand(scene, 'party_table', (g) => { mesh(new THREE.CylinderGeometry(.7, .7, .08, 20), cloth, g, [x, .8, z]); mesh(new THREE.CylinderGeometry(.08, .12, .8, 10), dk, g, [x, .4, z]); mesh(new THREE.ConeGeometry(.12, .3, 10), matte(0xe84a8a, .5), g, [x + .2, .99, z]); }); g.userData.at = { x, y: 0, z, s: 0.72, ry: (x * 7 + z * 3) % 6.28 }; }
   // the music box in the prize corner: a gift box on a tall shelf

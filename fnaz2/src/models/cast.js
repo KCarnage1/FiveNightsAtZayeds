@@ -27,7 +27,7 @@ export function buildZayed(who, variant = 'withered') {
   // torso: lathe so it has a real waist and chest
   const torso = lathe([[0, .55], [.32 * T, .6], [.43 * T, .85], [.42 * T, 1.1], [.36 * T, 1.38], [.2, 1.56], [0, 1.6]], skin);
   body.add(torso); torso.castShadow = true;
-  const patch = mesh(new THREE.SphereGeometry(.4 * T, 24, 16, 0, Math.PI * 2, .55, .9), matte(toy ? 0xfff4e0 : 0xd9ccb0, .8), body, [0, .98, .03], [Math.PI / 2 - .2, 0, 0], [.9, 1, .5]);
+  mesh(new THREE.SphereGeometry(.4 * T, 24, 16, 0, Math.PI * 2, .55, .9), matte(toy ? 0xfff4e0 : 0xd9ccb0, .8), body, [0, .98, .03], [Math.PI / 2 - .2, 0, 0], [.9, 1, .5]);
   mesh(new THREE.ConeGeometry(.07, .17, 12), tieM, body, [-.07, 1.4, .34], [Math.PI, 0, -.9]);
   mesh(new THREE.ConeGeometry(.07, .17, 12), tieM, body, [.07, 1.4, .34], [Math.PI, 0, .9]);
   mesh(new THREE.SphereGeometry(.06, 12, 10), tieM, body, [0, 1.4, .35]);
@@ -38,7 +38,7 @@ export function buildZayed(who, variant = 'withered') {
   for (const [side, sx] of [['L', -1], ['R', 1]]) {
     const sh = group(body, [sx * .46, 1.42, 0], 'arm' + side);
     mesh(new THREE.SphereGeometry(.15 * T, 18, 14), skin, sh);
-    const upper = limb(sh, [0, 0, 0], [sx * .08, -.34, .04], .1 * T, .085 * T, skin);
+    limb(sh, [0, 0, 0], [sx * .08, -.34, .04], .1 * T, .085 * T, skin);
     const el = group(sh, [sx * .08, -.34, .04], 'elbow' + side);
     const broken = !toy && side === 'R' && who !== 'taffy';
     if (broken) { limb(el, [0, 0, 0], [0, -.34, .1], .035, .03, bone); mesh(new THREE.SphereGeometry(.05, 10, 8), bone, el, [0, -.36, .11]); for (let k = -1; k <= 1; k++) limb(el, [0, -.36, .11], [k * .04, -.5, .15], .01, .006, bone); }
@@ -68,7 +68,7 @@ function kindExtras(kind, head, skin, dark, toy, who, body) {
   if (kind === 'camel') {
     mesh(new THREE.SphereGeometry(.34, 24, 18), skin, body, [0, 1.52, -.3], 0, [.9, .85, 1]); // hump
     for (const sx of [-1, 1]) { mesh(new THREE.SphereGeometry(.09, 14, 10), skin, head, [sx * .26, .56, 0], [0, 0, sx * .6], [1, 1.5, .5]); mesh(new THREE.SphereGeometry(.05, 12, 8), inner, head, [sx * .26, .56, .03], [0, 0, sx * .6], [1, 1.4, .3]); }
-    const hat = mesh(new THREE.CylinderGeometry(.16, .2, .2, 20), matte(0xb3262e, .6), head, [0, .66, 0]);
+    mesh(new THREE.CylinderGeometry(.16, .2, .2, 20), matte(0xb3262e, .6), head, [0, .66, 0]);
     mesh(new THREE.CylinderGeometry(.015, .015, .12, 8), matte(0xe0c25a, .4), head, [0, .8, 0]);
   } else if (kind === 'cat') {
     for (const sx of [-1, 1]) { mesh(new THREE.ConeGeometry(.12, .3, 4), skin, head, [sx * .2, .62, 0], [0, Math.PI / 4, sx * -.28]); mesh(new THREE.ConeGeometry(.07, .2, 4), inner, head, [sx * .2, .6, .05], [0, Math.PI / 4, sx * -.28]); for (let w = 0; w < 3; w++) limb(head, [sx * .12, .2 - w * .02, .27], [sx * (.38), .24 - w * .07, .29], .005, .003, matte(0xffffff)); }
@@ -135,7 +135,7 @@ function toyDetails(head, who, s) {
 
 /* The Withered bodies: torn fur on the head over bare metal, a loose wire, a chewed ear. */
 function tornHead(head, who, bone, dark) {
-  const cap = mesh(new THREE.SphereGeometry(.14, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), bone, head, [.2, .42, .12], [.5, 0, -.9], [1, .5, 1]);
+  mesh(new THREE.SphereGeometry(.14, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), bone, head, [.2, .42, .12], [.5, 0, -.9], [1, .5, 1]);
   mesh(new THREE.TorusGeometry(.09, .012, 6, 14), dark, head, [.2, .4, .14], [.5, .6, 0]);
   for (let i = 0; i < 3; i++) limb(head, [.2 + i * .02, .42, .2], [.3 + i * .04, .3 - i * .05, .25], .006, .004, matte(0x2a2420, .6));
   mesh(new THREE.SphereGeometry(.03, 8, 6), matte(0xd0453a, .4), head, [-.28, .18, .1]); // a stain

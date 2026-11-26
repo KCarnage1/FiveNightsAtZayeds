@@ -135,7 +135,6 @@ body.cam-on #gl{filter:grayscale(1) contrast(1.25) brightness(1.2)}
   body.cam-on #bMask,body.cam-on #bFlash{display:none}
   .pausebtn{top:calc(60px + env(safe-area-inset-top))}
 }
-#callSkip{min-height:44px;min-width:44px}
 @media (pointer:coarse){#call button{min-height:44px;padding:0 14px}.adm select,.adm input[type=text],.adm input[type=password]{min-height:44px}.row select{min-height:44px}}
 
 /* the night card sits under every menu, and the pause menu is one card with stacked buttons */
@@ -145,3 +144,16 @@ body.cam-on #gl{filter:grayscale(1) contrast(1.25) brightness(1.2)}
 @media (orientation:portrait) and (pointer:coarse){.title .tag1::after{content:"\A Plays best sideways"}}
 #toast{top:auto;bottom:calc(8px + env(safe-area-inset-bottom))}
 @media (pointer:coarse){#kb{display:none}}
+
+/* ---------- antislop-ui pass: no emoji, sentence case, glow only on the logo ---------- */
+.coin{display:inline-block;width:.85em;height:.85em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#ffd24a 55%,#b8860b);vertical-align:-.08em;margin-right:.35em;box-shadow:inset 0 0 0 .12em #b8860b66}
+.item i svg{width:24px;height:24px}
+.title .tag1{letter-spacing:.02em;text-transform:none;font-size:15px;opacity:.9;margin:0}
+.title .top{display:grid;gap:2px}
+.tmenu button,.tabs button{text-transform:none;letter-spacing:.01em;font-weight:700}
+.tmenu button{font-size:16px}.tmenu button.main{font-size:19px}
+.code{text-shadow:none}
+.screen h1{text-shadow:none}.title h1,.logo{text-shadow:0 0 24px #ffd24a55}
+.coinbar b,.corner .coins{display:inline-flex;align-items:center}
+
+@media (pointer:coarse){#callSkip{min-height:44px;min-width:44px}}

@@ -2,3 +2,5 @@ node_modules/
 preview.bundle.js
 game.bundle.js
 propview.bundle.js
+debug.bundle.js
+icon-*.tmp

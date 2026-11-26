@@ -1,4 +1,5 @@
 import { adminWordOk } from './admin.js';
+import { ic } from './icons.js';
 import { WHO, NODES, HOUR_SEC } from './ai.js';
 import * as Online from './online.js';
 import { stats, saveStats } from './settings.js';
@@ -22,7 +23,6 @@ export function initAdmin(ctx) {
     };
     $('#ago').onclick = go; $('#apw').onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') go(); }; $('#aclose').onclick = closeModal; $('#apw').focus();
   }
-  const lv = () => (G.S ? G.S.lv : null);
   const tog = (k, label, p) => `<div class="row"><label for="a_${k}">${label}</label><input id="a_${k}" class="tog" data-flag="${k}" type="checkbox" ${G.adm[k] ? 'checked' : ''}>${p ? `<p>${p}</p>` : ''}</div>`;
   function menu(tab = 'Cheats') {
     const tabs = ['Cheats', 'Cast', 'Economy', 'Online', 'Broadcast'];
@@ -34,7 +34,7 @@ export function initAdmin(ctx) {
     if (tab === 'Cast') body = G.S ? `<div class="adm"><h3>Levels (this night)</h3>${WHO.map((w) => `<div class="row"><label for="l_${w}">${ctx.NAMES[w]}</label><span><input id="l_${w}" data-lv="${w}" type="range" min="0" max="20" value="${G.S.lv[w]}"> <output>${G.S.lv[w]}</output></span></div>`).join('')}
       <h3>Move one</h3><div class="grid2"><select id="m_who">${WHO.map((w) => `<option value="${w}">${ctx.NAMES[w]}</option>`).join('')}</select><select id="m_to">${NODES.map((n) => `<option value="${n}">${n}</option>`).join('')}</select></div>
       <div class="grid2"><button class="sm" id="m_go">Send</button><button class="sm" id="m_clear">Clear the office</button><button class="sm" id="m_hall">Everyone to the hall</button><button class="sm" id="m_home">Everyone home</button></div></div>` : '<p>Start a night to use these.</p>';
-    if (tab === 'Economy') body = `<div class="adm"><div class="coinbar"><span>Coins</span><b>🪙 ${stats.coins}</b></div><div class="grid2"><button class="sm" data-coin="100">+100</button><button class="sm" data-coin="1000">+1000</button><button class="sm" data-coin="10000">+10000</button><button class="sm" data-coin="0">Set to 0</button></div>
+    if (tab === 'Economy') body = `<div class="adm"><div class="coinbar"><span>Coins</span><b>${ic('coin')}${stats.coins}</b></div><div class="grid2"><button class="sm" data-coin="100">+100</button><button class="sm" data-coin="1000">+1000</button><button class="sm" data-coin="10000">+10000</button><button class="sm" data-coin="0">Set to 0</button></div>
       <div class="grid2"><button class="sm" id="e_all">Unlock every night</button><button class="sm" id="e_items">Own every item</button><button class="sm" id="e_claim">Reset daily reward</button><button class="sm" id="e_stats">Clear stats</button></div></div>`;
     if (tab === 'Online') body = `<div class="adm"><p id="olist">Loading…</p><div class="btnrow"><button class="sm" id="o_refresh">Refresh</button></div>
       <h3>Co-op</h3><p>${G.net ? `state: ${G.net.state} · room: ${G.net.code || '-'} · ping: ${G.net.ping} ms` : 'not started'}</p></div>`;
@@ -52,7 +52,7 @@ export function initAdmin(ctx) {
     m.querySelectorAll('[data-coin]').forEach((b) => { b.onclick = () => { const n = +b.dataset.coin; if (n === 0) { stats.coins = 0; saveStats(); } else earn(n); menu('Economy'); ctx.refreshHome(); }; });
     on('e_all', () => { stats.beaten = 6; saveStats(); toast('All nights unlocked'); ctx.refreshHome(); }); on('e_items', () => { for (const u of UPGRADES) while ((stats.items[u.id] | 0) < u.tiers.length) buy(u, true); for (const c of COSMETICS) buy(c, true); toast('Owned everything'); ctx.applyCosmetics(); });
     on('e_claim', () => { stats.claim = ''; stats.streak = 0; saveStats(); toast('Daily reward reset'); }); on('e_stats', () => { stats.deaths = stats.wins = 0; stats.killers = {}; stats.seconds = 0; saveStats(); toast('Stats cleared'); });
-    if (tab === 'Online') { const load = async () => { try { const d = await Online.rpc('admin_online', { p_secret: pw }, 7000); $('#olist') && ($('#olist').innerHTML = d ? `<b>${d.total}</b> online now (${d.today} today)<br>` + d.players.slice(0, 20).map((p) => `${esc(p.id)} · ${esc(p.platform || '?')} · v${esc(p.ver || '?')} · ${esc(p.screen || '')}${p.night ? ' n' + p.night : ''}`).join('<br>') : 'The server did not accept the password.'); } catch (e) { $('#olist') && ($('#olist').textContent = 'Could not reach the server.'); } }; load(); on('o_refresh', load); }
+    if (tab === 'Online') { const load = async () => { try { const d = await Online.rpc('admin_online', { p_secret: pw }, 7000); $('#olist') && ($('#olist').innerHTML = d ? `<b>${d.total}</b> online now (${d.today} today)<br>` + d.players.slice(0, 20).map((p) => `${esc(p.id)} · ${esc(p.platform || '?')} · v${esc(p.ver || '?')} · ${esc(p.screen || '')}${p.night ? ' n' + p.night : ''}`).join('<br>') : 'The server did not accept the password. Log out and log in again.'); } catch (e) { $('#olist') && ($('#olist').textContent = 'Could not reach the server. Check your connection, then press Refresh.'); } }; load(); on('o_refresh', load); }
     if (tab === 'Broadcast') {
       const pub = async (obj) => { try { const r = await Online.rpc('admin_publish', { p_secret: pw, p_data: obj }, 8000); $('#b_res').textContent = r ? 'Published.' : 'The server refused (password?).'; } catch (e) { $('#b_res').textContent = 'Could not reach the server.'; } };
       on('b_pub', () => { const t = $('#b_title').value.trim(), msg = $('#b_msg').value.trim(); if (!t && !msg) { $('#b_res').textContent = 'Write something first.'; return; } pub({ id: 'f2-' + Date.now().toString(36), title: t || 'Message', message: msg }); });

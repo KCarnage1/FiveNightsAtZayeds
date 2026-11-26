@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { mergeByMaterial } from './merge.js';
 
 /* Hard-surface props modelled in CAD (build123d, source in models-src/*.py) and exported as glTF. They are authored in millimetres with Z up;
  * this loader turns them into metres with Y up, resting on the floor, and gives them the game's lighting. */
@@ -14,6 +15,7 @@ function fix(gltf, name) {
       if (m) { m.metalness = Math.min(m.metalness || 0, 0.5); m.roughness = Math.max(m.roughness ?? 0.6, 0.35); m.side = THREE.FrontSide; } } });
   const box = new THREE.Box3().setFromObject(inner); const big = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z); g.scale.setScalar(big > 20 ? 0.001 : 1); // millimetres or already metres
   inner.position.set(-(box.min.x + box.max.x) / 2, -box.min.y, -(box.min.z + box.max.z) / 2); // centred, on the floor
+  mergeByMaterial(g); // one draw call per material instead of one per part
   return g;
 }
 /* Resolves with a new copy of the prop, or null if it could not be loaded (the game then keeps its simple shapes). */

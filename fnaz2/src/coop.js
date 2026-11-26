@@ -1,8 +1,8 @@
 /* Online co-op. The host is the Guard (office, flashlight, mask) and runs the whole night. The guest is the Operator: only they can use
  * the cameras and wind the music box, and they see what the cameras see. Snapshots go to the guest 10 times a second. */
 import { createNet, cleanCode, PROTO } from './net.js';
-import { WHO } from './ai.js';
 
+const PLACES = new Set(['stage', 'main', 'game', 'prize', 'partyL', 'partyR', 'parts', 'kids', 'ceiling', 'hall', 'ventL', 'ventR', 'office']);
 const PINGS = { mask: 'Mask on!', hall: 'Light the hallway!', left: 'Left vent!', right: 'Right vent!', wind: 'Wind the music box!', ok: 'Got it', thx: 'Nice!' };
 
 export function initCoop(ctx) {
@@ -34,7 +34,7 @@ export function initCoop(ctx) {
       $('#ccopy').onclick = () => copy(net.code); $('#clink').onclick = () => copy(link); $('#cn').onchange = (e) => { lobbyNight = +e.target.value; }; $('#cbk').onclick = back;
       $('#cgo').onclick = () => { const seed = (Date.now() & 0xffff) + 1; net.send('start', { night: lobbyNight, seed }); begin(lobbyNight, seed, 'host'); };
     };
-    render(); net.onState.length; const off = net.onState((st, err) => { if (G.mode === 'play' || !net.role) return; if (st === 'connected') { net.send('hello', {}); render(); } if (st === 'lost') { toast(err || 'Partner left'); net.reopen(); render(); } if (st === 'error') { off(); fail(err); } });
+    render(); const off = net.onState((st, err) => { if (G.mode === 'play' || !net.role) return; if (st === 'connected') { net.send('hello', {}); render(); } if (st === 'lost') { toast(err || 'Partner left'); net.reopen(); render(); } if (st === 'error') { off(); fail(err); } });
     const tick = setInterval(() => { if (!net.role || G.mode === 'play') { clearInterval(tick); return; } const el = $('#cstat'); if (el && net.state === 'connected') el.textContent = 'Partner connected · ' + Math.max(1, net.ping) + ' ms'; }, 1000);
   }
 
@@ -72,8 +72,19 @@ export function initCoop(ctx) {
   net.on('hello', (d) => { if (d && d.v !== undefined && d.v !== PROTO) toast('Your partner has a different game version. Update both.'); });
   net.on('chat', (id) => { if (PINGS[id]) { ctx.say((G.guest ? 'Guard' : 'Operator') + ': ' + PINGS[id], 2600); Snd.chime(); } });
   net.on('inp', (d) => { if (!G.coop || G.guest || !d) return; G.coop.remote.cam = d.cam && ctx.CAMS[d.cam] ? d.cam : null; G.coop.remote.wind = !!d.wind; G.coop.partnerCam = G.coop.remote.cam; });
-  net.on('snap', (d) => { if (!G.guest || !G.S || !d) return; Object.assign(G.S, d.s); Object.assign(G.from, d.from || {}); if (d.fx && d.fx.length) ctx.apply(d.fx); });
-  net.on('leave', () => { if (net.state === 'connected') { net.reopen && net.role === 'host' && null; } });
+  /* Everything from the other player is checked before it touches the game: only known fields, known characters and known places. */
+  const NUM = ['t', 'hour', 'box', 'boxOut', 'battery', 'flashDead', 'mask'], FX = new Set(['move', 'enter', 'run', 'pushed', 'boxout', 'boxsafe', 'revived', 'kill', 'win', 'leave']), num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  function takeSnap(d) {
+    const s = d.s || {}, S = G.S;
+    for (const k of NUM) { const v = num(s[k]); if (v !== null) S[k] = v; }
+    if (typeof s.flashOn === 'boolean') S.flashOn = s.flashOn; if (typeof s.won === 'boolean') S.won = s.won;
+    S.aimedAt = typeof s.aimedAt === 'string' && PLACES.has(s.aimedAt) ? s.aimedAt : null; S.dead = typeof s.dead === 'string' && ctx.NAMES[s.dead] ? s.dead : null;
+    if (s.pos && typeof s.pos === 'object') for (const w of Object.keys(ctx.NAMES)) if (typeof s.pos[w] === 'string' && PLACES.has(s.pos[w])) S.pos[w] = s.pos[w];
+    if (d.from && typeof d.from === 'object') for (const w of Object.keys(ctx.NAMES)) if (typeof d.from[w] === 'string' && PLACES.has(d.from[w])) G.from[w] = d.from[w];
+    const fx = Array.isArray(d.fx) ? d.fx.slice(0, 40).filter((f) => f && FX.has(f.type) && (f.who === undefined || ctx.NAMES[f.who]) && (f.from === undefined || PLACES.has(f.from)) && (f.to === undefined || PLACES.has(f.to))) : [];
+    if (fx.length) ctx.apply(fx);
+  }
+  net.on('snap', (d) => { if (G.guest && G.S && d && typeof d === 'object') takeSnap(d); });
   net.onState((st, err) => {
     if (st !== 'lost' || !started) return; started = false;
     if (G.guest) { toast(err || 'The host left'); G.coop = null; G.guest = false; G.cam = null; ctx.leaveToMenu('The host disconnected. The night ended.'); net.close(); }

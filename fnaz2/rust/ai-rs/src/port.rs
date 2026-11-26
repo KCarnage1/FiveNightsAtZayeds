@@ -311,7 +311,7 @@ impl Night<'_> {
                 (hold - dt * 0.5).max(0.0)
             };
             self.set_sub("hold", w, hold);
-            if hold > 1.1 {
+            if hold > 1.0 {
                 self.set_pos(w, "parts");
                 self.set_sub("runT", w, 0.0);
                 self.set_sub("hold", w, 0.0);
@@ -319,7 +319,7 @@ impl Night<'_> {
                 self.fx(json!({"type": "pushed", "who": w, "from": "hall", "to": "parts"}));
                 return;
             }
-            if run > 4.2 {
+            if run > 4.6 {
                 if !truthy(self.s.get("inv")) && !self.revive(w) {
                     self.kill(w);
                 } else {
@@ -368,7 +368,7 @@ impl Night<'_> {
         let b = if truthy(self.s.get("wind")) {
             (b + dt * 26.0).min(100.0)
         } else {
-            (b - dt * (0.55 + lvl * 0.05) * self.mod_n("box")).max(0.0)
+            (b - dt * (0.55 + lvl * 0.07) * self.mod_n("box")).max(0.0)
         };
         self.set("box", b);
         if self.cheat("box") {

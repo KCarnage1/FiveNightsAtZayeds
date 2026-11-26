@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { canvasTex, matte, mesh, group, loadFace } from './models/kit.js';
+import { canvasTex, matte, mesh, group } from './models/kit.js';
 
 /* The look of the pizzeria: bright party rooms with striped, confetti-covered walls and checkerboard floors, bunting and balloons,
  * posters, the kids' crayon drawings in the office. Cameras are shown in grey by the page (CSS), as on the old security monitors. */
@@ -50,14 +50,17 @@ function bunting(scene, x0, z0, x1, z1, y, sag = .25, n = 14) {
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide })); scene.add(m);
 }
-function balloons(scene, x, z, n = 6, h = 2.4) {
-  const g = group(scene, [x, 0, z]);
-  for (let i = 0; i < n; i++) {
-    const c = pick(PARTY), ox = (rnd() - .5) * .7, oz = (rnd() - .5) * .7, y = h + rnd() * .7;
-    mesh(new THREE.SphereGeometry(.22, 16, 12), new THREE.MeshPhysicalMaterial({ color: c, roughness: .2, clearcoat: 1, clearcoatRoughness: .1 }), g, [ox, y, oz], 0, [1, 1.18, 1]);
-    mesh(new THREE.CylinderGeometry(.004, .004, y - .1, 4), matte(0xdddddd, .8), g, [ox / 2, (y - .1) / 2, oz / 2]);
-  }
-  mesh(new THREE.CylinderGeometry(.09, .11, .16, 10), matte(0x6a5a3a, .8), g, [0, .08, 0]);
+const balloonList = [], stringPts = [];
+function balloons(scene, x, z, n = 6, h = 2.4) { // collected here, built as one instanced mesh by flushBalloons()
+  for (let i = 0; i < n; i++) { const ox = (rnd() - .5) * .7, oz = (rnd() - .5) * .7, y = h + rnd() * .7; balloonList.push({ x: x + ox, y, z: z + oz, c: pick(PARTY) }); stringPts.push(x + ox / 2, 0.1, z + oz / 2, x + ox, y - .2, z + oz); }
+  mesh(new THREE.CylinderGeometry(.09, .11, .16, 10), matte(0x6a5a3a, .8), group(scene, [x, 0, z]), [0, .08, 0]);
+}
+function flushBalloons(scene) {
+  const m = new THREE.InstancedMesh(new THREE.SphereGeometry(.22, 14, 10), new THREE.MeshPhysicalMaterial({ roughness: .2, clearcoat: 1, clearcoatRoughness: .1 }), balloonList.length), d = new THREE.Object3D();
+  balloonList.forEach((b, i) => { d.position.set(b.x, b.y, b.z); d.scale.set(1, 1.18, 1); d.updateMatrix(); m.setMatrixAt(i, d.matrix); m.setColorAt(i, new THREE.Color(b.c)); });
+  m.instanceMatrix.needsUpdate = true; m.frustumCulled = false; scene.add(m);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(stringPts, 3)); scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xdddddd })));
+  balloonList.length = 0; stringPts.length = 0;
 }
 function poster(scene, w, h, pos, rotY, draw) {
   const t = canvasTex(512, Math.round(512 * h / w), draw);
@@ -112,4 +115,5 @@ export function decorate(scene) {
   celebrate(scene, [0, 2.0, 2.38], Math.PI);
   // kids' cove
   starSign(scene, "KID'S COVE", [-7.5, 2.8, -28.88], 2.4);
+  flushBalloons(scene);
 }

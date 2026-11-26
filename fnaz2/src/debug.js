@@ -4,7 +4,7 @@ import { newNight, step, WHO, CAST } from './ai.js';
 import { buildZayed } from './models/cast.js';
 import { buildIbrahim, buildGelly, buildBidoof } from './models/extras.js';
 import { buildMap, ROOMS, CAMS } from './map.js';
-import { cfg, set as setCfg, DEFAULTS } from './settings.js';
+import { cfg, set as setCfg } from './settings.js';
 import * as Online from './online.js';
 import { createNet, peerOptions } from './net.js';
 import { adminWordOk } from './admin.js';

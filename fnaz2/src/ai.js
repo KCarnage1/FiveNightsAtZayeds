@@ -26,17 +26,17 @@ export const CAST = {
 export const WHO = Object.keys(CAST);
 /* AI level (0-20) per night, 1..6, 7 = custom. */
 export const LEVELS = {
-  toyZayed:   [0, 2, 4, 5, 7, 9],
-  toyBubbles: [2, 3, 5, 6, 8, 10],
-  toyTaffy:   [0, 0, 3, 5, 7, 9],
+  toyZayed:   [0, 2, 4, 6, 8, 11],
+  toyBubbles: [2, 3, 5, 7, 9, 12],
+  toyTaffy:   [0, 0, 3, 5, 8, 11],
   toySherbet: [0, 0, 0, 4, 6, 8],
-  wZayed:     [0, 0, 2, 4, 6, 8],
-  wBubbles:   [0, 0, 0, 3, 5, 7],
-  wTaffy:     [0, 0, 0, 2, 5, 7],
+  wZayed:     [0, 0, 2, 4, 7, 10],
+  wBubbles:   [0, 0, 0, 4, 6, 9],
+  wTaffy:     [0, 0, 0, 3, 6, 9],
   wSherbet:   [0, 1, 2, 3, 5, 7],
-  gelly:      [0, 0, 0, 3, 6, 9],
+  gelly:      [0, 0, 0, 4, 7, 11],
   bidoof:     [0, 2, 3, 4, 5, 6],
-  ibrahim:    [1, 2, 4, 6, 8, 10]
+  ibrahim:    [1, 2, 4, 6, 9, 12]
 };
 export const HOUR_SEC = 80;
 
@@ -120,8 +120,8 @@ function runner(S, w, dt, lvl, input, fx) { // wSherbet: runs the hallway; the f
   if (at === 'hall') {
     S.runT[w] = (S.runT[w] || 0) + dt;
     if (S.aimedAt === 'hall') S.hold[w] = (S.hold[w] || 0) + dt; else S.hold[w] = Math.max(0, (S.hold[w] || 0) - dt * 0.5);
-    if (S.hold[w] > 1.1) { S.pos[w] = 'parts'; S.runT[w] = 0; S.hold[w] = 0; S.acc[w] = -6; fx.push({ type: 'pushed', who: w, from: 'hall', to: 'parts' }); return; }
-    if (S.runT[w] > 4.2) { if (!S.inv && !revive(S, w, fx)) { S.dead = w; fx.push({ type: 'kill', who: w }); } else { S.pos[w] = 'parts'; S.runT[w] = 0; } }
+    if (S.hold[w] > 1.0) { S.pos[w] = 'parts'; S.runT[w] = 0; S.hold[w] = 0; S.acc[w] = -6; fx.push({ type: 'pushed', who: w, from: 'hall', to: 'parts' }); return; }
+    if (S.runT[w] > 4.6) { if (!S.inv && !revive(S, w, fx)) { S.dead = w; fx.push({ type: 'kill', who: w }); } else { S.pos[w] = 'parts'; S.runT[w] = 0; } }
     return;
   }
   S.acc[w] += dt; if (S.acc[w] < CAST[w].every) return; S.acc[w] = 0;
@@ -136,7 +136,7 @@ function puppet(S, dt, lvl, fx) { // Ibrahim: the music box has to be wound, or 
     return;
   }
   if (S.wind) S.box = Math.min(100, S.box + dt * 26);
-  else S.box = Math.max(0, S.box - dt * (0.55 + lvl * 0.05) * S.mods.box);
+  else S.box = Math.max(0, S.box - dt * (0.55 + lvl * 0.07) * S.mods.box);
   if (S.cheat && S.cheat.box) S.box = 100;
   if (S.box <= 0) { S.boxOut = 0.001; fx.push({ type: 'boxout' }); }
 }

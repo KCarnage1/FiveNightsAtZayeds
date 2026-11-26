@@ -4,7 +4,7 @@ import { buildZayed, animate } from './models/cast.js';
 import { buildIbrahim, buildGelly, buildBidoof } from './models/extras.js';
 import { newNight, step, CAST, WHO, HOUR_SEC } from './ai.js';
 import { S as Snd, start as startAudio } from './audio.js';
-import { cfg, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings, resetProgress, DEFAULTS } from './settings.js';
+import { cfg, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings, resetProgress } from './settings.js';
 import * as Calls from './calls.js';
 import * as Online from './online.js';
 import { loadFace } from './models/kit.js';
@@ -12,10 +12,10 @@ import * as Shop from './shop.js';
 import { openShop, dailyReward } from './shopui.js';
 import { initCoop } from './coop.js';
 import { initAdmin } from './adminui.js';
+import { ic } from './icons.js';
 import { wordTyper } from './admin.js';
 
 const $ = (s) => document.querySelector(s);
-const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
 const NAMES = { toyZayed: 'Toy Zayed', toyBubbles: 'Toy Bubbles', toyTaffy: 'Toy Taffy', toySherbet: 'Toy Sherbet', wZayed: 'Withered Zayed', wBubbles: 'Withered Bubbles', wTaffy: 'Withered Taffy', wSherbet: 'Withered Sherbet', gelly: 'Gelly', bidoof: 'Bidoof', ibrahim: 'Ibrahim' };
 
 const canvas = $('#gl');
@@ -105,15 +105,15 @@ function home() {
   G.mode = 'title'; Calls.stop(); document.body.classList.remove('playing'); G.paused = false; G.menuOpen = false; $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); $('#call').hidden = true; $('#scareBar').hidden = true; $('#staticOv').classList.remove('on'); closeModal(); const pk = $('#pings'); if (pk) pk.hidden = true;
   const u = unlocked(), s = $('#screen'); s.hidden = false; s.className = 'screen titlebg';
   const dly = stats.claim !== Online.dayKey();
-  s.innerHTML = `<div class="title"><div class="top"><div class="tag1">One soul · four bodies</div><h1 class="logo">Five Nights<br><em>at Zayed's 2</em></h1></div>
+  s.innerHTML = `<div class="title"><div class="top"><h1 class="logo">Five Nights<br><em>at Zayed's 2</em></h1><p class="tag1">One soul, four bodies.</p></div>
     <div class="bottom"><div class="tmenu"><button class="main" id="mNew">${stats.beaten ? 'Continue' : 'Play'}<small>Night ${u}</small></button><button id="mCoop">Co-op<small>2 players online</small></button><button id="mNights">Nights</button><button id="mCustom">Custom<small>${stats.beaten >= 6 ? 'your own night' : 'beat Night 6'}</small></button><button id="mDaily">Daily</button><button id="mShop">Shop${dly ? '<small>reward ready!</small>' : ''}</button><button id="mExtras">Extras</button><button id="mSet">Settings</button></div>
     ${newsItem ? `<div class="news"><b>${esc(newsItem.title || 'News')}</b> ${esc(String(newsItem.message || '').replace(/\s+/g, ' ').slice(0, 200))}</div>` : ''}
-    <div class="foot">v${Online.VERSION} · ${stats.wins} win${stats.wins === 1 ? '' : 's'} · ${stats.deaths} death${stats.deaths === 1 ? '' : 's'}<span id="kb"> · F3 debug</span></div></div></div><div class="corner"><span class="coins" id="coins">🪙 ${stats.coins}</span></div>`;
+    <div class="foot">v${Online.VERSION} · ${stats.wins} win${stats.wins === 1 ? '' : 's'} · ${stats.deaths} death${stats.deaths === 1 ? '' : 's'}<span id="kb"> · F3 debug</span></div></div></div><div class="corner"><span class="coins" id="coins">${ic('coin')}${stats.coins}</span></div>`;
   $('#mNew').onclick = () => startNight(u); $('#mNights').onclick = nightSelect; $('#mCustom').onclick = () => (stats.beaten >= 6 ? customNight() : toast('Beat Night 6 to unlock the Custom Night')); $('#mDaily').onclick = daily; $('#mExtras').onclick = extras; $('#mSet').onclick = () => settings(); $('#mCoop').onclick = () => coop.menu(); $('#mShop').onclick = () => openShop(ctx); $('#coins').onclick = () => openShop(ctx);
   s.querySelectorAll('.tmenu button').forEach((b) => b.addEventListener('pointerenter', () => Snd.click()));
   Online.beat('title', 0);
 }
-const refreshHome = () => { if (G.mode === 'title' && $('#screen').querySelector('.title') && !$('#screen').hidden) { const c = $('#coins'); if (c) c.textContent = '🪙 ' + stats.coins; } };
+const refreshHome = () => { if (G.mode === 'title' && $('#screen').querySelector('.title') && !$('#screen').hidden) { const c = $('#coins'); if (c) c.innerHTML = ic('coin') + stats.coins; } };
 function leaveToMenu(msg) { G.mode = 'title'; Calls.stop(); $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); document.body.classList.remove('playing'); closeModal(); const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div><h2>${esc(msg)}</h2><button class="big" id="tt">Menu</button></div>`; $('#tt').onclick = home; }
 function applyCosmetics() { flash.color.set(Shop.colorOf('light')); const c = Shop.colorOf('mask'); document.querySelectorAll('#maskOv path:nth-child(2)').forEach((p) => p.setAttribute('stroke', c)); }
 const dbg = document.createElement('div'); dbg.id = 'dbg'; dbg.hidden = true; document.body.appendChild(dbg);
@@ -156,9 +156,15 @@ function extras() {
   const s = $('#screen'); s.className = 'screen'; const k = Object.entries(stats.killers).sort((a, b) => b[1] - a[1])[0];
   s.innerHTML = `<div class="panel"><h2>Extras</h2><div class="stat"><div><b>${stats.beaten}</b><span>Nights beaten</span></div><div><b>${stats.wins}</b><span>Wins</span></div><div><b>${stats.deaths}</b><span>Deaths</span></div><div><b>${Math.round(stats.seconds / 60)}m</b><span>Played</span></div></div>
    <p>${k ? `Most deaths: <b>${NAMES[k[0]] || k[0]}</b> (${k[1]})` : 'No deaths yet.'}</p>
-   <div class="btnrow"><button class="pri" id="xg">Characters</button><button id="xc">Controls</button><button id="bk">Back</button></div></div>`;
+   <div class="btnrow"><button class="pri" id="xg">Characters</button><button id="xc">Controls</button><button id="xa">About</button><button id="bk">Back</button></div></div>`;
   $('#xg').onclick = gallery; $('#bk').onclick = home;
+  $('#xa').onclick = about;
   $('#xc').onclick = () => { s.innerHTML = `<div class="panel"><h2>Controls</h2><p>Mouse / finger: look left and right (vents are at the sides).<br>Hold <b>F</b> or click: flashlight.<br>Hold <b>M</b>: Zayed mask (cameras off while worn).<br><b>C</b> / Tab: cameras · <b>1–9</b>: pick a camera.<br>Hold <b>W</b> on the Prize Corner camera: wind the music box.<br><b>Esc</b> / P: pause.</p><div class="btnrow"><button id="bk">Back</button></div></div>`; $('#bk').onclick = extras; };
+}
+function about() {
+  const s = $('#screen'); s.className = 'screen';
+  s.innerHTML = `<div class="panel"><h2>About</h2><p>Five Nights at Zayed's 2 is a fan game made for fun. It is not affiliated with Scott Cawthon or Five Nights at Freddy's. The characters, faces and story belong to the people who made them.</p><p>Version ${Online.VERSION}. Made with three.js, PeerJS and CAD models built in build123d.</p><h3>What the game sends</h3><p>If you leave "Show that I am online" on, the game sends a random ID, the version, your device type and the screen you are on, about every 30 seconds. No name, no account, no location. Co-op connects the two players directly; the matchmaking server only introduces them. Your saves, settings and coins stay in this browser.</p><div class="btnrow"><button class="pri" id="bk">Back</button></div></div>`;
+  $('#bk').onclick = extras;
 }
 let gi = 0;
 function gallery() {
@@ -189,7 +195,7 @@ function over(win) {
   }
   saveStats();
   const coopMode = !!G.coop, guest = !!G.guest;
-  const pay = cheated ? '<p class="hint">Admin powers were used: no coins or progress for this run.</p>' : rw.total ? `<p>${rw.parts.map(([l, v]) => `${l} +${v}`).join(' · ')} → <b>🪙 +${rw.total}</b></p>` : '';
+  const pay = cheated ? '<p class="hint">Admin powers were used: no coins or progress for this run.</p>' : rw.total ? `<p>${rw.parts.map(([l, v]) => `${l} +${v}`).join(' · ')} → <b>${ic('coin')}+${rw.total}</b></p>` : '';
   const s = $('#screen'); s.hidden = false; s.className = 'screen';
   const next = win && n < 6 && !G.opts.label ? `<button class="big" id="nx">Night ${n + 1}</button>` : '';
   const buttons = coopMode ? (guest ? '<p class="pulse">Waiting for the host to start again…</p>' : `<button class="big" id="rt">Play again</button>`) + '<button class="big alt" id="tt">Leave</button>' : `${next}<button class="big ${next ? 'alt' : ''}" id="rt">${win ? 'Replay' : 'Try again'}</button><button class="big alt" id="tt">Menu</button>`;
@@ -412,4 +418,5 @@ const ctx = { G, $, esc, toast, say, openModal, closeModal, startNight, home, ov
 coop = initCoop(ctx); admin = initAdmin(ctx);
 requestAnimationFrame(frame);
 boot();
-window.FNAZ2 = { propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]peer=/.test(location.search) && location.hostname !== 'localhost') navigator.serviceWorker.register('sw.js').catch(() => {});
+window.FNAZ2 = { renderer, propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };

@@ -1,0 +1,20 @@
+# Changelog
+
+## 0.5.0
+- New look: black-and-white security cameras, checkerboard floors, striped confetti walls, bunting, balloons, star curtains and signs.
+- CAD-built props (music box, arcade cabinets, fan, vent grilles, flashlight, party tables) made with build123d.
+- Toy bodies have rosy cheeks, gloss and a party piece each; Withered bodies are torn with bare metal showing.
+- Harder late nights: Withered Sherbet is fairer to beat (a little more time, a little less light needed), and the other threats push harder on nights 4 to 6.
+- Phone layout: camera buttons are a numbered grid, no overlaps, 44 px touch targets, one-line logo in landscape.
+- Pause screen is one card; the night title card no longer covers menus.
+- Fewer draw calls (about 5 times fewer in the office), so it runs better on phones.
+- Works offline once loaded, and can be installed as an app.
+- About screen with credits and what the game sends.
+- Co-op hardened: everything from the other player is checked before it is used.
+- No emoji in the interface; coins and shop items use drawn icons.
+
+## 0.4.0
+Shop, admin menu, new title screen, peer-to-peer co-op, debug page.
+
+## 0.3.0
+Loading page, home page, settings, phone calls, custom night, daily challenge, extras.
