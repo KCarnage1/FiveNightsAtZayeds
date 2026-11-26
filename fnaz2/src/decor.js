@@ -92,9 +92,11 @@ function drawing(scene, pos, rotY, who) { // a child's crayon drawing of one of 
     g.fillStyle = '#333'; g.font = '700 34px "Comic Sans MS",cursive'; g.textAlign = 'center'; g.fillText({ camel: 'ZAYED', cat: 'BUBBLES', goat: 'TAFFY', falcon: 'SHERBET' }[who] + ' <3', W / 2, H - 22);
   });
 }
+export const signMats = []; // emissive sign materials; main.js flickers them
 function starSign(scene, text, pos, w = 2.6) {
   const t = canvasTex(512, 128, (g, W, H) => { g.fillStyle = '#1a0a2a'; g.fillRect(0, 0, W, H); g.strokeStyle = '#ffd24a'; g.lineWidth = 8; g.strokeRect(8, 8, W - 16, H - 16); g.fillStyle = '#ffd24a'; g.font = '900 64px system-ui'; g.textAlign = 'center'; g.fillText(text, W / 2, 86); });
-  mesh(new THREE.PlaneGeometry(w, w / 4), new THREE.MeshStandardMaterial({ map: t, emissive: 0xffd24a, emissiveMap: t, emissiveIntensity: .7 }), scene, pos).castShadow = false;
+  const mat = new THREE.MeshStandardMaterial({ map: t, emissive: 0xffd24a, emissiveMap: t, emissiveIntensity: .7 }); signMats.push(mat);
+  mesh(new THREE.PlaneGeometry(w, w / 4), mat, scene, pos).castShadow = false;
 }
 
 export function decorate(scene) {

@@ -182,3 +182,15 @@ body.cam-on #gl{filter:grayscale(1) contrast(1.25) brightness(1.2)}
 #updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));z-index:65;display:flex;gap:10px;align-items:center;background:#10091a;border:1px solid #ffd24a88;border-radius:10px;padding:8px 12px;font-size:14px}
 #updbar[hidden]{display:none}
 .notes{margin:8px 0 0;padding-left:20px;line-height:1.5}.notes li{margin:4px 0}
+
+/* ---------- camera feed: film grain, slow scan band, glitch on movement ---------- */
+#staticOv{overflow:hidden}
+#staticOv::before,#staticOv::after{content:"";position:absolute;pointer-events:none}
+#staticOv::before{inset:-50%;opacity:.16;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain .6s steps(6) infinite}
+#staticOv::after{left:0;right:0;top:0;height:22%;background:linear-gradient(180deg,transparent,rgba(190,220,255,.07) 60%,rgba(255,255,255,.12) 92%,transparent);animation:scanroll 7s linear infinite}
+@keyframes grain{0%{transform:translate(0,0)}17%{transform:translate(-7%,5%)}33%{transform:translate(6%,-9%)}50%{transform:translate(-4%,8%)}67%{transform:translate(9%,3%)}83%{transform:translate(-8%,-6%)}100%{transform:translate(0,0)}}
+@keyframes scanroll{from{transform:translateY(-110%)}to{transform:translateY(560%)}}
+#staticOv.gl{animation:camglitch .32s steps(2) 1}
+#staticOv.gl::before{opacity:.5}
+@keyframes camglitch{0%{transform:translateX(-10px) skewX(3deg);background-color:#ffffff22}35%{transform:translateX(14px);background-color:transparent}60%{transform:translateX(-5px) skewX(-2deg);background-color:#9cf3}100%{transform:none;background-color:transparent}}
+@media (prefers-reduced-motion:reduce){#staticOv::before,#staticOv::after,#staticOv.gl{animation:none}#staticOv::after{display:none}}

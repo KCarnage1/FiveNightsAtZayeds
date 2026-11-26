@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { buildMap, dressMap, ROOMS, CAMS } from './map.js';
+import { buildMap, dressMap, buildBeam, ROOMS, CAMS } from './map.js';
+import { signMats } from './decor.js';
 import { buildZayed, animate } from './models/cast.js';
 import { buildIbrahim, buildGelly, buildBidoof } from './models/extras.js';
 import { newNight, step, CAST, WHO, HOUR_SEC } from './ai.js';
@@ -26,13 +27,13 @@ const canvas = $('#gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.3;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x030206); scene.fog = new THREE.FogExp2(0x040308, 0.03);
-scene.add(new THREE.HemisphereLight(0x8a86c0, 0x1c1018, 0.16));
+const hemi = new THREE.HemisphereLight(0x8a86c0, 0x1c1018, 0.16); scene.add(hemi);
 const map = buildMap(scene); buildLoreItems(scene); const propsReady = dressMap(scene).catch(() => 0);
 const player = new THREE.PerspectiveCamera(68, 1, 0.05, 80); player.position.set(0, 1.35, 0.6); scene.add(player);
 const camV = new THREE.PerspectiveCamera(72, 1, 0.05, 80); scene.add(camV);
 const camLight = new THREE.PointLight(0xe8f0ff, 0, 30, 1.2); scene.add(camLight);
 const flash = new THREE.SpotLight(0xfff2cf, 0, 34, 0.32, 0.5, 1.2); player.add(flash); player.add(flash.target); flash.target.position.set(0, 0, -5);
-const officeLight = new THREE.PointLight(0xffc88a, 7, 14, 1.6); officeLight.position.set(0, 2.7, 0.5); scene.add(officeLight);
+const officeLight = new THREE.PointLight(0xffc88a, 7, 14, 1.6); officeLight.position.set(0, 2.7, 0.5); scene.add(officeLight); const beam = buildBeam(player);
 
 /* ---- the cast ---- */
 const bots = {};
@@ -337,10 +338,11 @@ function placeAll() {
 }
 
 /* ---- effects -> sound and game feel ---- */
+const camGlitch = () => { const o = $('#staticOv'); if (!G.cam || !cfg.flashing || !o) return; o.classList.remove('gl'); void o.offsetWidth; o.classList.add('gl'); };
 const pan = (n) => (n === 'ventL' || n === 'partyL' || n === 'prize' || n === 'kids' ? -0.8 : n === 'ventR' || n === 'partyR' || n === 'game' ? 0.8 : 0);
 function apply(fx) {
   for (const f of fx) {
-    if (f.type === 'move') { Snd.move(f.to, pan(f.to)); if (f.to === 'hall' && !G.cam) say('Something is in the hallway.', 2200); }
+    if (f.type === 'move') { camGlitch(); Snd.move(f.to, pan(f.to)); if (f.to === 'hall' && !G.cam) say('Something is in the hallway.', 2200); }
     else if (f.type === 'enter') { G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); buzz(60); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office!', 3000); G.shake = 0.5; }
     else if (f.type === 'run') { Snd.clang(0); say('Withered Sherbet is running the hall! Shine the light down it!', 3000); }
     else if (f.type === 'pushed') { Snd.step(pan(f.from)); }
@@ -364,6 +366,7 @@ function updateHud() {
   $('#mBox').style.background = S.box < 25 ? '#e8453c' : ''; $('#bMask').classList.toggle('on', G.mask); $('#bFlash').classList.toggle('on', G.light);
   $('#staticOv').classList.toggle('on', !!G.cam);
 }
+function flicker(now) { for (let i = 0; i < signMats.length; i++) { const v = Math.sin(now / 210 + i * 7.3) * Math.sin(now / 330 + i * 2.1); signMats[i].emissiveIntensity = cfg.flashing && v > 0.9 ? 0.08 : 0.65 + Math.sin(now / 900 + i) * 0.05; } }
 let last = performance.now(), fpsN = 0, fpsT = 0, titleT = 3, titleBot = null, titleOn = 0;
 function frame(now) {
   requestAnimationFrame(frame);
@@ -411,22 +414,22 @@ function frame(now) {
   // camera + lights
   if (G.mode === 'title') {
     for (const id in map.lights) map.lights[id].intensity = 0; officeLight.intensity = 0; camLight.intensity = 0; flash.intensity = 0;
-    const dark = titleOn > 0 && cfg.flashing; map.lights.main.intensity = dark ? 0 : 13 + Math.sin(now / 900) * 1.5; camLight.position.set(0, 2.5, -14); camLight.intensity = dark ? 0 : 2;
+    const dark = titleOn > 0 && cfg.flashing; map.lights.main.intensity = dark ? 0 : 13 + Math.sin(now / 900) * 1.5; camLight.position.set(Math.sin(now / 2300) * 7, 3.6, -17); camLight.color.setHSL((now / 12000) % 1, 0.65, 0.62); camLight.intensity = dark ? 0 : 5 + Math.sin(now / 700) * 1.5; flicker(now);
     player.position.set(Math.sin(now / 6000) * 1.3, 2.35, -13.3); player.lookAt(Math.sin(now / 8000) * 0.7, 1.7, -20.2); renderer.render(scene, player); return;
   }
-  G.shake = Math.max(0, G.shake - dt); const shake = cfg.shake ? G.shake * 0.03 : 0;
+  beam.set(false, now); camLight.color.setHex(0xe8f0ff); hemi.intensity = 0.16; G.shake = Math.max(0, G.shake - dt); const shake = cfg.shake ? G.shake * 0.03 : 0;
   for (const id in map.lights) map.lights[id].intensity = 0;
   if (G.cam && G.mode === 'play') {
     const c = CAMS[G.cam]; camV.position.set(...c.pos); camV.lookAt(...c.look); camV.position.x += Math.sin(now / 900) * 0.04;
     map.lights[c.room].intensity = c.room.startsWith('vent') ? 4 : 16; camLight.position.set(...c.pos); camLight.intensity = c.room.startsWith('vent') ? 1.5 : 5;
     officeLight.intensity = 0; flash.intensity = 0; renderer.render(scene, camV);
   } else {
-    camLight.intensity = 0; if (!G.scareWho) officeLight.intensity = G.mode === 'play' ? 6 + (cfg.flashing && Math.random() < 0.02 ? -3 : 0) : 7;
+    camLight.intensity = 0; if (!G.scareWho) { if (G.mode === 'play') { const w = Math.sin(now / 131) * 0.3 + Math.sin(now / 47) * 0.18, dip = cfg.flashing && Math.random() < 0.02 ? 3 : 0; officeLight.intensity = 6 + (cfg.flashing ? w : 0) - dip; officeLight.color.setRGB(1, 0.78 + w * 0.05, 0.54 + w * 0.08 + dip * 0.05); hemi.intensity = 0.16 + dip * 0.04; } else officeLight.intensity = 7; }
     if (G.mode === 'gallery') { // turntable
       const b = bots[ORDER[gi]]; b.root.position.set(0, 0, -60); b.root.scale.setScalar(1); b.root.rotation.set(0, now / 1800, 0); animate(b, dt, 'idle'); officeLight.position.set(1.5, 3, -57); officeLight.intensity = 14;
       player.position.set(0, 1.15, -55.3); player.rotation.set(-0.02, 0, 0, 'YXZ'); flash.intensity = 0; renderer.render(scene, player); officeLight.position.set(0, 2.7, 0.5); return;
     }
-    flash.intensity = G.S && G.S.flashOn && live ? 260 : titleFlash ? 260 : 0;
+    flash.intensity = G.S && G.S.flashOn && live ? 260 : titleFlash ? 260 : 0; beam.set(flash.intensity > 0 && G.mode === 'play', now); flicker(now); scene.fog.density = 0.03 + Math.sin(now / 3100) * 0.004 + (flash.intensity > 0 ? 0.004 : 0);
     player.rotation.set(Math.abs(G.yaw) > 0.9 ? -0.32 : -0.05, -G.yaw, 0, 'YXZ');
     player.position.set(Math.sin(now / 1500) * 0.01 + (Math.random() - .5) * shake, 1.35, 0.6); renderer.render(scene, player);
   }
