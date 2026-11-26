@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeByMaterial, lookSig } from './merge.js';
 import { fur, plastic, metal, matte, mesh, group, limb, smoothLathe, canvasTex, loadFace, faceDome } from './kit.js';
 
 /* The Zayeds. One soul, four bodies: the Camel (patience), the Cat (nerve), the Goat (memory) and the Falcon (hunger).
@@ -25,9 +26,8 @@ function bellyEmblem(color, word, toy) {
 export function buildZayed(who, variant = 'withered') {
   const s = SPEC[who], toy = variant === 'toy';
   const skin = toy ? plastic(s.toy, { rough: .32 }) : fur(s.fur, { grime: .35, bump: .8 });
-  const shoe = toy ? plastic(s.tie, { rough: .25 }) : matte(0x3a2a22, .8);
   const dark = matte(0x16111a, .55), bone = metal(toy ? 0xd7dbe2 : 0x7a7e86, toy ? .22 : .55), white = toy ? plastic(0xfff6e6, { rough: .3 }) : matte(0xd9ccb0, .85);
-  const tieM = toy ? plastic(s.tie, { rough: .2 }) : matte(s.tie, .7);
+  const tieM = toy ? plastic(s.tie, { rough: .2 }) : matte(s.tie, .7), shoe = toy ? tieM : matte(0x3a2a22, .8);
   const root = group(null, null, who + '-' + variant), body = group(root);
 
   // legs: thigh, knee ball, shin, big rounded shoe
@@ -44,7 +44,7 @@ export function buildZayed(who, variant = 'withered') {
     mesh(new THREE.CylinderGeometry(.17, .2, .08, 20), dark, body, [0, .93, .26], [Math.PI / 2, 0, 0], [1, 1, 1]);
     for (let i = -2; i <= 2; i++) limb(body, [i * .055, 1.07, .3], [i * .06, .8, .3], .012, .012, bone);
     for (const y of [.88, .98]) limb(body, [-.14, y, .3], [.14, y, .3], .011, .011, bone);
-    for (let i = 0; i < 3; i++) limb(body, [.1 + i * .02, .8, .3], [.17 + i * .05, .62 - i * .03, .3], .006, .004, matte(0x2a2420, .6));
+    for (let i = 0; i < 3; i++) limb(body, [.1 + i * .02, .8, .3], [.17 + i * .05, .62 - i * .03, .3], .006, .004, dark);
   }
   // neck joint and bow tie wrapped around it
   J(body, [0, 1.52, 0], .085, bone);
@@ -68,11 +68,15 @@ export function buildZayed(who, variant = 'withered') {
   const jaw = group(head, [0, .07, .08], 'jaw');
   mesh(new THREE.SphereGeometry(.2, 28, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), skin, jaw, [0, .02, .13], 0, [1.1, .7, 1.1]);
   mesh(new THREE.SphereGeometry(.175, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), dark, jaw, [0, .03, .13], [Math.PI, 0, 0], [1.1, .45, 1.05]);
-  for (let i = 0; i < 9; i++) { const a = -0.8 + i * .2; mesh(new THREE.ConeGeometry(.016, .05, 6), matte(toy ? 0xffffff : 0xcfc7a5, .45), jaw, [Math.sin(a) * .185, .045, .13 + Math.cos(a) * .17], [Math.PI, 0, 0]); }
+  for (let i = 0; i < 9; i++) { const a = -0.8 + i * .2; mesh(new THREE.ConeGeometry(.016, .05, 6), white, jaw, [Math.sin(a) * .185, .045, .13 + Math.cos(a) * .17], [Math.PI, 0, 0]); }
   if (!toy) { jaw.rotation.x = .26; jaw.userData.rest = .26; }
   const face = faceDome(head, loadFace(s.face), { r: .362, y: .35, z: 0, aspect: .74 });
   const extras = kindExtras(s.kind, head, skin, dark, toy, who, body, white);
   if (toy) toyDetails(head, who, body); else tornHead(head, who, bone, dark);
+  face.userData.keep = true; // the live photo dome stays its own mesh
+  // one mesh per look per joint: animate() only moves root > body > (head > jaw, armL, armR)
+  const joints = new Set([head, jaw, arms.L, arms.R]);
+  for (const j of [body, head, jaw, arms.L, arms.R]) mergeByMaterial(j, { stop: new Set([...joints, body].filter((x) => x !== j)), sig: lookSig });
   return { root, body, head, jaw, face, armL: arms.L, armR: arms.R, who, variant, kind: s.kind, toy, extras, t: Math.random() * 100 };
 }
 
@@ -82,7 +86,7 @@ function kindExtras(kind, head, skin, dark, toy, who, body, white) {
     mesh(new THREE.SphereGeometry(.3, 26, 18), skin, body, [0, 1.28, -.3], 0, [.95, 1, 1.05]); // hump
     for (const sx of [-1, 1]) { mesh(new THREE.SphereGeometry(.11, 18, 12), skin, head, [sx * .33, .58, -.02], [0, 0, sx * .5], [1, 1.5, .55]); mesh(new THREE.SphereGeometry(.065, 14, 10), inner, head, [sx * .335, .58, .02], [0, 0, sx * .5], [1, 1.4, .3]); }
     mesh(new THREE.CylinderGeometry(.15, .19, .2, 24), matte(0xb3262e, .5), head, [0, .72, -.02]); mesh(new THREE.TorusGeometry(.19, .012, 8, 24), matte(0xffd24a, .35), head, [0, .64, -.02], [Math.PI / 2, 0, 0]);
-    mesh(new THREE.CylinderGeometry(.012, .012, .12, 8), matte(0xe0c25a, .4), head, [0, .85, -.02]);
+    mesh(new THREE.CylinderGeometry(.012, .012, .12, 8), matte(0xffd24a, .35), head, [0, .85, -.02]);
   } else if (kind === 'cat') {
     for (const sx of [-1, 1]) { mesh(new THREE.ConeGeometry(.14, .34, 4), skin, head, [sx * .24, .7, -.02], [0, Math.PI / 4, sx * -.3]); mesh(new THREE.ConeGeometry(.08, .24, 4), inner, head, [sx * .24, .67, .02], [0, Math.PI / 4, sx * -.3]); for (let w = 0; w < 3; w++) limb(head, [sx * .15, .2 - w * .025, .3], [sx * .46, .26 - w * .09, .32], .005, .003, matte(0xffffff, .3)); }
     mesh(new THREE.SphereGeometry(.04, 12, 8), matte(0xff5a8a, .4), head, [0, .22, .35], 0, [1.2, .8, .8]);
@@ -115,7 +119,7 @@ function toyDetails(head, who, body) {
 function tornHead(head, who, bone, dark) {
   mesh(new THREE.SphereGeometry(.15, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), bone, head, [.24, .46, .12], [.5, 0, -.9], [1, .5, 1]);
   mesh(new THREE.TorusGeometry(.1, .013, 6, 16), dark, head, [.24, .44, .14], [.5, .6, 0]);
-  for (let i = 0; i < 3; i++) limb(head, [.24 + i * .02, .46, .22], [.35 + i * .04, .33 - i * .05, .27], .006, .004, matte(0x2a2420, .6));
+  for (let i = 0; i < 3; i++) limb(head, [.24 + i * .02, .46, .22], [.35 + i * .04, .33 - i * .05, .27], .006, .004, dark);
   mesh(new THREE.SphereGeometry(.03, 8, 6), matte(0xd0453a, .4), head, [-.31, .2, .1]);
 }
 
