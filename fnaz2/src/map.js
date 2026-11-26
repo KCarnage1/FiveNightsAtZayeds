@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { canvasTex, matte, mesh, group } from './models/kit.js';
 import { loadProp } from './models/props.js';
-import { KIND, floorTexture, wallMaterial, tileUV, decorate } from './decor.js';
+import { KIND, floorTexture, wallMaterial, tileUV, decorate, signMats } from './decor.js';
 import { mergeByMaterial } from './models/merge.js';
 
 /* The pizzeria. +z is toward the player, -z runs away down the hallway into the main hall.
@@ -88,7 +88,8 @@ function props(scene) {
   mesh(new THREE.CylinderGeometry(.18, .2, .05, 14), dk, scene, [.9, 1.02, 1.5]); // fan base
   // posters and a sign over the hallway
   const sign = canvasTex(512, 128, (g, w, h) => { g.fillStyle = '#1a0f14'; g.fillRect(0, 0, w, h); g.fillStyle = '#ffd24a'; g.font = '900 56px sans-serif'; g.textAlign = 'center'; g.fillText("ZAYED'S", w / 2, 62); g.fillStyle = '#f56'; g.font = '700 30px sans-serif'; g.fillText('Salem’s Candy · Abdulla’s Cafeteria', w / 2, 108); });
-  mesh(new THREE.PlaneGeometry(2.2, .55), new THREE.MeshStandardMaterial({ map: sign, emissive: 0x442211, emissiveMap: sign, emissiveIntensity: .6 }), scene, [-2.3, 2.5, 2.4], [0, Math.PI, 0]);
+  const signMat = new THREE.MeshStandardMaterial({ map: sign, emissive: 0x442211, emissiveMap: sign, emissiveIntensity: .6 }); signMats.push(signMat);
+  mesh(new THREE.PlaneGeometry(2.2, .55), signMat, scene, [-2.3, 2.5, 2.4], [0, Math.PI, 0]);
   // the stage in the main hall
   mesh(new THREE.BoxGeometry(9, .4, 3), matte(0x3a2a4a, .6), scene, [0, .2, -20]);
   mesh(new THREE.BoxGeometry(1.8, 4, .2), red, scene, [-4, 2, -21.8]); mesh(new THREE.BoxGeometry(1.8, 4, .2), red, scene, [4, 2, -21.8]);
@@ -120,4 +121,26 @@ export async function dressMap(scene) {
     m.position.set(at.x, at.y, at.z); m.rotation.y = at.ry; m.scale.multiplyScalar(at.s); scene.add(m); if (sw.g) sw.g.visible = false; n++;
   }));
   return n;
+}
+
+/* The flashlight beam: one open cone plus a handful of drifting dust motes (two draw calls, only while the light is on). */
+const BEAM_LEN = 11, BEAM_R = BEAM_LEN * Math.tan(0.32);
+export function buildBeam(parent) {
+  const geo = new THREE.ConeGeometry(BEAM_R, BEAM_LEN, 24, 1, true); geo.rotateX(-Math.PI / 2); geo.translate(0, 0, -BEAM_LEN / 2); geo.translate(0.22, -0.3, 0); // apex at origin, opening toward -z
+  const cone = new THREE.Mesh(geo, new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { u: { value: 0.13 } },
+    vertexShader: 'varying vec3 vN;varying vec3 vP;varying float vT;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vP=mv.xyz;vT=-position.z/' + BEAM_LEN.toFixed(1) + ';gl_Position=projectionMatrix*mv;}',
+    fragmentShader: 'uniform float u;varying vec3 vN;varying vec3 vP;varying float vT;void main(){float f=abs(dot(normalize(vN),normalize(vP)));float a=pow(f,1.1)*(1.-vT)*smoothstep(0.,.08,vT)*u;gl_FragColor=vec4(vec3(1.,.93,.72)*a,a);}',
+  }));
+  cone.renderOrder = 5; cone.frustumCulled = false; cone.visible = false; parent.add(cone);
+  const N = 70, pos = new Float32Array(N * 3), seed = new Float32Array(N);
+  for (let i = 0; i < N; i++) { const t = Math.random(), r = Math.sqrt(Math.random()) * Math.tan(0.3) * (0.6 + t * BEAM_LEN) * 0.9, a = Math.random() * 6.283; pos[i * 3] = Math.cos(a) * r + 0.22; pos[i * 3 + 1] = Math.sin(a) * r - 0.3; pos[i * 3 + 2] = -(0.6 + t * (BEAM_LEN - 0.6)); seed[i] = Math.random() * 6.283; }
+  const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); pg.setAttribute('seed', new THREE.BufferAttribute(seed, 1));
+  const dm = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { t: { value: 0 } },
+    vertexShader: 'attribute float seed;uniform float t;varying float vA;void main(){vec3 p=position+vec3(sin(t*.5+seed*3.),cos(t*.4+seed*5.),sin(t*.3+seed))*.18;vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp(40./-mv.z,1.5,4.);float s=sin(t*1.3+seed*7.);vA=.35+.65*s*s;}',
+    fragmentShader: 'varying float vA;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;gl_FragColor=vec4(vec3(1.,.95,.8)*vA*.6,1.);}',
+  });
+  const dust = new THREE.Points(pg, dm); dust.frustumCulled = false; dust.visible = false; dust.renderOrder = 6; parent.add(dust);
+  return { set(on, now) { cone.visible = dust.visible = on; if (on) dm.uniforms.t.value = now / 1000; } };
 }
