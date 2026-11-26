@@ -47,11 +47,11 @@ const G = { mode: 'title', S: null, cam: null, pitch: 0, yaw: 0, yawT: 0, keys: 
 const ORDER = WHO.slice();
 const LABEL = { 7: 'Custom Night' };
 function startNight(n, opts = {}) {
-  startAudio(); closeModal(); const mods = opts.daily || opts.coop === 'guest' ? undefined : Shop.mods(); G.S = newNight(n, opts.seed || (Date.now() & 0xffff), Object.assign({}, opts, { mods })); G.S.cheated = false; G.hourPaid = 0; G.opts = opts; if (G.adm) { G.adm.used = false; } G.mode = 'play'; G.paused = false; G.cam = null; G.mask = false; G.light = false; G.yaw = G.yawT = 0; G.from = {}; G.scareWho = null; G.speed = opts.speed || 1; G.label = opts.label || LABEL[n] || 'Night ' + n; G.opts = opts; applyCosmetics();
+  startAudio(); closeModal(); const mods = opts.daily || opts.coop === 'guest' ? undefined : Shop.mods(); G.S = newNight(n, opts.seed || (Date.now() & 0xffff), Object.assign({}, opts, { mods })); G.S.cheated = false; G.hourPaid = 0; G.opts = opts; const S0 = G.S; if (G.adm) { G.adm.used = false; } G.mode = 'play'; G.paused = false; G.cam = null; G.mask = false; G.light = false; G.yaw = G.yawT = 0; G.from = {}; G.scareWho = null; G.speed = opts.speed || 1; G.label = opts.label || LABEL[n] || 'Night ' + n; G.opts = opts; applyCosmetics();
   stats.plays++; saveStats(); document.body.classList.add('playing');
   $('#screen').hidden = true; $('#hud').hidden = false; $('#hNight').textContent = G.label; $('#scareBar').hidden = true; $('#bPause').hidden = false;
   intro(G.label); if (n <= 6 && !opts.daily) showLoreItems(n); else hideLoreItems();
-  if (n <= 6 && (!opts.label || opts.coop) && !opts.daily) setTimeout(() => { if (G.mode === 'play' && G.S && G.S.night === n) { Snd.ring(); setTimeout(() => { if (G.mode === 'play') Calls.start(n, $('#call')); }, 1800); } }, 2600);
+  if (n <= 6 && (!opts.label || opts.coop) && !opts.daily) setTimeout(() => { if (G.mode === 'play' && !G.paused && G.S && G.S.night === n && G.S === S0) { Snd.ring(); setTimeout(() => { if (G.mode === 'play' && !G.paused && G.S === S0) Calls.start(n, $('#call')); }, 1800); } }, 2600);
   else say('Hold F or click for the flashlight. Hold M for the mask. C opens the cameras.', 6000);
 }
 const NIGHT_LINE = { 1: "Qerh Cooperations. The new location. Please do not read the old paperwork.", 2: 'The vents were the order chute. Some orders are still coming up.', 3: 'The line is still open. Keep the music playing.', 4: 'Two more have arrived. One only laughs.', 5: 'Claim Q-0007 has been reopened.', 6: 'Six o\'clock. The police are at the door.' };
@@ -149,7 +149,7 @@ function daily() {
   $('#go').onclick = () => startNight(7, { levels: setup.levels, seed: setup.seed, label: 'Daily ' + key, daily: key }); $('#bk').onclick = home;
 }
 const CUSTOM_KEY = 'fnaz2_custom';
-function loadCustom() { try { const v = JSON.parse(localStorage.getItem(CUSTOM_KEY)); if (v) return v; } catch (e) { /* none */ } const o = {}; ORDER.forEach((w) => { o[w] = 5; }); return o; }
+function loadCustom() { try { const v = JSON.parse(localStorage.getItem(CUSTOM_KEY)); if (v && typeof v === 'object' && !Array.isArray(v)) { const o = {}; ORDER.forEach((w) => { o[w] = Math.min(20, Math.max(0, +v[w] | 0)); }); return o; } } catch (e) { /* none */ } const o = {}; ORDER.forEach((w) => { o[w] = 5; }); return o; }
 // eslint-disable-next-line no-unused-vars
 function customNight() {
   const lv = loadCustom(), s = $('#screen'); s.className = 'screen';
@@ -399,7 +399,7 @@ function frame(now) {
     $('#maskOv').classList.toggle('on', S.mask > 0.5); $('#bWind').classList.toggle('on', G.wind && !!G.cam);
     updateHud(); if (G.cam) drawMini();
   }
-  if (G.scareWho) { // the jumpscare: the body fills the view, shaking
+  if (G.scareWho && G.mode === 'play') { // the jumpscare: the body fills the view, shaking
     G.scareT += dt; const b = bots[G.scareWho]; b.root.visible = true; b.root.scale.setScalar(1.1);
     const p = Math.min(1, G.scareT / 0.18), d = 2.2 - p * 1.15; b.root.position.set(player.position.x + Math.sin(-G.yaw) * d, 0.0, player.position.z - Math.cos(G.yaw) * d); b.root.lookAt(player.position.x, 0, player.position.z);
     b.root.position.x += Math.sin(G.scareT * 90) * 0.05; b.root.position.y = -0.55;
@@ -432,7 +432,7 @@ function frame(now) {
   }
 }
 addEventListener('visibilitychange', () => { if (document.hidden && cfg.autopause && G.mode === 'play' && !G.coop) pause(true); });
-addEventListener('blur', () => { if (cfg.autopause && G.mode === 'play' && !G.scareWho && !G.coop) pause(true); });
+addEventListener('blur', () => { if (G.mode === 'play' && !cfg.toggleLight) G.light = false; if (G.mode === 'play' && !cfg.toggleMask) G.mask = false; G.wind = false; G.keys = {}; if (cfg.autopause && G.mode === 'play' && !G.scareWho && !G.coop) pause(true); });
 canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); toast('Graphics context lost. Reload the page.'); });
 setInterval(() => { const sc = G.mode === 'play' ? 'game' : G.mode; Online.beat(sc, G.S && G.mode === 'play' ? G.S.night : 0); }, 30000);
 

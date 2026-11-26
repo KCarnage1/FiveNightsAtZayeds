@@ -86,9 +86,10 @@ export function initCoop(ctx) {
   }
   net.on('snap', (d) => { if (G.guest && G.S && d && typeof d === 'object') takeSnap(d); });
   net.onState((st, err) => {
+    if (st === 'lost' && !started && net.role === 'guest' && G.mode !== 'play') { toast(err || 'The host left'); G.coop = null; G.guest = false; net.close(); ctx.leaveToMenu('The host closed the room.'); return; } // host left before the night started
     if (st !== 'lost' || !started) return; started = false;
     if (G.guest) { toast(err || 'The host left'); G.coop = null; G.guest = false; G.cam = null; ctx.leaveToMenu('The host disconnected. The night ended.'); net.close(); }
-    else if (G.coop) { toast('Your partner left. The cameras are yours again.'); G.coop = null; document.body.classList.remove('coop-host'); const p = $('#partner'); if (p) p.hidden = true; const k = $('#pings'); if (k) k.hidden = true; net.reopen(); }
+    else if (G.coop) { toast('Your partner left. The cameras are yours again.'); G.coop = null; document.body.classList.remove('coop-host'); const p = $('#partner'); if (p) p.hidden = true; const k = $('#pings'); if (k) k.hidden = true; net.reopen(); const rt = $('#rt'); if (rt && (G.mode === 'dead' || G.mode === 'won')) { rt.textContent = 'Play again (solo)'; rt.onclick = () => ctx.startNight(G.S.night, {}); } }
   });
 
   /* every frame */
