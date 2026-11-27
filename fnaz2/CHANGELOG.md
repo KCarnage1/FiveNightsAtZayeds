@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1
+- Ibrahim has a face (a pale puppet mask for now) and the page no longer logs a missing picture.
+- The web version publishes more reliably.
+
 ## 0.9.0
 - Closer to the original Five Nights at Freddy's 2: the flashlight battery now recharges slowly (about 70 seconds to full) instead of almost instantly, so the light is a real resource.
 - Golden Abdulla: from the second night he can appear in the hallway out of nowhere. Put the mask on, or turn the flashlight off if it was on, and he vanishes. Ignore him and the night is over.
