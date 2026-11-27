@@ -8,7 +8,8 @@ const fs = require('fs');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // The game is served from app://game, not file://, so it can load its models and sounds and keeps one stable address for saved progress.
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
-if (!app.requestSingleInstanceLock()) { app.quit(); }
+const single = app.requestSingleInstanceLock(); // a second copy just brings the first to the front
+if (!single) app.quit();
 
 function discordId() {
   const ok = (s) => (/^\d{17,20}$/.test(String(s || '').trim()) ? String(s).trim() : '');
@@ -58,13 +59,14 @@ function createWindow() {
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('app://')) { e.preventDefault(); if (/^https:\/\//.test(url)) shell.openExternal(url); } });
   win.webContents.on('before-input-event', (e, i) => { if (i.type === 'keyDown' && i.key === 'F11') { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); } });
 }
-app.whenReady().then(() => {
+if (single) app.whenReady().then(() => {
   protocol.handle('app', (req) => {
-    const rel = decodeURIComponent(new URL(req.url).pathname).replace(/^\/+/, '') || 'index.html';
+    let rel; try { rel = decodeURIComponent(new URL(req.url).pathname).replace(/^\/+/, '') || 'index.html'; } catch (e) { return new Response('Bad request', { status: 400 }); }
     const file = path.normalize(path.join(__dirname, rel));
     if (!file.startsWith(__dirname + path.sep)) return new Response('Not found', { status: 404 }); // never leave the app folder
     return net.fetch(pathToFileURL(file).toString()).catch(() => { if (process.env.FNAZ2_SELFTEST) console.log('MISSING', rel); return new Response('Not found', { status: 404 }); });
   });
+  require('electron').session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(false)); // the game asks for nothing, so nothing is allowed
   createWindow(); const id = discordId(); if (id) rpcConnect(id);
 });
 app.on('second-instance', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });

@@ -10,6 +10,8 @@ cp index.html debug.html styles.css game.bundle.js debug.bundle.js manifest.webm
 mkdir -p "$OUT/assets"; cp -r assets/faces assets/models assets/voice "$OUT/assets/"
 touch "$OUT/.nojekyll"
 VERSION=$(node -p "require('./package.json').version")
+# every build gets its own file addresses, so a browser never reuses the previous build's script or styles from its cache
+sed -i.bak "s#game.bundle.js\"#game.bundle.js?v=$VER\"#; s#styles.css\"#styles.css?v=$VER\"#" "$OUT/index.html" && rm "$OUT/index.html.bak"
 sed -i.bak "s/__BUILD__/$VER/g" "$OUT/game.bundle.js" && rm "$OUT/game.bundle.js.bak" # .bak: works with both GNU and Mac sed
 # version.json: what the in-game updater compares against, plus the latest release notes from the changelog
 node -e "

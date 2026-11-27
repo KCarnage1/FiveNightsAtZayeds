@@ -27,7 +27,8 @@ export async function check() {
 export async function applyUpdate() {
   if (desktop()) { window.fnaz.open(RELEASES); return; } // the app cannot replace itself: open the download page
   try { if (navigator.serviceWorker) for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); if (window.caches) for (const k of await caches.keys()) await caches.delete(k); } catch (e) { /* reload anyway */ }
-  location.reload();
+  // open the page under a new address so the browser fetches index.html fresh (it may be kept in the HTTP cache for minutes); its script and styles carry the new build in their address
+  const u = new URL(location.href); u.searchParams.set('u', String(status.available && status.available.build || Date.now())); location.replace(u.toString());
 }
 /* After an update, what changed (notes come from the build's version.json). Returns the notes once per new build, or null. */
 export async function whatsNew() {

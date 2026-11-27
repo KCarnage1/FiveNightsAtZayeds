@@ -1,10 +1,10 @@
 {
  "name": "fnaz2",
- "version": "0.8.1",
+ "version": "0.8.2",
  "private": true,
  "scripts": {
-  "build": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js --minify && esbuild src/debug.js --bundle --format=iife --outfile=debug.bundle.js --minify",
-  "dev": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js",
+  "build": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js --minify --define:APP_VERSION=\\\"$npm_package_version\\\" && esbuild src/debug.js --bundle --format=iife --outfile=debug.bundle.js --minify --define:APP_VERSION=\\\"$npm_package_version\\\"",
+  "dev": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js --define:APP_VERSION=\\\"$npm_package_version\\\"",
   "test": "node tests/ai.test.mjs",
   "peer": "peerjs --port 9000 --path /"
  },

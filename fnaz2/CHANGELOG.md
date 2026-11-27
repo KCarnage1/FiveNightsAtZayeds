@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2
+- Fixed: after pressing Update now, the update prompt could come back because the browser reused the old game file. Every build now has its own file addresses and the update opens a fresh page.
+- The desktop app's version number now always matches the release, and "what's new" shows after an update.
+- Releases only go public once the Windows and both Mac downloads are attached.
+- Opening a second copy of the desktop app brings the first one to the front.
+
 ## 0.8.1
 - New: seal a vent. Press Q (left) or E (right), or tap SEAL L / SEAL R. A sealed vent keeps everything out for 7 seconds, then needs 9 to recharge. The tutorial and the Night 2 call teach it.
 - The mask comes up faster, and pressing M while the cameras are open now closes them and puts the mask on.
