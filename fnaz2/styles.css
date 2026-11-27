@@ -233,3 +233,33 @@ body.hc #hint:empty{display:none}
 @media (max-height:520px){.pausebtn{top:calc(36px + 32px * var(--tx) + env(safe-area-inset-top))}}
 body.hc #hint{left:50%;right:auto;transform:translateX(-50%);white-space:nowrap}
 body.hc .pausebtn{background:#000;border:2px solid #fff}
+
+/* jumpscare: nothing but the face. The HUD, phone call and tutorial go away; at the end the picture cuts to static. */
+body.scaring #hud,body.scaring #call,body.scaring #tut,body.scaring #updbar,body.scaring #camUI,body.scaring #maskOv,body.scaring #caps,body.scaring #toast{display:none!important}
+body.scaring #vignette{background:radial-gradient(ellipse at center,transparent 25%,#7a000099 100%)}
+body.scarecut #gl{opacity:0}body.scarecut{background:#000}body.scarecut #staticOv{opacity:1!important;background:#000}body.scarecut #staticOv::before{opacity:.95}
+/* the game over screen fades in out of the dark */
+.screen .deathcard{animation:deathin .9s ease-out both}.screen .deathcard h2{color:#e8453c;text-shadow:0 0 18px #e8453c66;letter-spacing:.04em}
+@keyframes deathin{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:none}}
+
+/* action buttons: one tidy row at the bottom centre instead of corners and floating pieces */
+#actBar{position:absolute;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;justify-content:center;align-items:flex-end;gap:10px;pointer-events:none}
+#actBar .act{position:static;left:auto;right:auto;bottom:auto;transform:none;pointer-events:auto;min-width:96px;padding:8px 14px;background:#0a0710cc;border:1px solid #ffffff44;border-radius:10px;line-height:1.15}
+#actBar .act small{display:block;font:600 11px ui-monospace,monospace;opacity:.75;letter-spacing:.04em;margin-top:3px}
+#actBar .act.on{background:#ffd24a;color:#000;border-color:#ffd24a}#actBar .act.seal.on{background:#c99556;border-color:#c99556}
+#bWind{bottom:calc(86px + env(safe-area-inset-bottom))}
+@media (max-width:640px){#actBar{gap:5px}#actBar .act{min-width:0;padding:9px 8px;font-size:11px}}
+/* the camera: a dim, grainy security feed with the room name in the corner */
+body.cam-on #gl{filter:grayscale(.92) contrast(1.12) brightness(.8) sepia(.12)}
+#camUI{border:0;box-shadow:inset 0 0 150px 30px #000d;background:repeating-linear-gradient(0deg,#0000 0 2px,#0000002e 2px 3px)}
+.camname{top:auto;bottom:calc(82px + env(safe-area-inset-bottom));left:18px;transform:none;font:700 15px ui-monospace,monospace;text-align:left;letter-spacing:.06em;text-shadow:0 0 4px #000}
+.camname:before{content:"\25CF REC ";color:#e33;animation:recblink 1.2s steps(2) infinite}
+@keyframes recblink{50%{opacity:0}}
+#camList{top:50%;bottom:auto;right:12px;transform:translateY(-50%);display:grid;grid-template-columns:36px;gap:3px}
+#camList button{padding:0;min-height:30px;text-align:center;font-size:13px;border-radius:4px}#camList button span{display:none}
+#mini{right:12px;bottom:calc(82px + env(safe-area-inset-bottom));width:150px;height:auto}
+#camList button.tuthint{outline:2px solid #ffd24a;animation:recblink 1s steps(2) infinite}
+/* title smaller so it sits above the Toy bodies, camera mode hides the buttons that cannot be used there, and the map moves out of the way of the camera buttons */
+.title h1{font-size:clamp(28px,5.4vw,66px)!important;line-height:1}
+body.cam-on #bMask,body.cam-on #bFlash,body.cam-on #bSealL,body.cam-on #bSealR{display:none}
+#mini{right:auto;left:18px;bottom:calc(112px + env(safe-area-inset-bottom))}

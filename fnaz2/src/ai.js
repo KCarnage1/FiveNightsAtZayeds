@@ -104,7 +104,7 @@ export function step(S, dt, input) {
       if (def.kind === 'nuisance') { S.flashDead = Math.max(S.flashDead, 1.5); if (masked && S.offT[w] > 1.2) leave(S, w, fx, 'main'); else if (S.offT[w] > 14) leave(S, w, fx, 'hall'); continue; }
       if (masked) { if (S.offT[w] > 1.0 + rand(S) * 1.2) leave(S, w, fx, def.kind === 'crawler' ? 'ceiling' : 'main'); }
       // strike: night 1 grace and the assist multiplier from settings (1 = normal, 1.25 = a quarter more time before they strike)
-      else if (S.offT[w] > (3.4 + (S.night === 1 ? 1.2 : 0) - Math.min(1.2, lvl * 0.06)) * S.mods.strike) { if (!S.inv) { if (revive(S, w, fx)) continue; S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
+      else if (S.offT[w] > (3.4 + (S.night === 1 ? 1.2 : S.night === 2 ? 0.7 : 0) - Math.min(1.2, lvl * 0.06)) * S.mods.strike) { if (!S.inv) { if (revive(S, w, fx)) continue; S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
       continue;
     }
     S.acc[w] += dt;

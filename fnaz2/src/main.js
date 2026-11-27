@@ -46,6 +46,7 @@ function makeBot(w) {
 }
 
 /* ---- game state ---- */
+const _hp = new THREE.Vector3(); // scratch
 const G = { mode: 'title', S: null, cam: null, pitch: 0, yaw: 0, yawT: 0, keys: {}, wind: false, mask: false, light: false, scareT: 0, scareWho: null, from: {}, breathT: 0, speed: 1, shake: 0 };
 const ORDER = WHO.slice();
 const LABEL = { 7: 'Custom Night' };
@@ -133,7 +134,7 @@ function home() {
   Online.beat('title', 0);
 }
 const refreshHome = () => { if (G.mode === 'title' && $('#screen').querySelector('.title') && !$('#screen').hidden) { const c = $('#coins'); if (c) c.innerHTML = ic('coin') + stats.coins; } };
-function leaveToMenu(msg) { G.mode = 'title'; Calls.stop(); $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); document.body.classList.remove('playing'); closeModal(); const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div><h2>${esc(msg)}</h2><button class="big" id="tt">Menu</button></div>`; $('#tt').onclick = home; }
+function leaveToMenu(msg) { document.body.classList.remove('scaring', 'scarecut'); G.mode = 'title'; Calls.stop(); $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); document.body.classList.remove('playing'); closeModal(); const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div><h2>${esc(msg)}</h2><button class="big" id="tt">Menu</button></div>`; $('#tt').onclick = home; }
 function applyCosmetics() { flash.color.set(Shop.colorOf('light')); const c = Shop.colorOf('mask'); document.querySelectorAll('#maskOv path:nth-child(2)').forEach((p) => p.setAttribute('stroke', c)); }
 const dbg = document.createElement('div'); dbg.id = 'dbg'; dbg.hidden = true; document.body.appendChild(dbg);
 const errLog = []; addEventListener('error', (e) => errLog.push(e.message)); addEventListener('unhandledrejection', (e) => errLog.push('promise: ' + (e.reason && e.reason.message || e.reason)));
@@ -247,7 +248,7 @@ function over(win) {
   const buttons = coopMode ? (guest ? '<p class="pulse">Waiting for the host to start again…</p>' : `<button class="big" id="rt">Play again</button>`) + '<button class="big alt" id="tt">Leave</button>' : `${next}<button class="big ${next ? 'alt' : ''}" id="rt">${win ? 'Replay' : 'Try again'}</button><button class="big alt" id="tt">Menu</button>`;
   s.innerHTML = win
     ? `<div><h1>6 AM</h1><h2>You survived ${G.label}</h2><p>${n === 6 && !G.opts.label ? (Lore.has(Lore.FINAL_ID) ? 'The sun is up. You know whose order this was. The door is yours to open, Rashid.' : Lore.countFound() >= Math.round(Lore.total() * 0.6) ? 'The sun is up, and the police are at the door. You hold most of the pieces. Four numbers in the case file would tell you the rest.' : 'The sun is up. The police at the door are no longer the worst thing in the building. There is more to find in the cameras, from the first night on.') : 'The sun is up. The bodies are still. For now.'}${win && n >= OPEN_NIGHTS && !G.opts.label ? ' More nights are coming soon.' : ''}</p>${pay}${assistNote}${buttons}</div>`
-    : `<div><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p>${DEATH_LINE[G.scareWho] ? `<p class="quote">${DEATH_LINE[G.scareWho]}</p>` : ''}<p>${hintFor(G.scareWho)}</p>${pay}${assistNote}${buttons}</div>`;
+    : `<div class="deathcard"><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p>${DEATH_LINE[G.scareWho] ? `<p class="quote">${DEATH_LINE[G.scareWho]}</p>` : ''}<p>${hintFor(G.scareWho)}</p>${pay}${assistNote}${buttons}</div>`;
   if ($('#nx')) $('#nx').onclick = () => startNight(n + 1, { }); 
   if ($('#rt')) $('#rt').onclick = () => (coopMode ? coop.again() : startNight(n, G.opts));
   $('#tt').onclick = () => { if (coopMode) coop.leave(); home(); };
@@ -283,20 +284,21 @@ addEventListener('keydown', (e) => {
   if (k === 'escape' || k === 'p') { if (modalOpen()) { $('#mClose') ? $('#mClose').click() : closeModal(); } else if (G.mode === 'play') pause(G.coop ? !G.menuOpen : !G.paused); return; }
   if ((G.mode === 'dead' || G.mode === 'won') && (k === 'r' || k === 'enter')) { const bt = $('#rt') || $('#nx'); if (bt) bt.click(); return; }
   if (G.paused) return;
-  if (k === 'f' || k === ' ') { if (k === ' ') e.preventDefault(); pressLight(); } if (k === 'm') pressMask(); if (k === 'w') G.wind = true;
+  if (k === 'f' || k === ' ') { if (k === ' ') e.preventDefault(); pressLight(); } if (k === 'm' || k === 'shift') pressMask(); if (k === 'w') G.wind = true;
   if (!G.cam && (k === 'q' || k === 'e')) G.sealReq = k === 'q' ? 'ventL' : 'ventR'; /* seal a vent */
   if (k === 'c' || k === 'tab') { e.preventDefault(); toggleCam(); }
   if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = (k === 'arrowleft' || k === 'a' ? -1 : 1) * 1.2; /* keyboard look: hold to turn */
   if (G.cam && (k === 'arrowleft' || k === 'q' || k === 'arrowright' || k === 'e')) { const i = camIds.indexOf(G.cam), d = k === 'arrowleft' || k === 'q' ? -1 : 1; selectCam(camIds[(i + d + camIds.length) % camIds.length]); }
   const d = '1234567890'.indexOf(k); if (G.cam && d >= 0 && d < camIds.length) selectCam(camIds[d]);
 });
-addEventListener('keyup', (e) => { if (typing(e)) return; const k = e.key.toLowerCase(); G.keys[k] = 0; if (k === 'f' || k === ' ') releaseLight(); if (k === 'm') releaseMask(); if (k === 'w') G.wind = false; if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = 0; });
+addEventListener('keyup', (e) => { if (typing(e)) return; const k = e.key.toLowerCase(); G.keys[k] = 0; if (k === 'f' || k === ' ') releaseLight(); if (k === 'm' || k === 'shift') releaseMask(); if (k === 'w') G.wind = false; if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = 0; });
 const hold = (el, on, off) => { el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); on(); }); for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, off); };
 $('#bSealL').onclick = () => { G.sealReq = 'ventL'; }; $('#bSealR').onclick = () => { G.sealReq = 'ventR'; };
 hold($('#bMask'), pressMask, releaseMask); hold($('#bFlash'), pressLight, releaseLight);
 $('#bCam').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleCam(); });
 hold($('#bWind'), () => { G.wind = true; }, () => { G.wind = false; });
 
+const tutVisit = () => { const S = G.S; if (!S || S.dead || S.won) return; S.pos.bidoof = 'office'; S.offT.bidoof = 0; S.lv.bidoof = Math.max(S.lv.bidoof, 1); apply([{ type: 'enter', who: 'bidoof', from: 'ventR' }]); }; // tutorial: a harmless visitor
 const camIds = Object.keys(CAMS);
 function toggleCam() {
   if (G.mode !== 'play' || G.paused || G.guest || G.scareWho) return;
@@ -305,7 +307,7 @@ function toggleCam() {
   if (G.mask) setMask(false);
   G.cam = G.camLast || 'stage'; $('#camUI').hidden = false; $('#bCam').classList.add('on'); selectCam(G.cam); Snd.click();
 }
-function selectCam(id) { G.cam = G.camLast = id; $('#camName').textContent = 'CAM ' + (camIds.indexOf(id) + 1) + ' · ' + CAMS[id].name; $('#bWind').hidden = id !== 'prize'; [...$('#camList').children].forEach((b) => b.classList.toggle('on', b.dataset.id === id)); Snd.click(); }
+function selectCam(id) { const so = $('#staticOv'); if (so && G.cam !== id) { so.classList.remove('gl'); void so.offsetWidth; so.classList.add('gl'); } G.cam = G.camLast = id; $('#camName').textContent = 'CAM ' + (camIds.indexOf(id) + 1) + ' · ' + CAMS[id].name; $('#bWind').hidden = id !== 'prize'; [...$('#camList').children].forEach((b) => b.classList.toggle('on', b.dataset.id === id)); Snd.click(); }
 $('#bPause').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); pause(true); });
 $('#callSkip').addEventListener('click', () => { Calls.stop(); });
 $('#camList').innerHTML = camIds.map((id, i) => `<button data-id="${id}" title="${CAMS[id].name}" aria-label="Camera ${i + 1}, ${CAMS[id].name}"><b>${i + 1}</b><span> ${CAMS[id].name}</span></button>`).join('');
@@ -421,14 +423,20 @@ function frame(now) {
     apply(fx); Snd.box(S.box, dt); Snd.hum(0.04 + (G.cam ? 0.02 : 0)); Snd.frame(dt, !!(G.light && !G.cam), S.battery, G.mask, S.pos);
     if (G.mask) { G.breathT -= dt; if (G.breathT <= 0) { Snd.breath(); G.breathT = 1.4; } }
     $('#maskOv').classList.toggle('on', S.mask > 0.5); $('#bWind').classList.toggle('on', G.wind && !!G.cam);
-    updateHud(); tutTick(G, dt); if (G.cam) drawMini();
+    updateHud(); tutTick(G, dt, tutVisit); if (G.cam) drawMini();
   }
-  if (G.scareWho && G.mode === 'play') { // the jumpscare: the body fills the view, shaking
-    G.scareT += dt; const b = bots[G.scareWho]; b.root.visible = true; b.root.scale.setScalar(1.1);
-    const p = Math.min(1, G.scareT / 0.18), d = 2.2 - p * 1.15; b.root.position.set(player.position.x + Math.sin(-G.yaw) * d, 0.0, player.position.z - Math.cos(G.yaw) * d); b.root.lookAt(player.position.x, 0, player.position.z);
-    b.root.position.x += Math.sin(G.scareT * 90) * 0.05; b.root.position.y = -0.55;
-    animate(b, dt, 'scare'); officeLight.intensity = cfg.flashing ? 3 + Math.random() * 12 : 8; $('#flashOv').style.opacity = cfg.flashing && G.scareT < 0.25 ? 0.8 - G.scareT * 3 : 0;
-    if (G.scareT > 1.6) { officeLight.intensity = 7; b.root.visible = false; $('#flashOv').style.opacity = 0; over(false); }
+  if (G.scareWho && G.mode === 'play') { // the jumpscare: it lunges at your face, thrashes, then the picture cuts to static
+    G.scareT += dt; const t = G.scareT, b = bots[G.scareWho], k = Math.min(1, t / 0.12), ease = 1 - (1 - k) * (1 - k) * (1 - k);
+    document.body.classList.add('scaring'); b.root.visible = t < 1.3; G.pitch *= 0.6;
+    const fx = Math.sin(-G.yaw), fz = -Math.cos(G.yaw), d = 3.2 - ease * 2.6; // the face starts 3.2 m away and ends 0.6 m from your eyes
+    b.root.scale.setScalar(1.25 + ease * 0.45); b.root.position.set(player.position.x + fx * d, 0, player.position.z + fz * d); b.root.lookAt(player.position.x, 0, player.position.z);
+    animate(b, dt, 'scare'); b.root.updateMatrixWorld(true); _hp.set(0, 0.36, 0.18); b.head.localToWorld(_hp); // the middle of the face
+    const wob = t > 0.12 ? 1 : 0; b.root.position.x += player.position.x + fx * d - _hp.x + wob * (Math.random() - 0.5) * 0.12; b.root.position.z += player.position.z + fz * d - _hp.z + wob * (Math.random() - 0.5) * 0.12; b.root.position.y += player.position.y - 0.03 - _hp.y + wob * Math.sin(t * 70) * 0.05;
+    G.shake = 6 * (t < 1.3 ? 1 : 0); const fovBase = cfg.fov; player.fov = fovBase + 26 * ease + (t > 0.12 ? Math.sin(t * 55) * 4 : 0); player.updateProjectionMatrix();
+    officeLight.intensity = cfg.flashing ? (t < 0.9 ? 2 + Math.random() * 16 : 1) : 8;
+    const fl = $('#flashOv'); fl.style.background = t < 0.07 ? '#fff' : '#b00000'; fl.style.opacity = cfg.flashing ? (t < 0.07 ? 1 : t < 1.0 && Math.random() < 0.3 ? 0.45 : 0) : 0;
+    if (t > 1.3) document.body.classList.add('scarecut'); // hard cut to static
+    if (t > 1.75) { officeLight.intensity = 7; b.root.visible = false; fl.style.opacity = 0; fl.style.background = '#fff'; document.body.classList.remove('scaring', 'scarecut'); applyFov(); over(false); }
   } else if (live || G.mode === 'title') { for (const x of WHO) if (!(G.mode === 'title' && x === titleBot)) animate(bots[x], dt * (live ? 1 : 0), 'idle'); }
   if (live && !G.scareWho) placeAll();
   document.body.classList.toggle('cam-on', !!(G.cam && G.mode === 'play'));

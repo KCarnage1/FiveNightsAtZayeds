@@ -16,13 +16,14 @@ export function player(kind, delay, forget = 0, seed = 1) {
     const d = delay + (t < extraUntil ? extra : 0);
     const seen = { office: inOffice(S).length > 0, runner: S.pos.wSherbet === 'hall', box: S.box, bidoof: S.pos.bidoof === 'office' };
     q.push([t, seen]); while (q.length > 1 && q[1][0] <= t - d) q.shift(); const v = q[0][1];
+    const sealP = (t % 16 < DT * 1.2) ? 'ventL' : (t % 16 >= 8 && t % 16 < 8 + DT * 1.2) ? 'ventR' : undefined; // a player who closes the vents now and then (Q and E)
     if (kind === 'idle') return {};
     if (kind === 'maskonly') return { mask: true }; // never looks at anything: hold the mask, never wind
     if (kind === 'camper') return { cam: 'prize', wind: true }; // sits on the music box camera
-    if (kind === 'lazy') { return { mask: v.office && (t % 4 < 3), flash: v.runner, aim: v.runner ? 'hall' : null, cam: v.box < 35 && !v.office ? 'prize' : null, wind: true }; }
+    if (kind === 'lazy') { return { seal: sealP, mask: v.office && (t % 4 < 3), flash: v.runner, aim: v.runner ? 'hall' : null, cam: v.box < 35 && !v.office ? 'prize' : null, wind: true }; }
     // careful: mask when something is in the office, light on the runner, wind the box when it drops
     if (v.box < 55) winding = true; else if (v.box > 95) winding = false; // a human winds the box until it is nearly full
-    const wantCam = !v.office && !v.runner && winding; return { mask: v.office, flash: v.runner, aim: v.runner ? 'hall' : null, cam: wantCam ? 'prize' : null, wind: wantCam };
+    const wantCam = !v.office && !v.runner && winding; return { seal: sealP, mask: v.office, flash: v.runner, aim: v.runner ? 'hall' : null, cam: wantCam ? 'prize' : null, wind: wantCam };
   };
 }
 export const PLAYERS = [['idle', 0, 0], ['maskonly', 0, 0], ['camper', 0, 0], ['lazy', 1.2, 0.2], ['average', 0.8, 0.1], ['careful', 0.8, 0], ['careful', 0, 0]];

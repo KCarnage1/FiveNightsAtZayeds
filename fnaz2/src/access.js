@@ -48,7 +48,7 @@ const STEPS = [
   { id: 'look', t: 'Look at the vents', how: () => (coarse ? 'Touch the far left or far right of the screen to look into a vent.' : 'Move the mouse to the far left or right, or hold A or D, to look into a vent.') },
   { id: 'seal', t: 'Close a vent', how: () => (coarse ? 'Tap SEAL L or SEAL R to close that vent for a few seconds. Then it needs time to recharge.' : 'Press Q to seal the left vent, or E for the right. A sealed vent keeps everything out for a few seconds, then needs time to recharge.') },
   { id: 'light', t: 'Use the flashlight', how: () => (coarse ? 'Hold the LIGHT button to shine down the hall.' : 'Hold F, or click and hold, to shine the flashlight.') },
-  { id: 'mask', t: 'Wear the mask', how: () => (coarse ? 'Something got in. Hold the MASK button until it leaves.' : 'Something got in. Hold M until it leaves.') },
+  { id: 'mask', t: 'Wear the mask', how: () => (coarse ? 'Something got in. Hold the MASK button until it leaves.' : 'Something got in. Hold Shift (or M) until it leaves.') },
   { id: 'cam', t: 'Open the cameras', how: () => (coarse ? 'Tap CAMERAS to see the rooms.' : 'Press C to see the rooms.') },
   { id: 'wind', t: 'Wind the music box', how: () => (coarse ? 'In the cameras, pick the Prize Corner, then hold the wind button.' : 'In the cameras, pick the Prize Corner, then hold W.') }
 ];
@@ -65,10 +65,10 @@ function finish() { T.on = false; stats.tutorial = true; saveStats(); $('#tut').
 export function tutStart(G) {
   T.on = false; $('#tut').hidden = true; const S = G.S, o = G.opts || {};
   if (!cfg.tutorial || stats.tutorial || !S || S.night !== 1 || o.label || o.daily || o.coop || o.custom) return;
-  Object.assign(T, { on: true, t: 0, entered: false, fin: 0, cur: undefined, shown: false });
+  Object.assign(T, { on: true, t: 0, entered: false, demo: false, fin: 0, cur: undefined, shown: false });
 }
 export const tutEnter = () => { T.entered = true; };
-export function tutTick(G, dt) {
+export function tutTick(G, dt, visit) {
   if (!T.on) return;
   T.t += dt; const el = $('#tut');
   const mark = (id) => { if (!done(id)) { stats.tutSteps[id] = true; saveStats(); T.cur = undefined; } };
@@ -77,7 +77,10 @@ export function tutTick(G, dt) {
   if (G.light && (done('look') || T.t > 12)) mark('light');
   if (T.entered && G.mask) mark('mask');
   if (G.cam) mark('cam');
-  if (G.cam && G.wind) mark('wind');
+  if (G.cam === 'prize' && G.wind) mark('wind');
+  // nothing may come in on a gentle first night, so after the light and the vents are learned a harmless visitor shows what the mask is for
+  if (!T.entered && !T.demo && done('seal') && done('light') && T.t > 35 && !G.cam && !G.paused && visit) { T.demo = true; visit(); }
+  const pc = document.querySelector('#camList button[data-id="prize"]'); if (pc) pc.classList.toggle('tuthint', !!(T.cur && T.cur.id === 'wind' && G.cam && G.cam !== 'prize'));
   const want = (s) => !done(s.id) && (s.id === 'look' ? T.t > 3.5 : s.id === 'seal' ? done('look') || T.t > 8 : s.id === 'light' ? done('seal') || T.t > 12 : s.id === 'mask' ? T.entered : s.id === 'cam' ? done('light') || T.t > 25 : done('cam'));
   const next = (T.entered && want(STEPS[2]) ? STEPS[2] : STEPS.find(want)) || null;
   if (next !== T.cur) { T.cur = next; render(); }
