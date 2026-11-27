@@ -71,7 +71,7 @@ export function toward(w, at, S) {
   return rand(S) < 0.62 ? good[Math.floor(rand(S) * good.length)] : ns[Math.floor(rand(S) * ns.length)];
 }
 
-export const SEAL_SEC = 7, SEAL_COOL = 9; // a sealed vent holds for 7 seconds, then needs 9 to recharge
+export const SEAL_SEC = 5, SEAL_COOL = 11; // a sealed vent holds for 5 seconds, then needs 11 to recharge
 /* input: {seal:'ventL'|'ventR'|undefined (one press), mask:boolean, flash:boolean, aim:'hall'|'ventL'|'ventR'|null, cam:node|null, wind:boolean} */
 export function step(S, dt, input) {
   const fx = []; if (S.dead || S.won) return fx;
@@ -104,7 +104,7 @@ export function step(S, dt, input) {
       if (def.kind === 'nuisance') { S.flashDead = Math.max(S.flashDead, 1.5); if (masked && S.offT[w] > 1.2) leave(S, w, fx, 'main'); else if (S.offT[w] > 14) leave(S, w, fx, 'hall'); continue; }
       if (masked) { if (S.offT[w] > 1.0 + rand(S) * 1.2) leave(S, w, fx, def.kind === 'crawler' ? 'ceiling' : 'main'); }
       // strike: night 1 grace and the assist multiplier from settings (1 = normal, 1.25 = a quarter more time before they strike)
-      else if (S.offT[w] > (3.4 + (S.night === 1 ? 1.2 : S.night === 2 ? 0.7 : 0) - Math.min(1.2, lvl * 0.06)) * S.mods.strike) { if (!S.inv) { if (revive(S, w, fx)) continue; S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
+      else if (S.offT[w] > (3.4 + (S.night === 1 ? 1.2 : S.night === 2 ? 0 : 0) - Math.min(1.2, lvl * 0.06)) * S.mods.strike) { if (!S.inv) { if (revive(S, w, fx)) continue; S.dead = w; fx.push({ type: 'kill', who: w }); return fx; } }
       continue;
     }
     S.acc[w] += dt;

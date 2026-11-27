@@ -52,7 +52,7 @@ console.log('ai ok: idle kills', dead + '/20, competent wins', won + '/20');
   const run = (seal) => { let entered = 0; for (let seed = 1; seed <= 20; seed++) { const S = newNight(4, seed); for (let i = 0; i < 4000 && !S.dead && !S.won; i++) { const fx = step(S, 0.05, { seal: seal && (i % 120 === 0) ? (i % 240 ? 'ventR' : 'ventL') : undefined }); if (seal) { S.seal.ventL = 99; S.seal.ventR = 99; } entered += fx.filter((f) => f.type === 'enter' && String(f.from).startsWith('vent')).length; if (S.pos.wSherbet === 'office') break; } } return entered; };
   const open = run(false), sealed = run(true);
   assert(open > 0 && sealed === 0, 'sealed vents must block vent entries (open ' + open + ', sealed ' + sealed + ')');
-  const S = newNight(1, 1); step(S, 0.05, { seal: 'ventL' }); assert(S.seal.ventL > 6, 'pressing seal closes the vent');
+  const S = newNight(1, 1); step(S, 0.05, { seal: 'ventL' }); assert(S.seal.ventL > 4, 'pressing seal closes the vent');
   for (let i = 0; i < 160; i++) step(S, 0.05, {}); assert(S.seal.ventL === 0 && S.sealCd.ventL > 0, 'the seal runs out, then recharges');
   console.log('ai ok: vent seal blocks entries (open ' + open + ', sealed ' + sealed + ')');
 }

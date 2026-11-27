@@ -5,7 +5,7 @@
 - New controls: the mask is on Shift (or M). The action buttons are one tidy row at the bottom, and the camera buttons no longer clash with the map.
 - A better camera feed: dim and grainy with scanlines, a REC light and the room name in the corner. Switching cameras flickers.
 - The tutorial now teaches the mask with a harmless visitor, highlights the Prize Corner for the music box, and only counts winding on that camera.
-- Night 2 is gentler for casual players. The title is smaller so it no longer covers the characters.
+- The vent seal lasts 5 seconds and needs 11 to recharge. Night 2 difficulty is back on target. The title is smaller so it no longer covers the characters.
 
 ## 0.8.2
 - Fixed: after pressing Update now, the update prompt could come back because the browser reused the old game file. Every build now has its own file addresses and the update opens a fresh page.
