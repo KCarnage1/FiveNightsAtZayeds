@@ -1,6 +1,6 @@
 {
  "name": "fnaz2",
- "version": "0.8.0",
+ "version": "0.8.1",
  "private": true,
  "scripts": {
   "build": "esbuild src/main.js --bundle --format=iife --outfile=game.bundle.js --minify && esbuild src/debug.js --bundle --format=iife --outfile=debug.bundle.js --minify",

@@ -7,7 +7,7 @@ import { stats, saveStats } from './settings.js';
 import { UPGRADES, COSMETICS, buy, earn } from './shop.js';
 
 /* The admin menu. Opened by typing the secret word; every power needs the server to confirm the password first. */
-const FACE_LABEL = { zayed: 'Zayed (camel)', bubbles: 'Bubbles (cat)', taffy: 'Taffy (goat)', sherbet: 'Sherbet (falcon)', ibrahim: 'Ibrahim', gelly: 'Gelly', bidoof: 'Bidoof' };
+const FACE_LABEL = { zayed: 'Zayed the Camel', bubbles: 'Zayed the Cat', taffy: 'Zayed the Goat', sherbet: 'Zayed the Falcon', ibrahim: 'Ibrahim', gelly: 'Gelly', bidoof: 'Bidoof' };
 export function initAdmin(ctx) {
   const { G, $, esc, toast, openModal, closeModal } = ctx;
   G.adm = { on: false, god: false, freeze: false, battery: false, box: false, radar: false, free: false, speed: 1, used: false };

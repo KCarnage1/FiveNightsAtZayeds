@@ -46,6 +46,7 @@ export function cueHud(S, who) {
 /* ---- the first-night tutorial: teaches by doing, ticks itself off, never repeats ---- */
 const STEPS = [
   { id: 'look', t: 'Look at the vents', how: () => (coarse ? 'Touch the far left or far right of the screen to look into a vent.' : 'Move the mouse to the far left or right, or hold A or D, to look into a vent.') },
+  { id: 'seal', t: 'Close a vent', how: () => (coarse ? 'Tap SEAL L or SEAL R to close that vent for a few seconds. Then it needs time to recharge.' : 'Press Q to seal the left vent, or E for the right. A sealed vent keeps everything out for a few seconds, then needs time to recharge.') },
   { id: 'light', t: 'Use the flashlight', how: () => (coarse ? 'Hold the LIGHT button to shine down the hall.' : 'Hold F, or click and hold, to shine the flashlight.') },
   { id: 'mask', t: 'Wear the mask', how: () => (coarse ? 'Something got in. Hold the MASK button until it leaves.' : 'Something got in. Hold M until it leaves.') },
   { id: 'cam', t: 'Open the cameras', how: () => (coarse ? 'Tap CAMERAS to see the rooms.' : 'Press C to see the rooms.') },
@@ -72,11 +73,12 @@ export function tutTick(G, dt) {
   T.t += dt; const el = $('#tut');
   const mark = (id) => { if (!done(id)) { stats.tutSteps[id] = true; saveStats(); T.cur = undefined; } };
   if (T.t > 3.5 && Math.abs(G.yaw) > 0.9) mark('look');
+  if (G.S && (G.S.seal.ventL > 0 || G.S.seal.ventR > 0)) mark('seal');
   if (G.light && (done('look') || T.t > 12)) mark('light');
   if (T.entered && G.mask) mark('mask');
   if (G.cam) mark('cam');
   if (G.cam && G.wind) mark('wind');
-  const want = (s) => !done(s.id) && (s.id === 'look' ? T.t > 3.5 : s.id === 'light' ? done('look') || T.t > 12 : s.id === 'mask' ? T.entered : s.id === 'cam' ? done('light') || T.t > 25 : done('cam'));
+  const want = (s) => !done(s.id) && (s.id === 'look' ? T.t > 3.5 : s.id === 'seal' ? done('look') || T.t > 8 : s.id === 'light' ? done('seal') || T.t > 12 : s.id === 'mask' ? T.entered : s.id === 'cam' ? done('light') || T.t > 25 : done('cam'));
   const next = (T.entered && want(STEPS[2]) ? STEPS[2] : STEPS.find(want)) || null;
   if (next !== T.cur) { T.cur = next; render(); }
   el.hidden = T.t <= 3.5 || !!G.paused || !!G.scareWho;

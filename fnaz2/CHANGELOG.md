@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.1
+- New: seal a vent. Press Q (left) or E (right), or tap SEAL L / SEAL R. A sealed vent keeps everything out for 7 seconds, then needs 9 to recharge. The tutorial and the Night 2 call teach it.
+- The mask comes up faster, and pressing M while the cameras are open now closes them and puts the mask on.
+- Smooth frame rate: if the game runs slowly it draws at a lower resolution until it is smooth (Settings, Video).
+- Characters use the names from the first game: Zayed the Camel, the Cat, the Goat and the Falcon.
+- Fixed the Back button in the characters gallery.
+- New pictures for Gelly and Bidoof.
+
 ## 0.8.0
 - Windows and Mac apps, with your game status shown on your Discord profile while the Discord app is open.
 - Bidoof now uses his own picture, and the game has a new icon.
@@ -33,7 +41,7 @@
 - New look: black-and-white security cameras, checkerboard floors, striped confetti walls, bunting, balloons, star curtains and signs.
 - CAD-built props (music box, arcade cabinets, fan, vent grilles, flashlight, party tables) made with build123d.
 - Toy bodies have rosy cheeks, gloss and a party piece each; Withered bodies are torn with bare metal showing.
-- Harder late nights: Withered Sherbet is fairer to beat (a little more time, a little less light needed), and the other threats push harder on nights 4 to 6.
+- Harder late nights: Withered Zayed the Falcon is fairer to beat (a little more time, a little less light needed), and the other threats push harder on nights 4 to 6.
 - Phone layout: camera buttons are a numbered grid, no overlaps, 44 px touch targets, one-line logo in landscape.
 - Pause screen is one card; the night title card no longer covers menus.
 - Fewer draw calls (about 5 times fewer in the office), so it runs better on phones.

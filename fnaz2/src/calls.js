@@ -9,7 +9,7 @@ export const CALLS = {
     'The new bodies are the Toys. The old ones are in Parts and Service. Do not go looking for them.',
     'There is old paperwork taped up around the building. Do not read it, and do not click on anything you find on the cameras. Party Room 2 is still set for a party. Nobody ever cleared the table.'],
   2: ['Hello! Night two. You made it. I\'m honestly relieved. The paperwork was getting heavy.',
-    'Two air vents open into your office. Something small will use them. Put the mask on when it arrives, and it will leave.',
+    'Two air vents open into your office. Something small will use them. Press Q or E to seal a vent for a few seconds, and put the mask on if something gets in. It will leave.',
     'Those vents are older than the building. They were the order chute at the old cafeteria. Food went down. Orders came up. Some orders are still coming up.',
     'Things get left in the left vent. Check it on the cameras. If it is a slip, read it to the last line.',
     'The old bodies are awake now too. The Withered. The Falcon is the worst. He runs the hallway, and no mask will stop him. Light. Down the hall. Remember that.'],

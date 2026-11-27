@@ -46,3 +46,13 @@ assert(m1.scares / 40 >= 2 && m1.scares / 40 <= 7, 'night 1 has a few clear scar
 for (const night of [1, 2]) for (let seed = 1; seed <= 30; seed++) { const S = newNight(night, seed, { inv: true }); for (let i = 0; i < 9600; i++) { step(S, 0.05, {}); const real = WHO.filter((w) => S.pos[w] === 'office' && w !== 'bidoof').length + (S.pos.wSherbet === 'hall' ? 1 : 0); assert(real <= 1, 'night ' + night + ' seed ' + seed + ' t=' + S.t.toFixed(1) + ': ' + real + ' kill clocks'); } }
 console.log('night 1/2 survival', JSON.stringify(r));
 console.log('ai ok: idle kills', dead + '/20, competent wins', won + '/20');
+
+// 5. a sealed vent keeps a vent walker out; an unsealed one lets it in
+{
+  const run = (seal) => { let entered = 0; for (let seed = 1; seed <= 20; seed++) { const S = newNight(4, seed); for (let i = 0; i < 4000 && !S.dead && !S.won; i++) { const fx = step(S, 0.05, { seal: seal && (i % 120 === 0) ? (i % 240 ? 'ventR' : 'ventL') : undefined }); if (seal) { S.seal.ventL = 99; S.seal.ventR = 99; } entered += fx.filter((f) => f.type === 'enter' && String(f.from).startsWith('vent')).length; if (S.pos.wSherbet === 'office') break; } } return entered; };
+  const open = run(false), sealed = run(true);
+  assert(open > 0 && sealed === 0, 'sealed vents must block vent entries (open ' + open + ', sealed ' + sealed + ')');
+  const S = newNight(1, 1); step(S, 0.05, { seal: 'ventL' }); assert(S.seal.ventL > 6, 'pressing seal closes the vent');
+  for (let i = 0; i < 160; i++) step(S, 0.05, {}); assert(S.seal.ventL === 0 && S.sealCd.ventL > 0, 'the seal runs out, then recharges');
+  console.log('ai ok: vent seal blocks entries (open ' + open + ', sealed ' + sealed + ')');
+}

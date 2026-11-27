@@ -42,17 +42,17 @@ The ramp inside a night comes from the hour bonus (+1 level from hour 3, +2 from
 | character | N1 before / after | N2 before / after | N3 before / after |
 |---|---|---|---|
 | Toy Zayed | 0 / 1 | 2 / 2 | 4 / 4 |
-| Toy Bubbles (left vent) | 2 / 2 | 3 / 2 | 5 / 5 |
-| Toy Taffy (right vent) | 0 / 0 | 0 / 1 | 3 / 3 |
+| Toy Zayed the Cat (left vent) | 2 / 2 | 3 / 2 | 5 / 5 |
+| Toy Zayed the Goat (right vent) | 0 / 0 | 0 / 1 | 3 / 3 |
 | Withered Falcon (wSherbet) | 0 / 0 | 1 / 3 | 2 / 3 |
 | Bidoof | 0 / 4 | 2 / 2 | 3 / 3 |
 | Ibrahim (music box) | 1 / 6 | 2 / 6 | 4 / 6 |
 
-Night 1 teaches the mask (Toy Bubbles through the left vent), the light (Toy Zayed in the hall is pushed back by it), and the music box (it drains in about 45 s, so the player has to visit the Prize Corner about once a minute). Bidoof is harmless and fills the quiet gaps. Night 2 adds the right vent and the Falcon.
+Night 1 teaches the mask (Toy Zayed the Cat through the left vent), the light (Toy Zayed in the hall is pushed back by it), and the music box (it drains in about 45 s, so the player has to visit the Prize Corner about once a minute). Bidoof is harmless and fills the quiet gaps. Night 2 adds the right vent and the Falcon.
 
 ## Rules added (measured problems)
 
-1. Nights 1 and 2: one real threat at a time. A character cannot enter while the Falcon is in the hall or another non-Bidoof is in the office, and the Falcon cannot start a run while anything is in the office. Measured before: the Falcon running while Bubbles, Bidoof and Zayed arrived within 4.3 s, which no player can answer (the mask disables the light). Without the limit the average player's N2 survival was about 80% and killed mostly by the pile-ups. Mirrored in `rust/ai-rs/src/port.rs`.
+1. Nights 1 and 2: one real threat at a time. A character cannot enter while the Falcon is in the hall or another non-Bidoof is in the office, and the Falcon cannot start a run while anything is in the office. Measured before: the Falcon running while Zayed the Cat, Bidoof and Zayed arrived within 4.3 s, which no player can answer (the mask disables the light). Without the limit the average player's N2 survival was about 80% and killed mostly by the pile-ups. Mirrored in `rust/ai-rs/src/port.rs`.
 2. Night 1 only: an intruder needs 1.2 s longer to strike (3.4 s becomes 4.6 s, minus 0.06 s per level). Tutorial grace: the average player was 93 to 95% without it. Mirrored in the port.
 
 ## What remains

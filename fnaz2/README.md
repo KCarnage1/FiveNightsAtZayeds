@@ -11,12 +11,13 @@ Nights 1 and 2 are open. Nights 3 to 6 are built and unlock in a later update.
 | Do this | Keyboard | Touch |
 |---|---|---|
 | Look into a vent | mouse to the far left or right, or hold **A** / **D** | touch the far left or right |
+| Seal a vent (about 7 seconds, then it recharges) | **Q** left, **E** right | SEAL L / SEAL R |
 | Flashlight (down the hall) | hold **F**, or click and hold | hold LIGHT |
 | Wear the Zayed mask | hold **M** | hold MASK |
 | Cameras | **C** | camera button |
 | Wind the music box | in the cameras, choose Prize Corner, hold **W** | hold the wind button |
 
-- Anything that gets in through a vent leaves if you wear the mask. The Withered Falcon runs the hallway: the mask does not stop him, the flashlight does.
+- A sealed vent keeps everything out for a few seconds. Anything that gets in leaves if you wear the mask. Pressing **M** while the cameras are up closes them and puts the mask on. The Withered Falcon runs the hallway: the mask does not stop him, the flashlight does.
 - Keep the music box wound or the one inside it comes out.
 - Read the papers you find. They tell you what happened here (Extras, then Case file).
 

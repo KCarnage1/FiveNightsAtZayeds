@@ -23,7 +23,7 @@ import { buildLoreItems, showLoreItems, hideLoreItems, pickLoreItem, loreScreen 
 import { wordTyper } from './admin.js';
 
 const $ = (s) => document.querySelector(s);
-const NAMES = { toyZayed: 'Toy Zayed', toyBubbles: 'Toy Bubbles', toyTaffy: 'Toy Taffy', toySherbet: 'Toy Sherbet', wZayed: 'Withered Zayed', wBubbles: 'Withered Bubbles', wTaffy: 'Withered Taffy', wSherbet: 'Withered Sherbet', gelly: 'Gelly', bidoof: 'Bidoof', ibrahim: 'Ibrahim' };
+const NAMES = { toyZayed: 'Toy Zayed the Camel', toyBubbles: 'Toy Zayed the Cat', toyTaffy: 'Toy Zayed the Goat', toySherbet: 'Toy Zayed the Falcon', wZayed: 'Withered Zayed the Camel', wBubbles: 'Withered Zayed the Cat', wTaffy: 'Withered Zayed the Goat', wSherbet: 'Withered Zayed the Falcon', gelly: 'Gelly', bidoof: 'Bidoof', ibrahim: 'Ibrahim' };
 
 const canvas = $('#gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -70,7 +70,7 @@ function closeModal() { $('#modal').hidden = true; $('#modal').innerHTML = ''; }
 const modalOpen = () => !$('#modal').hidden;
 const TABS = {
   Audio: [{ k: 'master', t: 'range', l: 'Master volume', min: 0, max: 100 }, { k: 'sfx', t: 'range', l: 'Effects', min: 0, max: 100 }, { k: 'music', t: 'range', l: 'Music box', min: 0, max: 100 }],
-  Video: [{ k: 'quality', t: 'select', l: 'Quality', o: [['low', 'Low (best for phones)'], ['medium', 'Medium'], ['high', 'High']], p: 'Lower quality renders fewer pixels. Try Low if the game stutters.' }, { k: 'fov', t: 'range', l: 'Field of view', min: 55, max: 95 }, { k: 'brightness', t: 'range', l: 'Brightness', min: 60, max: 150 }, { k: 'uiScale', t: 'range', l: 'HUD size', min: 80, max: 130 }, { k: 'shake', t: 'toggle', l: 'Screen shake' }, { k: 'flashing', t: 'toggle', l: 'Flashing effects', p: 'Turn off to remove bright flashes and flicker.' }, { k: 'fps', t: 'toggle', l: 'Show FPS' }, { t: 'button', l: 'Fullscreen', b: 'Toggle', act: () => toggleFull() }],
+  Video: [{ k: 'autoRes', t: 'toggle', l: 'Smooth frame rate', p: 'If the game runs slowly, draw the picture at a lower resolution until it runs smoothly, then raise it again.' }, { k: 'quality', t: 'select', l: 'Quality', o: [['low', 'Low (best for phones)'], ['medium', 'Medium'], ['high', 'High']], p: 'Lower quality renders fewer pixels. Try Low if the game stutters.' }, { k: 'fov', t: 'range', l: 'Field of view', min: 55, max: 95 }, { k: 'brightness', t: 'range', l: 'Brightness', min: 60, max: 150 }, { k: 'uiScale', t: 'range', l: 'HUD size', min: 80, max: 130 }, { k: 'shake', t: 'toggle', l: 'Screen shake' }, { k: 'flashing', t: 'toggle', l: 'Flashing effects', p: 'Turn off to remove bright flashes and flicker.' }, { k: 'fps', t: 'toggle', l: 'Show FPS' }, { t: 'button', l: 'Fullscreen', b: 'Toggle', act: () => toggleFull() }],
   Gameplay: [{ k: 'sens', t: 'range', l: 'Look sensitivity', min: 40, max: 200 }, { k: 'invert', t: 'toggle', l: 'Invert look' }, { k: 'toggleMask', t: 'toggle', l: 'Mask: tap to toggle', p: 'Off = hold to wear it.' }, { k: 'toggleLight', t: 'toggle', l: 'Flashlight: tap to toggle', p: 'Off = hold to shine it.' }, { k: 'haptics', t: 'toggle', l: 'Vibration (phones)' }, { k: 'hints', t: 'toggle', l: 'On-screen hints' }, { k: 'calls', t: 'toggle', l: 'Phone calls' }, { k: 'voice', t: 'toggle', l: 'Read calls aloud', p: 'Uses your device\'s text-to-speech voice.' }, { k: 'subtitles', t: 'toggle', l: 'Subtitles' }, { k: 'autopause', t: 'toggle', l: 'Pause when the tab loses focus' }],
   Accessibility: [{ k: 'textSize', t: 'range', l: 'Text size', min: 100, max: 160, p: 'Makes the clock, meters, hints, captions and tutorial bigger.' }, { k: 'contrast', t: 'toggle', l: 'High contrast HUD', p: 'Solid black panels, white text and thick outlines.' }, { k: 'cues', t: 'toggle', l: 'Shape and text cues', p: 'Adds percentages, the word LOW, striped low meters and a warning badge when something is in the office, so colour is never the only signal.' }, { k: 'captions', t: 'toggle', l: 'Sound captions', p: 'Shows a short line with an arrow for sounds: vent clanks, footsteps and the music box.' }, { k: 'assist', t: 'toggle', l: 'Assist mode', p: 'Gives you a quarter more time before something in the office strikes. Applies from the next night. Coins are not reduced.' }, { k: 'tutorial', t: 'toggle', l: 'Show the tutorial on Night 1', p: 'Turn on to see the tips again.' }, { t: 'button', l: 'Replay the tutorial', b: 'Reset', act: () => { stats.tutorial = false; stats.tutSteps = {}; saveStats(); setCfg('tutorial', true); settings('Accessibility'); toast('The tutorial will show on Night 1'); } }],
   Online: [{ k: 'liveFaces', t: 'toggle', l: 'Live profile pictures', p: 'Characters can use the current Discord profile picture of the person they are based on. Your device loads the picture from Discord. Off keeps the pictures that came with the game.' }, { k: 'share', t: 'toggle', l: 'Show that I am online', p: 'Tells the developer the game is open: a random ID, the version, your device type and the screen you are on. No name, no account, no location.' }, { k: 'broker', t: 'text', l: 'Custom matchmaking server', p: 'Leave empty for the default. Format host:port, for example localhost:9000.' }, { t: 'status' }],
@@ -108,7 +108,15 @@ onChange((k) => {
 const RATIO = { low: 0.7, medium: 1, high: 1.5 };
 /* In portrait the sideways view would be cramped, so the vertical field of view widens to keep the same horizontal view (up to a limit). */
 function applyFov() { const asp = innerWidth / Math.max(1, innerHeight), v = asp >= 1 ? cfg.fov : Math.min(92, 2 * Math.atan(Math.tan(cfg.fov * Math.PI / 360) / asp) * 180 / Math.PI); if (Math.abs(player.fov - v) > 0.01) { player.fov = camV.fov = v; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); } }
-function applyQuality() { renderer.setPixelRatio(Math.min(devicePixelRatio || 1, RATIO[cfg.quality] || 1)); G.sized = 0; }
+function applyQuality() { renderer.setPixelRatio(Math.min(devicePixelRatio || 1, RATIO[cfg.quality] || 1) * (G.scale || 1)); G.sized = 0; }
+/* adaptive resolution: if frames take too long the picture is drawn at a lower resolution (down to half) until it runs smoothly, and creeps back up when there is room */
+const AD = { n: 0, sum: 0, good: 0 };
+function adapt(raw) {
+  if (!cfg.autoRes || G.mode === 'title' || document.hidden || raw > 250) { AD.n = 0; AD.sum = 0; return; }
+  AD.n++; AD.sum += raw; if (AD.n < 45) return; const avg = AD.sum / AD.n; AD.n = 0; AD.sum = 0;
+  if (avg > 34 && (G.scale || 1) > 0.5) { G.scale = Math.max(0.5, (G.scale || 1) * 0.85); AD.good = 0; applyQuality(); }
+  else if (avg < 19 && (G.scale || 1) < 1 && ++AD.good >= 4) { G.scale = Math.min(1, (G.scale || 1) * 1.1); AD.good = 0; applyQuality(); } else if (avg >= 19) AD.good = 0;
+}
 
 /* ---- the home page ---- */
 let newsItem = null;
@@ -208,7 +216,7 @@ function gallery() {
   const show = () => {
     const w = ORDER[gi]; for (const x of WHO) bots[x].root.visible = x === w;
     openGal(`<div class="gal"><button class="sm" id="gp">‹</button><p><b>${NAMES[w]}</b><br>${BLURB[w]}</p><button class="sm" id="gn">›</button></div><div class="btnrow"><button id="bk">Back</button></div>`);
-    $('#gp').onclick = () => { gi = (gi + ORDER.length - 1) % ORDER.length; show(); }; $('#gn').onclick = () => { gi = (gi + 1) % ORDER.length; show(); }; $('#bk').onclick = () => { closeGal(); for (const x of WHO) bots[x].root.visible = false; G.mode = 'title'; $('#screen').hidden = false; extras(); };
+    $('#modal #gp').onclick = () => { gi = (gi + ORDER.length - 1) % ORDER.length; show(); }; $('#modal #gn').onclick = () => { gi = (gi + 1) % ORDER.length; show(); }; $('#modal #bk').onclick = () => { closeGal(); for (const x of WHO) bots[x].root.visible = false; G.mode = 'title'; $('#screen').hidden = false; extras(); };
   };
   show();
 }
@@ -245,14 +253,14 @@ function over(win) {
   $('#tt').onclick = () => { if (coopMode) coop.leave(); home(); };
 }
 const DEATH_LINE = { toyZayed: '"Your order is almost ready."', toyBubbles: '"Do not hang up. Do not hang up."', toyTaffy: '"Twelve cupcakes. Four candles each."', toySherbet: '"Special delivery!"', wZayed: '"We waited. We are still waiting."', wBubbles: '"Pick up. Pick up. Pick up."', wTaffy: '"You were supposed to remember."', wSherbet: '"Late. So late."', ibrahim: '"Thank you for holding."', gelly: '"Delivery for you! I never knock."', bidoof: '"Complaint received!"' };
-const hintFor = (w) => ({ ibrahim: 'The music box ran out. Keep winding it from the Prize Corner camera.', wSherbet: 'Withered Sherbet runs the hallway. The mask will not stop him: shine the light down the hall.', gelly: 'Gelly comes through the vents. Wear the mask until she leaves.' }[w] || 'Put the mask on when something is in the office.');
+const hintFor = (w) => ({ ibrahim: 'The music box ran out. Keep winding it from the Prize Corner camera.', wSherbet: 'Withered Zayed the Falcon runs the hallway. The mask will not stop him: shine the light down the hall.', gelly: 'Gelly comes through the vents. Wear the mask until she leaves.' }[w] || 'Put the mask on when something is in the office.');
 
 /* ---- input ---- */
 const buzz = (p) => { if (cfg.haptics && navigator.vibrate) try { navigator.vibrate(p); } catch (e) { /* ignore */ } };
 const canPlay = () => G.mode === 'play' && !G.paused && !G.scareWho && !G.guest;
 const setLight = (v) => { if (!canPlay() || G.cam) { if (!v) G.light = false; return; } G.light = v; };
 const pressLight = () => { if (cfg.toggleLight) setLight(!G.light); else setLight(true); }; const releaseLight = () => { if (!cfg.toggleLight) setLight(false); };
-const setMask = (v) => { if (!canPlay()) { if (!v) G.mask = false; return; } if (v && (G.cam && !G.coop)) return; if (v !== G.mask) Snd.mask(v); G.mask = v; };
+const setMask = (v) => { if (!canPlay()) { if (!v) G.mask = false; return; } if (v && G.cam && !G.coop) toggleCam(); /* pulling the mask down closes the cameras */ if (v && G.cam && !G.coop) return; if (v !== G.mask) Snd.mask(v); G.mask = v; };
 const pressMask = () => { if (cfg.toggleMask) setMask(!G.mask); else setMask(true); }; const releaseMask = () => { if (!cfg.toggleMask) setMask(false); };
 addEventListener('pointermove', (e) => { const v = (e.clientX / innerWidth - 0.5) * 2 * 1.45 * (cfg.sens / 100) * (cfg.invert ? -1 : 1); G.yawT = Math.max(-1.45, Math.min(1.45, v)); });
 canvas.addEventListener('pointerdown', (e) => { if (e.button !== 2 && tryPickup(e)) return; if (e.button !== 2) pressLight(); });
@@ -276,6 +284,7 @@ addEventListener('keydown', (e) => {
   if ((G.mode === 'dead' || G.mode === 'won') && (k === 'r' || k === 'enter')) { const bt = $('#rt') || $('#nx'); if (bt) bt.click(); return; }
   if (G.paused) return;
   if (k === 'f' || k === ' ') { if (k === ' ') e.preventDefault(); pressLight(); } if (k === 'm') pressMask(); if (k === 'w') G.wind = true;
+  if (!G.cam && (k === 'q' || k === 'e')) G.sealReq = k === 'q' ? 'ventL' : 'ventR'; /* seal a vent */
   if (k === 'c' || k === 'tab') { e.preventDefault(); toggleCam(); }
   if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = (k === 'arrowleft' || k === 'a' ? -1 : 1) * 1.2; /* keyboard look: hold to turn */
   if (G.cam && (k === 'arrowleft' || k === 'q' || k === 'arrowright' || k === 'e')) { const i = camIds.indexOf(G.cam), d = k === 'arrowleft' || k === 'q' ? -1 : 1; selectCam(camIds[(i + d + camIds.length) % camIds.length]); }
@@ -283,6 +292,7 @@ addEventListener('keydown', (e) => {
 });
 addEventListener('keyup', (e) => { if (typing(e)) return; const k = e.key.toLowerCase(); G.keys[k] = 0; if (k === 'f' || k === ' ') releaseLight(); if (k === 'm') releaseMask(); if (k === 'w') G.wind = false; if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = 0; });
 const hold = (el, on, off) => { el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); on(); }); for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, off); };
+$('#bSealL').onclick = () => { G.sealReq = 'ventL'; }; $('#bSealR').onclick = () => { G.sealReq = 'ventR'; };
 hold($('#bMask'), pressMask, releaseMask); hold($('#bFlash'), pressLight, releaseLight);
 $('#bCam').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleCam(); });
 hold($('#bWind'), () => { G.wind = true; }, () => { G.wind = false; });
@@ -349,8 +359,10 @@ function apply(fx) {
   for (const f of fx) {
     captionFx(f);
     if (f.type === 'move') { camGlitch(); Snd.move(f.to, pan(f.to)); if (f.to === 'hall' && !G.cam) say('Something is in the hallway.', 2200); }
-    else if (f.type === 'enter') { tutEnter(); G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); buzz(60); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office!', 3000); G.shake = 0.5; }
-    else if (f.type === 'run') { Snd.clang(0); say('Withered Sherbet is running the hall! Shine the light down it!', 3000); }
+    else if (f.type === 'enter') { tutEnter(); G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); buzz(60); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office! Wear the mask (hold M).', 3000); G.shake = 0.5; }
+    else if (f.type === 'seal') { Snd.clang(f.v === 'ventL' ? -0.8 : 0.8); say((f.v === 'ventL' ? 'Left' : 'Right') + ' vent sealed.', 1600); }
+    else if (f.type === 'unseal') { say((f.v === 'ventL' ? 'Left' : 'Right') + ' vent is open again.', 1600); }
+    else if (f.type === 'run') { Snd.clang(0); say('Withered Zayed the Falcon is running the hall! Shine the light down it!', 3000); }
     else if (f.type === 'pushed') { Snd.step(pan(f.from)); }
     else if (f.type === 'boxout') { Snd.chime(); say('The music box ran out. Wind it from the Prize Corner camera!', 4000); }
     else if (f.type === 'revived') { Snd.chime(); say('The lucky charm saved you!', 3000); buzz(80); }
@@ -369,6 +381,7 @@ function drawMini() {
 }
 function updateHud() {
   const S = G.S; if (!G.guest && S.hour > (G.hourPaid | 0)) { G.hourPaid = S.hour; toast('Hour survived'); } $('#hClock').textContent = (S.hour === 0 ? 12 : S.hour) + ' AM'; $('#mFlash').style.width = S.battery + '%'; $('#boxM').style.display = ''; $('#mBox').style.width = S.box + '%';
+  for (const [id, v] of [['#bSealL', 'ventL'], ['#bSealR', 'ventR']]) { const b = $(id), on = S.seal[v] > 0, cd = S.sealCd[v] > 0, key = v === 'ventL' ? 'Q' : 'E'; b.classList.toggle('on', on); b.classList.toggle('cd', cd); b.querySelector('small').textContent = on ? 'sealed ' + Math.ceil(S.seal[v]) + 's' : cd ? 'wait ' + Math.ceil(S.sealCd[v]) + 's' : key; }
   $('#mBox').style.background = S.box < 25 ? '#e8453c' : ''; $('#bMask').classList.toggle('on', G.mask); $('#bFlash').classList.toggle('on', G.light);
   if (cfg.cues) { const w = Object.keys(S.pos).find((k) => S.pos[k] === 'office'); cueHud(S, w ? (NAMES[w] || 'Something') + ' is in the office' : ''); } else $('#danger').hidden = true;
   captionBox(S.box);
@@ -378,7 +391,7 @@ function flicker(now) { for (let i = 0; i < signMats.length; i++) { const v = Ma
 let last = performance.now(), fpsN = 0, fpsT = 0, titleT = 3, titleBot = null, titleOn = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  let dt = Math.min(0.1, (now - last) / 1000); last = now;
+  adapt(now - last); let dt = Math.min(0.1, (now - last) / 1000); last = now;
   const w = innerWidth, h = innerHeight, pr = renderer.getPixelRatio();
   if (G.sized !== w + 'x' + h + 'x' + pr) { G.sized = w + 'x' + h + 'x' + pr; renderer.setSize(w, h, false); player.aspect = camV.aspect = w / h; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); applyFov(); }
   if (!G.ready) return;
@@ -403,7 +416,7 @@ function frame(now) {
     const S = G.S; stats.seconds += dt; G.yaw += (G.yawT - G.yaw) * Math.min(1, dt * 6);
     const aim = G.yaw < -0.9 ? 'ventL' : G.yaw > 0.9 ? 'ventR' : 'hall';
     let fx = [];
-    if (!G.guest) { const rc = G.coop ? G.coop.remote : null; fx = step(S, dt * G.speed, { mask: G.mask, flash: G.light && !G.cam, aim, cam: rc ? rc.cam : G.cam, wind: rc ? rc.wind : G.wind, coop: !!G.coop }); if (G.coop) coop.hostTick(dt, fx); } else coop.guestTick(dt);
+    if (!G.guest) { const rc = G.coop ? G.coop.remote : null; const sealReq = G.sealReq; G.sealReq = null; fx = step(S, dt * G.speed, { seal: sealReq, mask: G.mask, flash: G.light && !G.cam, aim, cam: rc ? rc.cam : G.cam, wind: rc ? rc.wind : G.wind, coop: !!G.coop }); if (G.coop) coop.hostTick(dt, fx); } else coop.guestTick(dt);
     if (admin) admin.frame();
     apply(fx); Snd.box(S.box, dt); Snd.hum(0.04 + (G.cam ? 0.02 : 0)); Snd.frame(dt, !!(G.light && !G.cam), S.battery, G.mask, S.pos);
     if (G.mask) { G.breathT -= dt; if (G.breathT <= 0) { Snd.breath(); G.breathT = 1.4; } }

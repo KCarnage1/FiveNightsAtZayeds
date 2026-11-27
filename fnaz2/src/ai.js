@@ -46,7 +46,7 @@ export function rand(S) { S.rs = (S.rs + 0x6D2B79F5) >>> 0; let t = S.rs; t = Ma
 export function newNight(night, seed = 1, opts = {}) {
   const lv = {}; WHO.forEach((w) => { lv[w] = opts.levels ? opts.levels[w] || 0 : LEVELS[w][Math.min(night, 6) - 1]; });
   const S = { night, rs: seed >>> 0, t: 0, hour: 0, lv, pos: {}, acc: {}, since: {}, hold: {}, box: 100, boxOut: 0, battery: 100, flashDead: 0, flashOn: false, aimedAt: null, aimT: 0,
-    mods: Object.assign({ drain: 1, charge: 1, box: 1, revive: 0, maskSpeed: 7, strike: 1 }, opts.mods || {}), mask: 0, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
+    mods: Object.assign({ drain: 1, charge: 1, box: 1, revive: 0, maskSpeed: 12, strike: 1 }, opts.mods || {}), mask: 0, seal: { ventL: 0, ventR: 0 }, sealCd: { ventL: 0, ventR: 0 }, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
   WHO.forEach((w) => { S.pos[w] = CAST[w].home; S.acc[w] = rand(S) * CAST[w].every; S.since[w] = 0; });
   return S;
 }
@@ -71,7 +71,8 @@ export function toward(w, at, S) {
   return rand(S) < 0.62 ? good[Math.floor(rand(S) * good.length)] : ns[Math.floor(rand(S) * ns.length)];
 }
 
-/* input: {mask:boolean, flash:boolean, aim:'hall'|'ventL'|'ventR'|null, cam:node|null, wind:boolean} */
+export const SEAL_SEC = 7, SEAL_COOL = 9; // a sealed vent holds for 7 seconds, then needs 9 to recharge
+/* input: {seal:'ventL'|'ventR'|undefined (one press), mask:boolean, flash:boolean, aim:'hall'|'ventL'|'ventR'|null, cam:node|null, wind:boolean} */
 export function step(S, dt, input) {
   const fx = []; if (S.dead || S.won) return fx;
   S.t += dt; S.hour = Math.floor(S.t / HOUR_SEC);
@@ -80,6 +81,11 @@ export function step(S, dt, input) {
   // mask: eases up and down, can't be worn with the cameras up
   S.mask += ((input.mask && (!input.cam || input.coop) ? 1 : 0) - S.mask) * Math.min(1, dt * S.mods.maskSpeed);
   const masked = S.mask > 0.75;
+  // vent seals: close one vent for a few seconds, then it has to recharge
+  for (const v of ['ventL', 'ventR']) {
+    if (S.seal[v] > 0) { S.seal[v] -= dt; if (S.seal[v] <= 0) { S.seal[v] = 0; S.sealCd[v] = SEAL_COOL; fx.push({ type: 'unseal', v }); } } else if (S.sealCd[v] > 0) S.sealCd[v] = Math.max(0, S.sealCd[v] - dt);
+  }
+  if ((input.seal === 'ventL' || input.seal === 'ventR') && S.seal[input.seal] <= 0 && S.sealCd[input.seal] <= 0) { S.seal[input.seal] = SEAL_SEC; fx.push({ type: 'seal', v: input.seal }); }
   // flashlight and battery
   if (S.flashDead > 0) S.flashDead -= dt;
   S.flashOn = !!input.flash && S.battery > 0 && S.flashDead <= 0 && !masked && !input.freezeLight;
@@ -106,6 +112,7 @@ export function step(S, dt, input) {
     S.acc[w] = 0;
     if (rand(S) * 20 >= lvl) continue;
     if (def.entry.includes(at)) { // at the door of the office: try to come in
+      if (S.seal[at] > 0) { leave(S, w, fx, nexts(w, at)[0], true); continue; } // the vent is sealed: they cannot get in
       if (S.aimedAt === at && rand(S) < 0.7) { leave(S, w, fx, nexts(w, at)[0], true); continue; } // the light pushes them back
       if (S.night <= 2 && (S.pos.wSherbet === 'hall' || WHO.some((o) => o !== w && S.pos[o] === 'office' && CAST[o].kind !== 'nuisance'))) continue; // nights 1-2: one real threat at a time, never two kill clocks together
       S.pos[w] = 'office'; S.offT[w] = 0; fx.push({ type: 'enter', who: w, from: at }); continue;

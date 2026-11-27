@@ -98,7 +98,7 @@ Voice: a friendly waiter. Warm, unhurried, never raises his voice. Think restaur
 - jumpscare: a long, low "Special delivery" held on one note, then a hard cut. (effect)
 - secret: "I have been waiting since six. I do not mind."
 
-### Toy Bubbles (Cat, nerve)
+### Toy Zayed the Cat (Cat, nerve)
 Voice: bold, cheeky, always on the edge of a giggle. Fast. Likes the sound of her own voice.
 - idle: "Ring ring! Is this the right number?"
 - idle *(giggle)*: "Hee. I made the call, you know."
@@ -108,7 +108,7 @@ Voice: bold, cheeky, always on the edge of a giggle. Fast. Likes the sound of he
 - jumpscare: a sharp cat hiss that turns into a dial tone. (effect)
 - secret: "I was the one who rang. Somebody had to say it out loud."
 
-### Toy Taffy (Goat, memory)
+### Toy Zayed the Goat (Goat, memory)
 Voice: soft, dreamy, sing-song. Repeats details like a nursery rhyme.
 - idle: "Twelve cupcakes. Four candles each."
 - idle: "Do not forget the candles."
@@ -118,7 +118,7 @@ Voice: soft, dreamy, sing-song. Repeats details like a nursery rhyme.
 - jumpscare: the same number counted down, faster and faster, ending in silence. (effect)
 - secret: "I remember the order. I do not remember who took it. Do you?"
 
-### Toy Sherbet (Falcon, hunger)
+### Toy Zayed the Falcon (Falcon, hunger)
 Voice: fast, breathless, excitable, hungry. A delivery rider who has been running all night. Roller-skate noise under the lines.
 - idle: "Skates, skates, skates."
 - idle: "Is it ready? Is it ready yet?"
@@ -136,7 +136,7 @@ Voice: the same waiter, old and cracked. Slow. A tape that is wearing out.
 - leaves: "...Pardon... me..."
 - jumpscare: a slowed-down, pitched-down "delivery." (effect)
 
-### Withered Bubbles
+### Withered Zayed the Cat
 Voice: the same cheeky voice, but broken into pieces and static. The giggle has turned into a rattle.
 - idle: "Ring... ring... ring."
 - arrival *(from the vent)*: "Is anyone... there?"
@@ -144,7 +144,7 @@ Voice: the same cheeky voice, but broken into pieces and static. The giggle has 
 - leaves: "...wrong... number..."
 - jumpscare: a rattling laugh cut by a busy signal. (effect)
 
-### Withered Taffy
+### Withered Zayed the Goat
 Voice: a gentle voice, now flat and endlessly patient, like someone who has told the story too many times.
 - idle: "Twelve... four... twelve... four..."
 - arrival: "I kept the candles."
@@ -152,7 +152,7 @@ Voice: a gentle voice, now flat and endlessly patient, like someone who has told
 - leaves: "Ah. Wrong face."
 - jumpscare: the numbers counted in a flat monotone, then a single loud bell. (effect)
 
-### Withered Sherbet (runs the hall)
+### Withered Zayed the Falcon (runs the hall)
 Voice: a ragged, hoarse, exhausted rider who has been running for thirty years. Gasping.
 - hall alert *(the moment he starts to run)*: "DELIVERY!"
 - hall, while running: "Faster, faster, faster."

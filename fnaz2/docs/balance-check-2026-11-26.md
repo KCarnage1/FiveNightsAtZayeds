@@ -22,9 +22,9 @@ Skill: balance-check. Inputs: `src/ai.js` (FOUND), a design document with target
 
 ## Findings
 1. **No degenerate strategy.** Idle, mask-only and camping all lose every night (0 to 2 percent). Nothing passive wins.
-2. **Withered Sherbet was a difficulty cliff (fixed).** The run window was 4.2 s and the light had to hold for 1.1 s. A human who has to look at the hallway first lost the final night 80 percent of the time. Now 4.6 s and 1.0 s; the finale is 43 percent for a careful human, 72 percent for a perfect player.
+2. **Withered Zayed the Falcon was a difficulty cliff (fixed).** The run window was 4.2 s and the light had to hold for 1.1 s. A human who has to look at the hallway first lost the final night 80 percent of the time. Now 4.6 s and 1.0 s; the finale is 43 percent for a careful human, 72 percent for a perfect player.
 3. **Late nights were too gentle for the other threats (fixed).** Night 5 and 6 levels for the Toys, the Withered, Gelly and Ibrahim were raised by 1 to 3, and the music box now drains faster at high levels (0.07 per level instead of 0.05).
-4. **Remaining concern: every death on nights 4 to 6 is still Withered Sherbet.** The other threats are all answered by one habit (wear the mask when something is in the office), so they rarely kill a player who reacts within a second. Suggested next step: give the mask a cost (it blocks the cameras and flashlight already; a slow breathing-battery would add more) or let two intruders arrive together more often.
+4. **Remaining concern: every death on nights 4 to 6 is still Withered Zayed the Falcon.** The other threats are all answered by one habit (wear the mask when something is in the office), so they rarely kill a player who reacts within a second. Suggested next step: give the mask a cost (it blocks the cameras and flashlight already; a slow breathing-battery would add more) or let two intruders arrive together more often.
 5. Night 1 is 100 percent survivable by design (tutorial).
 
 ## Changes made
