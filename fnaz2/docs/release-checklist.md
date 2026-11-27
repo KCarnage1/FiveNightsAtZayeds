@@ -11,7 +11,7 @@ Skill: release-checklist. Status as of this commit. "Done" means checked by a te
 
 ## Hosting
 - [x] The Pages workflow builds the game into `/fnaz2/` next to the first game.
-- [ ] **Not live yet:** Pages deploys when `main` changes. This work is on `claude/hopeful-keller-o2xfu2` and has to be merged or pushed to `main`.
+- [x] Pages deploys when `main` changes.
 - [ ] Repo Settings, Pages, Source must be "GitHub Actions" (it already is for the first game).
 
 ## Quality
