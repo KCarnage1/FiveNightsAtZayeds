@@ -67,7 +67,7 @@ export function buildZayed(who, variant = 'withered') {
   mesh(new THREE.SphereGeometry(.35, 44, 32), skin, head, [0, .33, 0], 0, [1.08, .95, 1]);
   const jaw = group(head, [0, .07, .08], 'jaw');
   mesh(new THREE.SphereGeometry(.2, 28, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), skin, jaw, [0, .02, .13], 0, [1.1, .7, 1.1]);
-  mesh(new THREE.SphereGeometry(.175, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), dark, jaw, [0, .03, .13], [Math.PI, 0, 0], [1.1, .45, 1.05]);
+  mesh(new THREE.SphereGeometry(.175, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), toy ? matte(0x5a1830, .5) : dark, jaw, [0, .03, .13], [Math.PI, 0, 0], [1.1, .45, 1.05]);
   for (let i = 0; i < 9; i++) { const a = -0.8 + i * .2; mesh(new THREE.ConeGeometry(.016, .05, 6), white, jaw, [Math.sin(a) * .185, .045, .13 + Math.cos(a) * .17], [Math.PI, 0, 0]); }
   if (!toy) { jaw.rotation.x = .26; jaw.userData.rest = .26; }
   const face = faceDome(head, loadFace(s.face), { r: .362, y: .35, z: 0, aspect: .74 });
@@ -88,8 +88,10 @@ function kindExtras(kind, head, skin, dark, toy, who, body, white) {
     mesh(new THREE.CylinderGeometry(.15, .19, .2, 24), matte(0xb3262e, .5), head, [0, .72, -.02]); mesh(new THREE.TorusGeometry(.19, .012, 8, 24), matte(0xffd24a, .35), head, [0, .64, -.02], [Math.PI / 2, 0, 0]);
     mesh(new THREE.CylinderGeometry(.012, .012, .12, 8), matte(0xffd24a, .35), head, [0, .85, -.02]);
   } else if (kind === 'cat') {
-    for (const sx of [-1, 1]) { mesh(new THREE.ConeGeometry(.14, .34, 4), skin, head, [sx * .24, .7, -.02], [0, Math.PI / 4, sx * -.3]); mesh(new THREE.ConeGeometry(.08, .24, 4), inner, head, [sx * .24, .67, .02], [0, Math.PI / 4, sx * -.3]); for (let w = 0; w < 3; w++) limb(head, [sx * .15, .2 - w * .025, .3], [sx * .46, .26 - w * .09, .32], .005, .003, matte(0xffffff, .3)); }
-    mesh(new THREE.SphereGeometry(.04, 12, 8), matte(0xff5a8a, .4), head, [0, .22, .35], 0, [1.2, .8, .8]);
+    const cream = plastic(0xfff0e0, { rough: .4 }), whisk = matte(0xfafafa, .4);
+    for (const sx of [-1, 1]) { mesh(new THREE.ConeGeometry(.14, .34, 4), skin, head, [sx * .24, .7, -.02], [0, Math.PI / 4, sx * -.3]); mesh(new THREE.ConeGeometry(.08, .24, 4), inner, head, [sx * .24, .67, .02], [0, Math.PI / 4, sx * -.3]); mesh(new THREE.SphereGeometry(.095, 18, 14), cream, head, [sx * .085, .15, .285], 0, [1.15, .85, .9]);
+      for (let w = 0; w < 2; w++) { const wc = new THREE.CatmullRomCurve3([new THREE.Vector3(sx * .17, .17 - w * .045, .335), new THREE.Vector3(sx * .26, .2 - w * .08, .35), new THREE.Vector3(sx * .35, .2 - w * .13, .31)]); mesh(new THREE.TubeGeometry(wc, 8, .009, 6), whisk, head); } }
+    mesh(new THREE.SphereGeometry(.045, 12, 8), matte(0xff5a8a, .4), head, [0, .22, .36], 0, [1.2, .8, .8]);
     const tail = new THREE.CatmullRomCurve3([new THREE.Vector3(0, .62, -.28), new THREE.Vector3(0, .5, -.6), new THREE.Vector3(.1, .9, -.7), new THREE.Vector3(.04, 1.2, -.55)]); mesh(new THREE.TubeGeometry(tail, 24, .05, 10), skin, body);
   } else if (kind === 'goat') {
     for (const sx of [-1, 1]) { mesh(new THREE.TorusGeometry(.15, .04, 10, 22, Math.PI * 1.2), matte(toy ? 0xf3e2c0 : 0x8a7a5a, .4), head, [sx * .2, .68, -.02], [0, 0, sx > 0 ? .1 : Math.PI - .1]); mesh(new THREE.SphereGeometry(.085, 14, 10), skin, head, [sx * .38, .42, 0], [0, 0, sx * -.9], [1.6, .5, .7]); }
@@ -124,7 +126,7 @@ function tornHead(head, who, bone, dark) {
 }
 
 /* Procedural motion: idle sway, a chewing jaw, and the scare shake. */
-export function animate(b, dt, mode = 'idle') {
+export function animate(b, dt, mode = 'idle', speed = 1) {
   b.t += dt;
   const t = b.t;
   if (mode === 'scare') {
@@ -133,9 +135,29 @@ export function animate(b, dt, mode = 'idle') {
     b.armL.rotation.set(-1.5 + Math.sin(t * 29) * .15, 0, -.2); b.armR.rotation.set(-1.5 + Math.sin(t * 33) * .15, 0, .2);
     return;
   }
+  if (b.by0 === undefined) { b.by0 = b.body.position.y; b.ph = Math.random() * 6; }
+  if (mode === 'walk' || mode === 'run' || (mode === 'creep' && speed > 0)) { // travelling: arms swing against each other, the body bobs and leans, the head bobs
+    const run = mode === 'run', creep = mode === 'creep', rate = run ? 15 : creep ? 5 + speed * 4 : 9;
+    b.ph += dt * rate; const s = Math.sin(b.ph), a = creep ? .35 * (.4 + speed) : run ? 1.1 : .65;
+    b.body.position.y = b.by0 + Math.abs(s) * (run ? .08 : creep ? .01 : .035);
+    b.body.rotation.x = run ? .42 : creep ? .5 : .13; b.body.rotation.z = s * (run ? .07 : .04);
+    b.head.rotation.set((run ? -.3 : creep ? -.35 : -.08) + Math.sin(b.ph * 2) * .04, Math.sin(t * .6) * .15, s * .04);
+    b.jaw.rotation.x = (b.toy ? 0 : .26) + (run ? .3 : .05);
+    const base = creep ? -.9 : run ? -.2 : 0;
+    b.armL.rotation.set(base + s * a, 0, 0); b.armR.rotation.set(base - s * a, 0, 0);
+    return;
+  }
   const sway = Math.sin(t * .8), twitch = Math.max(0, Math.sin(t * 2.3 + Math.sin(t * .7) * 3) - .92) * 12;
+  b.body.position.y = b.by0;
   b.body.rotation.z = sway * .015; b.body.rotation.x = b.toy ? 0 : .05 + Math.sin(t * .5) * .01;
   b.head.rotation.set(Math.sin(t * .6) * .04, Math.sin(t * .4) * .25 + twitch * .1, Math.sin(t * .9) * .03 + twitch * .05);
   b.jaw.rotation.x = (b.toy ? 0 : .26) + Math.max(0, Math.sin(t * 1.7)) * (b.toy ? .15 : .1);
-  b.armL.rotation.x = Math.sin(t * .9) * .05; b.armR.rotation.x = Math.sin(t * .9 + 1) * .05;
+  b.armL.rotation.set(Math.sin(t * .9) * .05, 0, 0); b.armR.rotation.set(Math.sin(t * .9 + 1) * .05, 0, 0);
+  if (mode === 'creep') { b.body.rotation.x = .5 + Math.sin(t * 1.5) * .04; b.head.rotation.x = -.3; b.armL.rotation.x = b.armR.rotation.x = -.9; }
+  else if (mode === 'stage') { // title stage: slow head turns toward the camera, now and then a wave
+    const turn = Math.sin(t * .35 + b.ph), look = Math.max(0, Math.min(1, turn * 2 + .6)); // 1 = looking at the camera
+    b.head.rotation.y = (1 - look) * Math.sin(t * .5) * .7; b.head.rotation.x = -.05 - look * .06;
+    const cyc = t * .13 + b.ph * .1, k = cyc - Math.floor(cyc), w = k < .22 ? Math.sin(k / .22 * Math.PI) : 0; // a wave lasts about 1.7 s every 7.5 s
+    if (w > 0) { const arm = Math.floor(cyc) & 1 ? b.armL : b.armR, sg = arm === b.armR ? 1 : -1; arm.rotation.set(0, 0, sg * (.25 + w * 2.35 + Math.sin(t * 11) * .22 * w)); b.head.rotation.z = sg * w * .08; b.jaw.rotation.x = .2 * w; }
+  }
 }

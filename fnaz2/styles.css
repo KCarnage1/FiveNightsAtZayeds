@@ -263,3 +263,23 @@ body.cam-on #gl{filter:grayscale(.92) contrast(1.12) brightness(.8) sepia(.12)}
 .title h1{font-size:clamp(28px,5.4vw,66px)!important;line-height:1}
 body.cam-on #bMask,body.cam-on #bFlash,body.cam-on #bSealL,body.cam-on #bSealR{display:none}
 #mini{right:auto;left:18px;bottom:calc(112px + env(safe-area-inset-bottom))}
+
+/* ---- UI motion (animation pass) ---- */
+@keyframes scrIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes clockPulse{0%{transform:scale(1);text-shadow:none}30%{transform:scale(1.35);text-shadow:0 0 18px #ffd24a;color:#ffd24a}100%{transform:scale(1);text-shadow:none}}
+@keyframes titlePop{0%{opacity:0;transform:scale(.6);letter-spacing:.3em}55%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:none}}
+@keyframes glowPulse{0%,100%{text-shadow:0 0 18px #ffd24a55}50%{text-shadow:0 0 42px #ffd24acc,0 0 8px #fff8}}
+@keyframes introPop{0%{opacity:0;transform:scale(.7);letter-spacing:.3em}60%{opacity:1;transform:scale(1.06)}100%{opacity:1;transform:none}}
+.screen:not(.gallery):not(.story){animation:scrIn .25s ease-out both}
+.panel{animation:scrIn .25s ease-out both}
+.screen button,.panel button,.btnrow button,.tabs button,#camList button,#pings button{transition:transform .12s ease,filter .12s ease,background .15s ease,box-shadow .15s ease}
+.screen button.big:hover,.btnrow button:hover,.panel .sm:hover{transform:translateY(-2px);filter:brightness(1.12);box-shadow:0 6px 16px #0008}
+.screen button.big:active,.btnrow button:active,.panel .sm:active,.tabs button:active,#camList button:active{transform:translateY(1px) scale(.96);filter:brightness(.9);box-shadow:none}
+.clock b.tick{animation:clockPulse .9s ease-out}
+.screen:not(:has(.title)) h1{animation:titlePop .6s cubic-bezier(.2,1.2,.3,1) both,glowPulse 2.4s ease-in-out .6s infinite}
+.intro b{display:block;animation:introPop .7s cubic-bezier(.2,1.2,.3,1) both}
+.screen .deathcard h2{animation:none}
+body.noflash .clock b.tick{animation:none;color:#ffd24a}
+body.noflash .screen:not(:has(.title)) h1{animation:none}
+body.noflash .intro b{animation:none}
+@media (prefers-reduced-motion:reduce){.screen,.panel,.clock b.tick,.screen:not(:has(.title)) h1,.intro b{animation:none!important}.screen button.big:hover,.btnrow button:hover{transform:none}}

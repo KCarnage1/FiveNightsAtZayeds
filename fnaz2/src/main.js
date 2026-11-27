@@ -335,24 +335,45 @@ function spot(w, node) {
   }
   return [0, 0, -9, 1];
 }
-function placeAll() {
+let placedS = null, placedMode = null;
+const _sm = (k) => k * k * (3 - 2 * k), _tr = Math.PI * 2;
+function visNode(node, hallLit, vL, vR) {
+  const room = NODE_ROOM(node);
+  if (G.cam) { if (G.cam === 'stage') return node === 'stage'; if (G.cam === 'main') return node === 'main' || node === 'ceiling'; return room === CAMS[G.cam].room; }
+  return node === 'office' || (node === 'hall' && hallLit) || (node === 'ventL' && vL) || (node === 'ventR' && vR);
+}
+function placeAll(dt) { // dt omitted = put everyone exactly on their spot (no travel)
   const S = G.S; if (!S) return;
-  const hallLit = S.aimedAt === 'hall', vL = S.aimedAt === 'ventL', vR = S.aimedAt === 'ventR';
+  const snap = !(dt > 0) || S !== placedS || placedMode !== G.mode; placedS = S; placedMode = G.mode;
+  const hallLit = S.aimedAt === 'hall', vL = S.aimedAt === 'ventL', vR = S.aimedAt === 'ventR', kd = snap ? 1 : 1 - Math.exp(-dt * 9), kr = snap ? 1 : 1 - Math.exp(-dt * 8);
   for (const w of WHO) {
     const b = bots[w], node = S.pos[w];
-    if (w === 'ibrahim' && S.boxOut <= 0) { b.root.visible = false; continue; }
-    const [x, y, z, s] = w === 'ibrahim' && node === 'prize' ? [-12, 1.5 + Math.min(1, S.boxOut / 4) * 0, -20, 1] : spot(w, node);
-    b.root.position.set(x, y, z); b.root.scale.setScalar(s); b.root.rotation.set(0, 0, 0);
-    const room = NODE_ROOM(node);
-    if (node === 'hall' || node === 'office' || node === 'ventL' || node === 'ventR') b.root.lookAt(0, y, 0.6);
-    else if (node === 'ceiling') { b.root.lookAt(0, y, 3); b.root.rotation.x = Math.PI * 0.7; }
-    else { const c = CAMS[room === 'main' ? 'main' : room]; b.root.lookAt(c.pos[0], y, c.pos[2]); }
-    let vis;
-    if (G.cam) { const cr = CAMS[G.cam].room; vis = room === cr || (cr === 'main' && node === 'stage' && G.cam === 'stage') || (G.cam === 'main' && node === 'stage' && false); if (G.cam === 'stage') vis = node === 'stage'; else if (G.cam === 'main') vis = node === 'main' || node === 'ceiling'; }
-    else vis = node === 'office' || (node === 'hall' && hallLit) || (node === 'ventL' && vL) || (node === 'ventR' && vR);
-    b.root.visible = !!vis && !G.scareWho;
+    if (w === 'ibrahim' && S.boxOut <= 0) { b.root.visible = false; b.pn = undefined; continue; }
+    const [x, y, z, s] = w === 'ibrahim' && node === 'prize' ? [-12, 1.5, -20, 1] : spot(w, node);
+    if (snap || b.pn === undefined) { b.cx = x; b.cy = y; b.cz = z; b.cs = s; b.tk = 1; b.pn = b.fn = node; b.tx = x; b.ty = y; b.tz = z; b.ts = s; b.yw = NaN; }
+    else if (Math.abs(x - b.tx) + Math.abs(y - b.ty) + Math.abs(z - b.tz) > 0.01) { // a new spot: start a tween from wherever it stands now
+      b.ox = b.cx; b.oy = b.cy; b.oz = b.cz; b.os = b.cs; b.tx = x; b.ty = y; b.tz = z; b.ts = s; b.tk = 0;
+      b.td = w === 'wSherbet' ? 0.45 : Math.min(0.9, Math.max(0.5, Math.hypot(x - b.ox, z - b.oz) / 12)); if (b.pn !== node) b.fn = b.pn; b.pn = node;
+    }
+    let moving = false;
+    if (b.tk < 1) { b.tk = Math.min(1, b.tk + (snap ? 1 : dt / b.td)); const e = _sm(b.tk); b.cx = b.ox + (b.tx - b.ox) * e; b.cy = b.oy + (b.ty - b.oy) * e; b.cz = b.oz + (b.tz - b.oz) * e; b.cs = b.os + (b.ts - b.os) * e; moving = b.tk < 1; }
+    const tilt = node === 'ceiling' ? Math.PI * 0.7 : 0;
+    let want;
+    if (moving) want = Math.atan2(b.tx - b.ox, b.tz - b.oz);
+    else if (node === 'hall' || node === 'office' || node === 'ventL' || node === 'ventR') want = Math.atan2(-b.cx, 0.6 - b.cz);
+    else if (node === 'ceiling') want = Math.atan2(-b.cx, 3 - b.cz);
+    else { const c = CAMS[NODE_ROOM(node) === 'main' ? 'main' : NODE_ROOM(node)]; want = Math.atan2(c.pos[0] - b.cx, c.pos[2] - b.cz); }
+    if (b.yw !== b.yw) { b.yw = want; b.rx = tilt; } else { let d = (want - b.yw) % _tr; if (d > Math.PI) d -= _tr; else if (d < -Math.PI) d += _tr; b.yw += d * kd; b.rx += (tilt - b.rx) * kr; }
+    b.root.position.set(b.cx, b.cy, b.cz); b.root.scale.setScalar(b.cs); b.root.rotation.set(b.rx, b.yw, 0);
+    const low = node === 'ventL' || node === 'ventR' || node === 'ceiling' || CAST[w].kind === 'crawler';
+    const mode = low ? 'creep' : w === 'wSherbet' && (moving || node === 'hall') ? 'run' : moving ? 'walk' : 'idle';
+    animate(b, dt > 0 ? dt : 0, mode, moving || (mode === 'run') ? 1 : 0);
+    b.root.visible = !G.scareWho && (visNode(node, hallLit, vL, vR) || (moving && visNode(b.fn, hallLit, vL, vR)));
   }
 }
+
+const hc = $('#hClock'); // the clock pulses on every new hour
+let hcLast = ''; if (hc) new MutationObserver(() => { const tx = hc.textContent; if (tx === hcLast) return; const first = !hcLast; hcLast = tx; if (first || G.mode !== 'play') return; hc.classList.remove('tick'); void hc.offsetWidth; hc.classList.add('tick'); }).observe(hc, { childList: true, characterData: true, subtree: true });
 
 /* ---- effects -> sound and game feel ---- */
 const camGlitch = () => { const o = $('#staticOv'); if (!G.cam || !cfg.flashing || !o) return; o.classList.remove('gl'); void o.offsetWidth; o.classList.add('gl'); };
@@ -406,7 +427,7 @@ function frame(now) {
     titleT -= dt; if (titleT <= 0 && !titleOn) { titleOn = 0.3; titleT = 6 + Math.random() * 6; }
     if (titleOn > 0) titleOn -= dt;
     const camPos = player.position;
-    for (const x of WHO) { const toy = CAST[x].toy; bots[x].root.visible = toy; if (toy) { const [bx, by, bz] = spot(x, 'stage'); const r = bots[x].root; r.position.set(bx, by, bz); r.scale.setScalar(1); r.rotation.set(0, 0, 0); r.lookAt(camPos.x * 0.6, by, camPos.z); animate(bots[x], dt, 'idle'); } }
+    for (const x of WHO) { const toy = CAST[x].toy; bots[x].root.visible = toy; if (toy) { const [bx, by, bz] = spot(x, 'stage'); const r = bots[x].root; r.position.set(bx, by, bz); r.scale.setScalar(1); r.rotation.set(0, 0, 0); r.lookAt(camPos.x * 0.6, by, camPos.z); animate(bots[x], dt, 'stage'); } }
   }
   if (G.mode === 'won' || G.mode === 'dead') { // a slow pan, and now and then something stands in the hall
     G.yaw = Math.sin(now / 4000) * 0.45; titleT -= dt;
@@ -437,8 +458,8 @@ function frame(now) {
     const fl = $('#flashOv'); fl.style.background = t < 0.07 ? '#fff' : '#b00000'; fl.style.opacity = cfg.flashing ? (t < 0.07 ? 1 : t < 1.0 && Math.random() < 0.3 ? 0.45 : 0) : 0;
     if (t > 1.3) document.body.classList.add('scarecut'); // hard cut to static
     if (t > 1.75) { officeLight.intensity = 7; b.root.visible = false; fl.style.opacity = 0; fl.style.background = '#fff'; document.body.classList.remove('scaring', 'scarecut'); applyFov(); over(false); }
-  } else if (live || G.mode === 'title') { for (const x of WHO) if (!(G.mode === 'title' && x === titleBot)) animate(bots[x], dt * (live ? 1 : 0), 'idle'); }
-  if (live && !G.scareWho) placeAll();
+  } 
+  if (live && !G.scareWho) placeAll(dt); else if (!live) placedS = null;
   document.body.classList.toggle('cam-on', !!(G.cam && G.mode === 'play'));
   // camera + lights
   if (G.mode === 'title') {
@@ -455,7 +476,7 @@ function frame(now) {
   } else {
     camLight.intensity = 0; if (!G.scareWho) { if (G.mode === 'play') { const w = Math.sin(now / 131) * 0.3 + Math.sin(now / 47) * 0.18, dip = cfg.flashing && Math.random() < 0.02 ? 3 : 0; officeLight.intensity = 6 + (cfg.flashing ? w : 0) - dip; officeLight.color.setRGB(1, 0.78 + w * 0.05, 0.54 + w * 0.08 + dip * 0.05); hemi.intensity = 0.16 + dip * 0.04; } else officeLight.intensity = 7; }
     if (G.mode === 'gallery') { // turntable
-      const b = bots[ORDER[gi]]; b.root.position.set(0, 0, -60); b.root.scale.setScalar(1); b.root.rotation.set(0, now / 1800, 0); animate(b, dt, 'idle'); officeLight.position.set(1.5, 3, -57); officeLight.intensity = 14;
+      const b = bots[ORDER[gi]]; if (!b.galH) { b.root.position.set(0, 0, 0); b.root.scale.setScalar(1); b.root.rotation.set(0, 0, 0); b.root.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(b.root); b.galH = Math.max(0.5, bb.max.y); } const gs = Math.min(1.7, 2.3 / b.galH); b.root.scale.setScalar(gs); b.root.position.set(0, 1.15 - b.galH * gs * 0.5 + 0.35, -58.6); b.root.rotation.set(0, Math.sin(now / 1600) * 0.4, 0); animate(b, dt, 'idle'); officeLight.position.set(1.2, 2.6, -56.2); officeLight.intensity = 16;
       player.position.set(0, 1.15, -55.3); player.rotation.set(-0.02, 0, 0, 'YXZ'); flash.intensity = 0; renderer.render(scene, player); officeLight.position.set(0, 2.7, 0.5); return;
     }
     flash.intensity = G.S && G.S.flashOn && live ? 260 : titleFlash ? 260 : 0; beam.set(flash.intensity > 0 && G.mode === 'play', now); flicker(now); scene.fog.density = 0.03 + Math.sin(now / 3100) * 0.004 + (flash.intensity > 0 ? 0.004 : 0);

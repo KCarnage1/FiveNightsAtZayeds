@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.4
+- Characters now walk between rooms instead of teleporting: a walk cycle, a fast lean for the Withered Falcon in the hall, and a low creep through the vents. The Toy bodies on the title screen turn their heads and wave.
+- Menus and screens fade in, buttons respond to hover and press, the clock pulses each hour, and the 6 AM screen pops.
+- The characters gallery shows each one facing you, centred and large.
+- Toy Zayed the Cat has a proper muzzle and short whiskers. Gelly is rebuilt, Bidoof's picture is fully visible, and Ibrahim has a neck and feet.
+
 ## 0.8.3
 - A real jumpscare: the face lunges at you, the screen strobes red and shakes, the HUD disappears, then it cuts to static before the game over card.
 - New controls: the mask is on Shift (or M). The action buttons are one tidy row at the bottom, and the camera buttons no longer clash with the map.
