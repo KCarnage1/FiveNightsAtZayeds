@@ -1,15 +1,41 @@
 # Five Nights at Zayed's 2
 
-New bodies, old souls. No doors: use the flashlight, the Zayed mask, the cameras and the music box to survive until 6 AM.
+A fan horror game. New bodies, old souls. There are no doors: survive until 6 AM with a flashlight, a mask, the cameras and a music box.
 
-- `npm install && npm run build`, then serve this folder over http and open `index.html`.
-- `npm test` runs the AI tests. `tests/*.cjs` are Playwright checks (screenshots and flows).
-- Features: loading page, animated home page, 6 nights with phone calls, custom night with share codes, daily challenge, extras (stats, character gallery), pause, full settings (audio, video quality, sensitivity, accessibility, online sharing), touch controls, optional online presence and announcements.
-- Code: `src/ai.js` (pure, seeded brain), `src/map.js` (pizzeria), `src/models/` (characters), `src/main.js` (game and screens), `src/settings.js`, `src/calls.js`, `src/online.js`, `src/audio.js`.
+**[Play in your browser](https://kcarnage1.github.io/Five-Nights-At-Zayed-2/)** (phones too) · **[Download for Windows or Mac](https://github.com/KCarnage1/Five-Nights-At-Zayed-2/releases/latest)**
 
-## v0.4
-- **Shop** (coins from nights, hours and a daily reward): permanent upgrades (battery, charger, music-box spring, quick mask, lucky charm) and mask/flashlight colours.
-- **Admin menu**: type the secret word, then the server checks the password. Cheats, cast control, economy, online list, broadcast.
-- **Online co-op (peer-to-peer)**: host = Guard (flashlight, mask), guest = Operator (cameras, music box). Room codes and invite links (`?join=CODE`). Run a local broker for testing: `npm run peer` then open the game with `?peer=localhost:9000`.
-- **/debug.html**: in-browser self-tests (graphics, characters, AI, saves, online, peer-to-peer). Press F3 in the game for a live debug overlay.
-- Tests: `npm test` (AI), `node tests/coop.cjs` (two real browsers over WebRTC), `tests/shop-admin.cjs`, `tests/flow.cjs`, `tests/debug.cjs` (need the local server on :8766 and the broker on :9000).
+Nights 1 and 2 are open. Nights 3 to 6 are built and unlock in a later update.
+
+## How to play
+
+| Do this | Keyboard | Touch |
+|---|---|---|
+| Look into a vent | mouse to the far left or right, or hold **A** / **D** | touch the far left or right |
+| Flashlight (down the hall) | hold **F**, or click and hold | hold LIGHT |
+| Wear the Zayed mask | hold **M** | hold MASK |
+| Cameras | **C** | camera button |
+| Wind the music box | in the cameras, choose Prize Corner, hold **W** | hold the wind button |
+
+- Anything that gets in through a vent leaves if you wear the mask. The Withered Falcon runs the hallway: the mask does not stop him, the flashlight does.
+- Keep the music box wound or the one inside it comes out.
+- Read the papers you find. They tell you what happened here (Extras, then Case file).
+
+## Play with a friend
+
+Online co-op runs peer to peer. One player hosts and is the **Guard** (flashlight and mask). The other joins with the room code or an invite link and is the **Operator** (cameras and music box). Two players per room.
+
+## Install the desktop app
+
+1. Download `FiveNightsAtZayeds2-win32-x64.zip` (Windows) or the `mac` zip for your chip (Apple Silicon: `arm64`, Intel: `x64`) from the [latest release](https://github.com/KCarnage1/Five-Nights-At-Zayed-2/releases/latest).
+2. Unzip and open `FiveNightsAtZayeds2`. **F11** toggles fullscreen.
+3. Mac: the app is not notarised, so the first time, right-click it and choose Open.
+
+The desktop app shows what you are playing on your Discord profile (Rich Presence) while the Discord app is open. It tells you when a newer version is out and opens the download page.
+
+## Settings and access
+
+Text size, high-contrast HUD, shape and text cues, captions for sounds with a direction arrow, and an Assist option that gives you a quarter more time before something strikes are all in Settings. A short tutorial on the first night teaches each control by doing it.
+
+## Contributing and releases
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Version history is in [CHANGELOG.md](CHANGELOG.md).

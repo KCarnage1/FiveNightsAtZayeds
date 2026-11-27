@@ -15,6 +15,7 @@ import * as Updater from './update.js';
 import * as Shop from './shop.js';
 import { openShop, dailyReward } from './shopui.js';
 import { initCoop } from './coop.js';
+import { startPresence } from './presence.js';
 import { initAdmin } from './adminui.js';
 import { ic } from './icons.js';
 import * as Lore from './lore.js';
@@ -457,7 +458,10 @@ async function boot() {
   G.ready = true; bar(0.72, 'Loading faces…');
   await Promise.all(['zayed', 'bubbles', 'taffy', 'sherbet'].map(faceReady)); startLiveFaces();
   bar(0.8, 'Loading models…'); await Promise.race([propsReady, new Promise((r) => setTimeout(r, 6000))]);
-  bar(0.9, 'Warming up the lights…'); for (const x of WHO) bots[x].root.visible = false; renderer.render(scene, player); await nap();
+  bar(0.9, 'Warming up the lights…'); for (const x of WHO) bots[x].root.visible = false;
+  // compile the shaders without freezing the page (slow graphics cards used to look stuck here); give up waiting after 20 seconds and let them compile on first use
+  try { await Promise.race([renderer.compileAsync(scene, player), new Promise((r) => setTimeout(r, 20000))]); } catch (e) { /* compiled on first use instead */ }
+  renderer.render(scene, player); await nap();
   bar(1, 'Ready.');
   if (!renderer.getContext()) { $('#ldWarn').hidden = false; $('#ldWarn').textContent = 'Your browser could not start 3D graphics.'; return; }
   Updater.startUpdateChecks();
@@ -471,8 +475,10 @@ const ctx = { G, $, esc, toast, say, openModal, closeModal, startNight, home, ov
 coop = initCoop(ctx); admin = initAdmin(ctx);
 applyDisplay();
 requestAnimationFrame(frame);
-boot();
+const slow = setTimeout(() => { const m = $('#ldMsg'); if (m && $('#loading')) m.textContent += ' Still working. The first load can take a while on slower devices.'; }, 15000);
+boot().then(() => clearTimeout(slow), (e) => { clearTimeout(slow); const w = $('#ldWarn'); if (w) { w.hidden = false; w.textContent = 'The game could not finish loading (' + (e && e.message || e) + '). Reload the page. If it keeps happening, tell us which device and browser you use.'; } });
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]peer=/.test(location.search) && location.hostname !== 'localhost') navigator.serviceWorker.register('sw.js').catch(() => {});
+startPresence();
 window.FNAZ2 = { Lore, loreScreen, faceCanvas, refreshFaces, renderer, propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };
 
 /* the update banner: shown on every screen when a newer build is published */

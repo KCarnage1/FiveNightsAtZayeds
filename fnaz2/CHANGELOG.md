@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0
+- Windows and Mac apps, with your game status shown on your Discord profile while the Discord app is open.
+- Bidoof now uses his own picture, and the game has a new icon.
+- Night 1 phone call is a real voice recording.
+- Loading no longer freezes on slower graphics cards: the lights are prepared in the background, a note appears if loading is slow, and a failure shows a message instead of a stuck bar.
+- Nights 1 and 2 are open. Nights 3 to 6 follow in a later update.
+
 ## 0.7.1
 - A first-night tutorial that teaches the vents, the light, the mask, the cameras and the music box by doing, and never repeats.
 - Accessibility: text size, high-contrast HUD, shape and text cues, sound captions with a direction arrow, and an Assist option (a quarter more time before something strikes).

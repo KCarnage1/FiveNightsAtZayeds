@@ -6,6 +6,9 @@ import { VERSION } from './online.js';
 const BUILD = '__BUILD__'; // replaced when the web build is made; stays as-is in development
 export const dev = BUILD.startsWith('__'); // a real build id never starts with two underscores
 export const status = { available: null, checking: false, lastChecked: 0, error: '' };
+const PAGES = 'https://kcarnage1.github.io/Five-Nights-At-Zayed-2/', RELEASES = 'https://github.com/KCarnage1/Five-Nights-At-Zayed-2/releases/latest';
+const desktop = () => !!(window.fnaz && window.fnaz.open); // the Windows/Mac app: updates come as a new download
+const newer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
 const KEY = 'fnaz2_last_build', listeners = new Set();
 export const onUpdate = (f) => { listeners.add(f); return () => listeners.delete(f); };
 const emit = () => listeners.forEach((f) => f(status));
@@ -14,14 +17,15 @@ export async function check() {
   if (dev) { status.error = 'This is a development copy.'; emit(); return null; }
   status.checking = true; status.error = ''; emit();
   try {
-    const res = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' }); if (!res.ok) throw new Error('HTTP ' + res.status);
+    const res = await fetch((desktop() ? PAGES : '') + 'version.json?t=' + Date.now(), { cache: 'no-store' }); if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json(); status.lastChecked = Date.now();
-    status.available = d && d.build && d.build !== BUILD ? d : null;
+    status.available = d && d.build && (desktop() ? newer(d.version, VERSION) : d.build !== BUILD) ? d : null;
   } catch (e) { status.error = 'Could not reach the update server.'; }
   status.checking = false; emit(); return status.available;
 }
 /* Clears every cached copy, then loads the new version. */
 export async function applyUpdate() {
+  if (desktop()) { window.fnaz.open(RELEASES); return; } // the app cannot replace itself: open the download page
   try { if (navigator.serviceWorker) for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); if (window.caches) for (const k of await caches.keys()) await caches.delete(k); } catch (e) { /* reload anyway */ }
   location.reload();
 }
