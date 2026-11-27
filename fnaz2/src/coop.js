@@ -73,7 +73,7 @@ export function initCoop(ctx) {
   net.on('chat', (id) => { if (PINGS[id]) { ctx.say((G.guest ? 'Guard' : 'Operator') + ': ' + PINGS[id], 2600); Snd.chime(); } });
   net.on('inp', (d) => { if (!G.coop || G.guest || !d) return; G.coop.remote.cam = d.cam && ctx.CAMS[d.cam] ? d.cam : null; G.coop.remote.wind = !!d.wind; G.coop.partnerCam = G.coop.remote.cam; });
   /* Everything from the other player is checked before it touches the game: only known fields, known characters and known places. */
-  const NUM = ['t', 'hour', 'box', 'boxOut', 'battery', 'flashDead', 'mask'], FX = new Set(['move', 'enter', 'run', 'pushed', 'boxout', 'boxsafe', 'revived', 'kill', 'win', 'leave', 'seal', 'unseal']), num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  const NUM = ['t', 'hour', 'box', 'boxOut', 'battery', 'flashDead', 'mask'], FX = new Set(['move', 'enter', 'run', 'pushed', 'boxout', 'boxsafe', 'revived', 'kill', 'win', 'leave', 'seal', 'unseal', 'golden', 'goldengone']), num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
   function takeSnap(d) {
     const s = d.s || {}, S = G.S;
     for (const k of NUM) { const v = num(s[k]); if (v !== null) S[k] = v; }

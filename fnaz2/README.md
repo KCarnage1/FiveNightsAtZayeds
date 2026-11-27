@@ -18,6 +18,8 @@ Nights 1 and 2 are open. Nights 3 to 6 are built and unlock in a later update.
 | Wind the music box | in the cameras, choose Prize Corner, hold **W** | hold the wind button |
 
 - A sealed vent keeps everything out for a few seconds. Anything that gets in leaves if you wear the mask. Pressing **M** while the cameras are up closes them and puts the mask on. The Withered Falcon runs the hallway: the mask does not stop him, the flashlight does.
+- The flashlight has its own battery and recharges slowly, so use it on the hallway and not for fun. Bidoof knocks the light out when he gets in.
+- Golden Abdulla can appear in the hallway out of nowhere. Put the mask on at once, or turn the light off if it was on.
 - Keep the music box wound or the one inside it comes out.
 - Read the papers you find. They tell you what happened here (Extras, then Case file).
 

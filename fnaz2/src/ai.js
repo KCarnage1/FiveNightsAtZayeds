@@ -20,7 +20,7 @@ export const CAST = {
   wTaffy:     { home: 'parts', entry: ['ventR'], every: 6.4, kind: 'walker', body: 'taffy', toy: false },
   wSherbet:   { home: 'parts', entry: ['hall'],  every: 5.5, kind: 'runner', body: 'sherbet', toy: false },
   gelly:      { home: 'kids',  entry: ['ventL', 'ventR'], every: 4.9, kind: 'crawler' },
-  bidoof:     { home: 'game',  entry: ['hall', 'ventR'], every: 5.4, kind: 'nuisance' },
+  bidoof:     { home: 'game',  entry: ['ventL'], every: 5.4, kind: 'nuisance' },
   ibrahim:    { home: 'prize', entry: [], every: 1, kind: 'puppet' }
 };
 export const WHO = Object.keys(CAST);
@@ -41,12 +41,15 @@ export const LEVELS = {
 export const HOUR_SEC = 80;
 
 /* The random numbers (mulberry32). The generator's state is the number S.rs, so the whole night is plain data. */
+export const GOLD_CHANCE = [0, 0.45, 0.6, 0.75, 0.9, 1]; // by night: how likely a Golden Abdulla visit is when it is due
+function grand(S) { const o = S.gold || { gs: 1 }; o.gs = (o.gs + 0x9E3779B9) >>> 0; let t = o.gs; t = Math.imul(t ^ (t >>> 16), 0x85ebca6b); t = Math.imul(t ^ (t >>> 13), 0xc2b2ae35); return ((t ^ (t >>> 16)) >>> 0) / 4294967296; }
 export function rand(S) { S.rs = (S.rs + 0x6D2B79F5) >>> 0; let t = S.rs; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
 
 export function newNight(night, seed = 1, opts = {}) {
   const lv = {}; WHO.forEach((w) => { lv[w] = opts.levels ? opts.levels[w] || 0 : LEVELS[w][Math.min(night, 6) - 1]; });
   const S = { night, rs: seed >>> 0, t: 0, hour: 0, lv, pos: {}, acc: {}, since: {}, hold: {}, box: 100, boxOut: 0, battery: 100, flashDead: 0, flashOn: false, aimedAt: null, aimT: 0,
     mods: Object.assign({ drain: 1, charge: 1, box: 1, revive: 0, maskSpeed: 12, strike: 1 }, opts.mods || {}), mask: 0, seal: { ventL: 0, ventR: 0 }, sealCd: { ventL: 0, ventR: 0 }, cheat: null, dead: null, won: false, runT: {}, offT: {}, inv: !!opts.inv, wind: false };
+  S.gold = { state: 'idle', wait: 30 + grand(S) * 60, n: 0, lit: false, t: 0, gs: (seed * 2654435761) >>> 0 }; // its own random stream, so it never shifts the rest of the night
   WHO.forEach((w) => { S.pos[w] = CAST[w].home; S.acc[w] = rand(S) * CAST[w].every; S.since[w] = 0; });
   return S;
 }
@@ -90,10 +93,19 @@ export function step(S, dt, input) {
   if (S.flashDead > 0) S.flashDead -= dt;
   S.flashOn = !!input.flash && S.battery > 0 && S.flashDead <= 0 && !masked && !input.freezeLight;
   if (S.cheat && S.cheat.battery) S.battery = 100;
-  if (S.flashOn) S.battery = Math.max(0, S.battery - dt * (100 / 55) * S.mods.drain); else S.battery = Math.min(100, S.battery + dt * 7 * S.mods.charge);
+  if (S.flashOn) S.battery = Math.max(0, S.battery - dt * (100 / 55) * S.mods.drain); else S.battery = Math.min(100, S.battery + dt * 1.4 * S.mods.charge);
   S.aimedAt = S.flashOn ? input.aim || null : null;
   S.wind = !!input.wind && input.cam === 'prize';
   if (S.cheat && S.cheat.freeze) return fx;
+  // Golden Abdulla: appears in the hall now and then. Put the mask on, or turn the flashlight off if it was on, and he vanishes. Ignore him and the game ends.
+  const g = S.gold, gc = GOLD_CHANCE[Math.min(5, S.night - 1)];
+  if (g.state === 'idle') {
+    if (gc > 0 && S.hour >= 2 && g.n < 2) { g.wait -= dt; if (g.wait <= 0) { if (grand(S) < gc) { g.state = 'here'; g.t = 0; g.lit = S.flashOn; g.n++; fx.push({ type: 'golden' }); } else g.wait = 40; } }
+  } else {
+    g.t += dt;
+    if (masked || (g.lit && !S.flashOn)) { g.state = 'idle'; g.wait = 90 + grand(S) * 90; fx.push({ type: 'goldengone' }); }
+    else if (g.t > 3.5) { if (!S.inv && !revive(S, 'golden', fx)) { S.dead = 'golden'; fx.push({ type: 'kill', who: 'golden' }); return fx; } g.state = 'idle'; g.wait = 90; }
+  }
   for (const w of WHO) {
     const def = CAST[w], lvl = Math.min(20, S.lv[w] + (S.lv[w] > 0 ? hb : 0)); if (lvl <= 0 && w !== 'ibrahim') continue;
     const at = S.pos[w];

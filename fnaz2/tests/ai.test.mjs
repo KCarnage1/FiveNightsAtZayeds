@@ -10,7 +10,7 @@ let won = 0;
 for (let seed = 1; seed <= 20; seed++) {
   const S = newNight(2, seed);
   for (let i = 0; i < 40000 && !S.dead && !S.won; i++) {
-    const inOffice = WHO.some((w) => S.pos[w] === 'office'), runner = S.pos.wSherbet === 'hall';
+    const inOffice = WHO.some((w) => S.pos[w] === 'office') || S.gold.state === 'here', runner = S.pos.wSherbet === 'hall';
     const cam = !inOffice && !runner && S.box < 60 ? 'prize' : null;
     step(S, 0.05, { mask: inOffice, flash: runner, aim: runner ? 'hall' : null, cam, wind: cam === 'prize' });
   }
@@ -55,4 +55,13 @@ console.log('ai ok: idle kills', dead + '/20, competent wins', won + '/20');
   const S = newNight(1, 1); step(S, 0.05, { seal: 'ventL' }); assert(S.seal.ventL > 4, 'pressing seal closes the vent');
   for (let i = 0; i < 160; i++) step(S, 0.05, {}); assert(S.seal.ventL === 0 && S.sealCd.ventL > 0, 'the seal runs out, then recharges');
   console.log('ai ok: vent seal blocks entries (open ' + open + ', sealed ' + sealed + ')');
+}
+
+// 6. Golden Abdulla: ignoring him ends the night; the mask makes him vanish; a flashlight that was on and is turned off does too
+{
+  const mk = (seed) => { const S = newNight(5, seed); S.hour = 2; S.t = 170; S.gold.wait = 0; return S; };
+  let S = mk(3), shown = false, killed = false; for (let i = 0; i < 400 && !S.dead; i++) { const fx = step(S, 0.05, {}); shown ||= fx.some((f) => f.type === 'golden'); killed ||= fx.some((f) => f.type === 'kill' && f.who === 'golden'); if (killed) break; }
+  assert(shown, 'Golden Abdulla shows up when due'); assert(killed || S.dead, 'ignored, Golden Abdulla ends the night');
+  S = mk(3); let gone = false; for (let i = 0; i < 400 && !S.dead; i++) { const here = S.gold.state === 'here'; const fx = step(S, 0.05, { mask: here }); gone ||= fx.some((f) => f.type === 'goldengone'); if (gone) break; } assert(gone && S.dead !== 'golden', 'the mask makes Golden Abdulla vanish');
+  console.log('ai ok: Golden Abdulla appears, kills when ignored, vanishes for the mask');
 }

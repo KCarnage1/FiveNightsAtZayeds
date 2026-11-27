@@ -3,6 +3,7 @@ import { canvasTex, matte, mesh, group } from './models/kit.js';
 import { loadProp } from './models/props.js';
 import { KIND, floorTexture, wallMaterial, tileUV, decorate, signMats } from './decor.js';
 import { mergeByMaterial } from './models/merge.js';
+const SHUTTERS = {}; // the vent shutters, filled in when the office is dressed
 
 /* The pizzeria. +z is toward the player, -z runs away down the hallway into the main hall.
  * Rooms are boxes with doorway gaps; vents are low ducts that open into the office's side walls. */
@@ -74,7 +75,7 @@ export function buildMap(scene) {
     } else { const L = new THREE.PointLight(0x9fb2ff, 0, 9, 1.8); L.position.set(cx, .8, cz); g.add(L); lights[id] = L; }
   }
   props(scene); decorate(scene);
-  return { lights };
+  return { lights, shutters: SHUTTERS };
 }
 
 /* Simple stand-in shapes are built first; dressMap() swaps each for its CAD model once the model has loaded (and keeps the stand-in if it can't). */
@@ -108,6 +109,17 @@ function props(scene) {
   for (let z = -4; z > -12; z -= 2) mesh(new THREE.BoxGeometry(.05, .05, 1.2), matte(0x333333), scene, [0, 3.05, z]);
   // vent grilles on the office walls
   for (const sx of [-1, 1]) stand(scene, 'vent_grille', (g) => { mesh(new THREE.BoxGeometry(.06, 1, 1.15), matte(0x303338, .4), g, [sx * 2.92, .6, -.4]); }).userData.at = { x: sx * 2.86, y: 0.08, z: -0.4, s: 0.9, ry: sx < 0 ? 0 : Math.PI };
+  // vent shutters: a steel plate that slides down over each vent when it is sealed, with a lamp above it (green = open, red = sealed)
+  for (const sx of [-1, 1]) {
+    const g = new THREE.Group(); g.position.set(sx * 2.8, 0, -0.4); scene.add(g);
+    const steel = new THREE.MeshStandardMaterial({ color: 0x8a9096, metalness: 0.7, roughness: 0.35, emissive: 0x2a0000, emissiveIntensity: 0.6 });
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.1, 1.3), steel); plate.castShadow = plate.receiveShadow = true; g.add(plate);
+    for (let i = 0; i < 5; i++) { const slat = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.05, 1.3), matte(0x4a4f56, 0.4)); slat.position.y = -0.4 + i * 0.2; plate.add(slat); }
+    const hz = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 1.3), new THREE.MeshStandardMaterial({ color: 0xe8b000, emissive: 0x553c00, emissiveIntensity: 0.8 })); hz.position.y = -0.5; plate.add(hz);
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshStandardMaterial({ color: 0x00ff55, emissive: 0x00ff55, emissiveIntensity: 1.5 })); lamp.position.set(0, 1.3, 0); g.add(lamp);
+    const glow = new THREE.PointLight(0x00ff55, 0.6, 3, 2); glow.position.set(-sx * 0.15, 1.3, 0); g.add(glow);
+    SHUTTERS[sx < 0 ? 'ventL' : 'ventR'] = { plate, lamp, glow, k: 0 };
+  }
   // things on the desk that only exist as models: a fan and the flashlight
   swaps.push({ name: 'desk_fan', g: null, at: { x: 1.0, y: 1.01, z: 1.45, s: 1, ry: -0.5 } }, { name: 'flashlight', g: null, at: { x: -0.35, y: 1.01, z: 1.75, s: 1, ry: 0.8 } });
 }

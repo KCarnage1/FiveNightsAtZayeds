@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0
+- Closer to the original Five Nights at Freddy's 2: the flashlight battery now recharges slowly (about 70 seconds to full) instead of almost instantly, so the light is a real resource.
+- Golden Abdulla: from the second night he can appear in the hallway out of nowhere. Put the mask on, or turn the flashlight off if it was on, and he vanishes. Ignore him and the night is over.
+- Bidoof, the light-jammer, now comes through the left vent. He never hurts you, but he knocks the flashlight out, which leaves the Withered Falcon free to run.
+- A sealed vent is now visible: a steel shutter slides down over it and its lamp turns from green to red.
+- Between nights, a cartridge sometimes appears after a loss: a small 8-bit minigame, "Take Cake to the Children". It never counts for anything.
+
 ## 0.8.4
 - Characters now walk between rooms instead of teleporting: a walk cycle, a fast lean for the Withered Falcon in the hall, and a low creep through the vents. The Toy bodies on the title screen turn their heads and wave.
 - Menus and screens fade in, buttons respond to hover and press, the clock pulses each hour, and the 6 AM screen pops.

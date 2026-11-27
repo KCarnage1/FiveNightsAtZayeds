@@ -283,3 +283,10 @@ body.noflash .clock b.tick{animation:none;color:#ffd24a}
 body.noflash .screen:not(:has(.title)) h1{animation:none}
 body.noflash .intro b{animation:none}
 @media (prefers-reduced-motion:reduce){.screen,.panel,.clock b.tick,.screen:not(:has(.title)) h1,.intro b{animation:none!important}.screen button.big:hover,.btnrow button:hover{transform:none}}
+
+/* the cartridge minigame */
+#cart{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:#000d}
+#cart .cartbox{width:min(92vw,720px);display:grid;gap:10px;justify-items:center}
+#cart canvas{width:100%;image-rendering:pixelated;border:3px solid #ffd24a55;background:#000;aspect-ratio:192/120;touch-action:none}
+#cart .cartmsg{margin:0;font:700 14px ui-monospace,monospace;color:#ffd24a;text-align:center;min-height:2.4em}
+#cart .cartbtns{display:flex;gap:8px}

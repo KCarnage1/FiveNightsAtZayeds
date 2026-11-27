@@ -16,6 +16,7 @@ import * as Shop from './shop.js';
 import { openShop, dailyReward } from './shopui.js';
 import { initCoop } from './coop.js';
 import { startPresence } from './presence.js';
+import { playCartridge } from './minigame.js';
 import { initAdmin } from './adminui.js';
 import { ic } from './icons.js';
 import * as Lore from './lore.js';
@@ -23,7 +24,7 @@ import { buildLoreItems, showLoreItems, hideLoreItems, pickLoreItem, loreScreen 
 import { wordTyper } from './admin.js';
 
 const $ = (s) => document.querySelector(s);
-const NAMES = { toyZayed: 'Toy Zayed the Camel', toyBubbles: 'Toy Zayed the Cat', toyTaffy: 'Toy Zayed the Goat', toySherbet: 'Toy Zayed the Falcon', wZayed: 'Withered Zayed the Camel', wBubbles: 'Withered Zayed the Cat', wTaffy: 'Withered Zayed the Goat', wSherbet: 'Withered Zayed the Falcon', gelly: 'Gelly', bidoof: 'Bidoof', ibrahim: 'Ibrahim' };
+const NAMES = { toyZayed: 'Toy Zayed the Camel', toyBubbles: 'Toy Zayed the Cat', toyTaffy: 'Toy Zayed the Goat', toySherbet: 'Toy Zayed the Falcon', wZayed: 'Withered Zayed the Camel', wBubbles: 'Withered Zayed the Cat', wTaffy: 'Withered Zayed the Goat', wSherbet: 'Withered Zayed the Falcon', gelly: 'Gelly', bidoof: 'Bidoof', ibrahim: 'Ibrahim', golden: 'Golden Abdulla' };
 
 const canvas = $('#gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -39,11 +40,17 @@ const officeLight = new THREE.PointLight(0xffc88a, 7, 14, 1.6); officeLight.posi
 
 /* ---- the cast ---- */
 const bots = {};
+function buildGolden() { // Golden Abdulla: the old Camel body, all gold
+  const g = buildZayed('zayed', 'withered'); const seen = new Set();
+  g.root.traverse((o) => { if (o.isMesh && o.material && !seen.has(o.material)) { seen.add(o.material); const m = o.material.clone(); m.color.set(0xd9a521); if (m.emissive) { m.emissive.set(0x5a3b00); m.emissiveIntensity = 0.8; } if ('map' in m) m.map = null; o.material = m; } });
+  return g;
+}
 function makeBot(w) {
   const c = CAST[w];
   bots[w] = w === 'ibrahim' ? buildIbrahim() : w === 'gelly' ? buildGelly() : w === 'bidoof' ? buildBidoof() : buildZayed(c.body, c.toy ? 'toy' : 'withered');
   bots[w].root.visible = false; scene.add(bots[w].root);
 }
+function makeGolden() { bots.golden = buildGolden(); bots.golden.root.visible = false; scene.add(bots.golden.root); }
 
 /* ---- game state ---- */
 const _hp = new THREE.Vector3(); // scratch
@@ -251,10 +258,11 @@ function over(win) {
     : `<div class="deathcard"><h2>${NAMES[G.scareWho] || 'Something'} got you</h2><p>You lasted until ${fmtTime(G.S.t)}.</p>${DEATH_LINE[G.scareWho] ? `<p class="quote">${DEATH_LINE[G.scareWho]}</p>` : ''}<p>${hintFor(G.scareWho)}</p>${pay}${assistNote}${buttons}</div>`;
   if ($('#nx')) $('#nx').onclick = () => startNight(n + 1, { }); 
   if ($('#rt')) $('#rt').onclick = () => (coopMode ? coop.again() : startNight(n, G.opts));
+  if (!win && !coopMode && !G.opts.daily && Math.random() < 0.35) { const b = document.createElement('button'); b.className = 'big alt'; b.id = 'cartBtn'; b.textContent = '\u25B6 A cartridge is in the machine'; b.onclick = () => playCartridge(); const row = $('#rt') && $('#rt').parentElement; if (row) row.appendChild(b); } // an 8-bit minigame, only sometimes, never counts for anything
   $('#tt').onclick = () => { if (coopMode) coop.leave(); home(); };
 }
-const DEATH_LINE = { toyZayed: '"Your order is almost ready."', toyBubbles: '"Do not hang up. Do not hang up."', toyTaffy: '"Twelve cupcakes. Four candles each."', toySherbet: '"Special delivery!"', wZayed: '"We waited. We are still waiting."', wBubbles: '"Pick up. Pick up. Pick up."', wTaffy: '"You were supposed to remember."', wSherbet: '"Late. So late."', ibrahim: '"Thank you for holding."', gelly: '"Delivery for you! I never knock."', bidoof: '"Complaint received!"' };
-const hintFor = (w) => ({ ibrahim: 'The music box ran out. Keep winding it from the Prize Corner camera.', wSherbet: 'Withered Zayed the Falcon runs the hallway. The mask will not stop him: shine the light down the hall.', gelly: 'Gelly comes through the vents. Wear the mask until she leaves.' }[w] || 'Put the mask on when something is in the office.');
+const DEATH_LINE = { golden: '"It\'s me. It has always been me."', toyZayed: '"Your order is almost ready."', toyBubbles: '"Do not hang up. Do not hang up."', toyTaffy: '"Twelve cupcakes. Four candles each."', toySherbet: '"Special delivery!"', wZayed: '"We waited. We are still waiting."', wBubbles: '"Pick up. Pick up. Pick up."', wTaffy: '"You were supposed to remember."', wSherbet: '"Late. So late."', ibrahim: '"Thank you for holding."', gelly: '"Delivery for you! I never knock."', bidoof: '"Complaint received!"' };
+const hintFor = (w) => ({ golden: 'Golden Abdulla appears out of nowhere. Put the mask on at once, or turn the flashlight off if it was on.', ibrahim: 'The music box ran out. Keep winding it from the Prize Corner camera.', wSherbet: 'Withered Zayed the Falcon runs the hallway. The mask will not stop him: shine the light down the hall.', gelly: 'Gelly comes through the vents. Wear the mask until she leaves.' }[w] || 'Put the mask on when something is in the office.');
 
 /* ---- input ---- */
 const buzz = (p) => { if (cfg.haptics && navigator.vibrate) try { navigator.vibrate(p); } catch (e) { /* ignore */ } };
@@ -298,7 +306,7 @@ hold($('#bMask'), pressMask, releaseMask); hold($('#bFlash'), pressLight, releas
 $('#bCam').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); toggleCam(); });
 hold($('#bWind'), () => { G.wind = true; }, () => { G.wind = false; });
 
-const tutVisit = () => { const S = G.S; if (!S || S.dead || S.won) return; S.pos.bidoof = 'office'; S.offT.bidoof = 0; S.lv.bidoof = Math.max(S.lv.bidoof, 1); apply([{ type: 'enter', who: 'bidoof', from: 'ventR' }]); }; // tutorial: a harmless visitor
+const tutVisit = () => { const S = G.S; if (!S || S.dead || S.won) return; S.pos.bidoof = 'office'; S.offT.bidoof = 0; S.lv.bidoof = Math.max(S.lv.bidoof, 1); apply([{ type: 'enter', who: 'bidoof', from: 'ventL' }]); }; // tutorial: a harmless visitor
 const camIds = Object.keys(CAMS);
 function toggleCam() {
   if (G.mode !== 'play' || G.paused || G.guest || G.scareWho) return;
@@ -383,6 +391,8 @@ function apply(fx) {
     captionFx(f);
     if (f.type === 'move') { camGlitch(); Snd.move(f.to, pan(f.to)); if (f.to === 'hall' && !G.cam) say('Something is in the hallway.', 2200); }
     else if (f.type === 'enter') { tutEnter(); G.from[f.who] = f.from; (f.from.startsWith('vent') ? Snd.clang : Snd.step)(pan(f.from)); if (f.who === 'bidoof') Snd.laugh(); buzz(60); say(f.who === 'bidoof' ? 'Bidoof is in the office. The flashlight is dead.' : (NAMES[f.who] || f.who) + ' is in the office! Wear the mask (hold M).', 3000); G.shake = 0.5; }
+    else if (f.type === 'golden') { G.goldT = 0; camGlitch(); Snd.laugh(); buzz([80, 40, 80]); say('Golden Abdulla is here. Put the mask on, or turn the light off!', 3400); }
+    else if (f.type === 'goldengone') { G.goldT = 0; Snd.click(); say('He is gone.', 1400); }
     else if (f.type === 'seal') { Snd.clang(f.v === 'ventL' ? -0.8 : 0.8); say((f.v === 'ventL' ? 'Left' : 'Right') + ' vent sealed.', 1600); }
     else if (f.type === 'unseal') { say((f.v === 'ventL' ? 'Left' : 'Right') + ' vent is open again.', 1600); }
     else if (f.type === 'run') { Snd.clang(0); say('Withered Zayed the Falcon is running the hall! Shine the light down it!', 3000); }
@@ -460,6 +470,8 @@ function frame(now) {
     if (t > 1.75) { officeLight.intensity = 7; b.root.visible = false; fl.style.opacity = 0; fl.style.background = '#fff'; document.body.classList.remove('scaring', 'scarecut'); applyFov(); over(false); }
   } 
   if (live && !G.scareWho) placeAll(dt); else if (!live) placedS = null;
+  { const sh = map.shutters; if (sh) for (const v of ['ventL', 'ventR']) { const o = sh[v]; if (!o) continue; const want = live && G.S && G.S.seal[v] > 0 ? 1 : 0; o.k += (want - o.k) * Math.min(1, dt * 10); const k = Math.max(0.05, o.k); o.plate.scale.y = k; o.plate.position.y = 1.15 - 0.55 * k; const sealed = o.k > 0.5; o.lamp.material.color.setHex(sealed ? 0xff2020 : 0x00ff55); o.lamp.material.emissive.setHex(sealed ? 0xff2020 : 0x00ff55); o.glow.color.setHex(sealed ? 0xff2020 : 0x00ff55); } }
+  { const gb = bots.golden; if (gb) { const here = live && !G.scareWho && G.S && G.S.gold && G.S.gold.state === 'here' && !G.cam; gb.root.visible = here || G.scareWho === 'golden'; if (here) { G.goldT = (G.goldT || 0) + dt; gb.root.scale.setScalar(1.1); gb.root.position.set(Math.sin(G.goldT * 40) * 0.015, 0, -3.4 + Math.min(1.2, G.goldT * 0.4)); gb.root.lookAt(0, 0, 0); animate(gb, dt, 'idle'); } } }
   document.body.classList.toggle('cam-on', !!(G.cam && G.mode === 'play'));
   // camera + lights
   if (G.mode === 'title') {
@@ -497,7 +509,7 @@ async function boot() {
   const nap = () => new Promise((r) => setTimeout(r, 25));
   bar(0.05, 'Building the pizzeria…'); await nap();
   let i = 0; for (const w of WHO) { bar(0.1 + (i++ / WHO.length) * 0.6, 'Assembling ' + NAMES[w] + '…'); makeBot(w); await nap(); }
-  G.ready = true; bar(0.72, 'Loading faces…');
+  makeGolden(); G.ready = true; bar(0.72, 'Loading faces…');
   await Promise.all(['zayed', 'bubbles', 'taffy', 'sherbet'].map(faceReady)); startLiveFaces();
   bar(0.8, 'Loading models…'); await Promise.race([propsReady, new Promise((r) => setTimeout(r, 6000))]);
   bar(0.9, 'Warming up the lights…'); for (const x of WHO) bots[x].root.visible = false;
@@ -521,7 +533,7 @@ const slow = setTimeout(() => { const m = $('#ldMsg'); if (m && $('#loading')) m
 boot().then(() => clearTimeout(slow), (e) => { clearTimeout(slow); const w = $('#ldWarn'); if (w) { w.hidden = false; w.textContent = 'The game could not finish loading (' + (e && e.message || e) + '). Reload the page. If it keeps happening, tell us which device and browser you use.'; } });
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]peer=/.test(location.search) && location.hostname !== 'localhost') navigator.serviceWorker.register('sw.js').catch(() => {});
 startPresence();
-window.FNAZ2 = { Lore, loreScreen, faceCanvas, refreshFaces, renderer, propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };
+window.FNAZ2 = { playCartridge, Lore, loreScreen, faceCanvas, refreshFaces, renderer, propsReady, G, startNight, bots, step, placeAll, scene, camV, player, home, settings, pause, cfg, stats };
 
 /* the update banner: shown on every screen when a newer build is published */
 {
