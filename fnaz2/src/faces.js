@@ -14,7 +14,7 @@ const urlOk = (u) => typeof u === 'string' && /^https:\/\/cdn\.discordapp\.com\/
 function loadImage(url) { return new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => rej(new Error('image')); i.src = url; }); }
 async function apply(faces) {
   for (const [slot, f] of Object.entries(faces || {})) {
-    if (!slotOk(slot) || !f || !urlOk(f.url)) continue;
+    if (!slotOk(slot) || slot === 'bidoof' || !f || !urlOk(f.url)) continue; // Bidoof keeps his bundled photo
     const key = f.url + '|' + f.v; if (current[slot] === key && faceIsLive(slot)) continue;
     try { const img = await loadImage(f.url); if (setLiveFace(slot, img)) { current[slot] = key; status.slots[slot] = f.url; } } catch (e) { status.slots[slot] = ''; }
   }
