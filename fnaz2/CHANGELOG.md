@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.2
+- Quality of life: rebind every key in Settings, Controls (a key that is already used swaps places), with Space, M, Tab and the arrows kept as extras.
+- Gamepad support: A flashlight, B mask, X wind the music box, Y cameras, LB / RB seal the vents (or switch camera), stick or D-pad to look, Start to pause.
+- A bar under the clock shows how much of the night is left.
+- Settings, Gameplay: replay the tutorial. The pause menu has a Fullscreen button.
+
 ## 0.9.1
 - Ibrahim has a face (a pale puppet mask for now) and the page no longer logs a missing picture.
 - The web version publishes more reliably.

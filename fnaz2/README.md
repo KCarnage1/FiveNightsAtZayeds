@@ -23,6 +23,8 @@ Nights 1 and 2 are open. Nights 3 to 6 are built and unlock in a later update.
 - Keep the music box wound or the one inside it comes out.
 - Read the papers you find. They tell you what happened here (Extras, then Case file).
 
+Keys can be changed in Settings, Controls. A gamepad works too (A flashlight, B mask, X wind the music box, Y cameras, LB and RB seal the vents).
+
 ## Play with a friend
 
 Online co-op runs peer to peer. One player hosts and is the **Guard** (flashlight and mask). The other joins with the room code or an invite link and is the **Operator** (cameras and music box). Two players per room.

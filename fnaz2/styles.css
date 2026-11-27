@@ -290,3 +290,7 @@ body.noflash .intro b{animation:none}
 #cart canvas{width:100%;image-rendering:pixelated;border:3px solid #ffd24a55;background:#000;aspect-ratio:192/120;touch-action:none}
 #cart .cartmsg{margin:0;font:700 14px ui-monospace,monospace;color:#ffd24a;text-align:center;min-height:2.4em}
 #cart .cartbtns{display:flex;gap:8px}
+
+/* time left in the night, under the clock */
+#hBar{display:block;width:90px;height:4px;margin:5px 0 0 auto;background:#ffffff22;border-radius:3px;overflow:hidden}#hBar u{display:block;height:100%;width:0;background:linear-gradient(90deg,#c99556,#ffd24a);transition:width .5s linear}
+.bindbtn{min-width:90px}.row p{margin:4px 0 0;opacity:.75;font-size:13px}

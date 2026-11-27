@@ -6,7 +6,7 @@ import { buildIbrahim, buildGelly, buildBidoof } from './models/extras.js';
 import { newNight, step, CAST, WHO, HOUR_SEC } from './ai.js';
 import { S as Snd, start as startAudio } from './audio.js';
 import { applyDisplay, captionFx, captionBox, cueHud, tutStart, tutEnter, tutTick } from './access.js';
-import { cfg, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings, resetProgress, OPEN_NIGHTS } from './settings.js';
+import { cfg, DEFAULTS, set as setCfg, onChange, stats, saveStats, unlocked, resetSettings, resetProgress, OPEN_NIGHTS } from './settings.js';
 import * as Calls from './calls.js';
 import * as Online from './online.js';
 import { faceReady, faceCanvas } from './models/kit.js';
@@ -79,7 +79,8 @@ const modalOpen = () => !$('#modal').hidden;
 const TABS = {
   Audio: [{ k: 'master', t: 'range', l: 'Master volume', min: 0, max: 100 }, { k: 'sfx', t: 'range', l: 'Effects', min: 0, max: 100 }, { k: 'music', t: 'range', l: 'Music box', min: 0, max: 100 }],
   Video: [{ k: 'autoRes', t: 'toggle', l: 'Smooth frame rate', p: 'If the game runs slowly, draw the picture at a lower resolution until it runs smoothly, then raise it again.' }, { k: 'quality', t: 'select', l: 'Quality', o: [['low', 'Low (best for phones)'], ['medium', 'Medium'], ['high', 'High']], p: 'Lower quality renders fewer pixels. Try Low if the game stutters.' }, { k: 'fov', t: 'range', l: 'Field of view', min: 55, max: 95 }, { k: 'brightness', t: 'range', l: 'Brightness', min: 60, max: 150 }, { k: 'uiScale', t: 'range', l: 'HUD size', min: 80, max: 130 }, { k: 'shake', t: 'toggle', l: 'Screen shake' }, { k: 'flashing', t: 'toggle', l: 'Flashing effects', p: 'Turn off to remove bright flashes and flicker.' }, { k: 'fps', t: 'toggle', l: 'Show FPS' }, { t: 'button', l: 'Fullscreen', b: 'Toggle', act: () => toggleFull() }],
-  Gameplay: [{ k: 'sens', t: 'range', l: 'Look sensitivity', min: 40, max: 200 }, { k: 'invert', t: 'toggle', l: 'Invert look' }, { k: 'toggleMask', t: 'toggle', l: 'Mask: tap to toggle', p: 'Off = hold to wear it.' }, { k: 'toggleLight', t: 'toggle', l: 'Flashlight: tap to toggle', p: 'Off = hold to shine it.' }, { k: 'haptics', t: 'toggle', l: 'Vibration (phones)' }, { k: 'hints', t: 'toggle', l: 'On-screen hints' }, { k: 'calls', t: 'toggle', l: 'Phone calls' }, { k: 'voice', t: 'toggle', l: 'Read calls aloud', p: 'Uses your device\'s text-to-speech voice.' }, { k: 'subtitles', t: 'toggle', l: 'Subtitles' }, { k: 'autopause', t: 'toggle', l: 'Pause when the tab loses focus' }],
+  Controls: [{ t: 'binds' }, { t: 'button', l: 'Default keys', b: 'Reset keys', act: () => { for (const [k] of BINDS) setCfg(k, DEFAULTS[k]); settings('Controls'); toast('Keys reset'); } }, { t: 'info', l: 'Gamepad', p: 'A: flashlight (hold) \u00B7 B: mask (hold) \u00B7 X: wind the music box \u00B7 Y: cameras \u00B7 LB / RB: seal the left / right vent \u00B7 left stick or D-pad: look \u00B7 Start: pause.' }],
+  Gameplay: [{ k: 'sens', t: 'range', l: 'Look sensitivity', min: 40, max: 200 }, { k: 'invert', t: 'toggle', l: 'Invert look' }, { t: 'button', l: 'Tutorial', b: 'Replay on Night 1', act: () => { stats.tutorial = false; stats.tutSteps = {}; saveStats(); toast('The tutorial will play again on Night 1'); } }, { k: 'toggleMask', t: 'toggle', l: 'Mask: tap to toggle', p: 'Off = hold to wear it.' }, { k: 'toggleLight', t: 'toggle', l: 'Flashlight: tap to toggle', p: 'Off = hold to shine it.' }, { k: 'haptics', t: 'toggle', l: 'Vibration (phones)' }, { k: 'hints', t: 'toggle', l: 'On-screen hints' }, { k: 'calls', t: 'toggle', l: 'Phone calls' }, { k: 'voice', t: 'toggle', l: 'Read calls aloud', p: 'Uses your device\'s text-to-speech voice.' }, { k: 'subtitles', t: 'toggle', l: 'Subtitles' }, { k: 'autopause', t: 'toggle', l: 'Pause when the tab loses focus' }],
   Accessibility: [{ k: 'textSize', t: 'range', l: 'Text size', min: 100, max: 160, p: 'Makes the clock, meters, hints, captions and tutorial bigger.' }, { k: 'contrast', t: 'toggle', l: 'High contrast HUD', p: 'Solid black panels, white text and thick outlines.' }, { k: 'cues', t: 'toggle', l: 'Shape and text cues', p: 'Adds percentages, the word LOW, striped low meters and a warning badge when something is in the office, so colour is never the only signal.' }, { k: 'captions', t: 'toggle', l: 'Sound captions', p: 'Shows a short line with an arrow for sounds: vent clanks, footsteps and the music box.' }, { k: 'assist', t: 'toggle', l: 'Assist mode', p: 'Gives you a quarter more time before something in the office strikes. Applies from the next night. Coins are not reduced.' }, { k: 'tutorial', t: 'toggle', l: 'Show the tutorial on Night 1', p: 'Turn on to see the tips again.' }, { t: 'button', l: 'Replay the tutorial', b: 'Reset', act: () => { stats.tutorial = false; stats.tutSteps = {}; saveStats(); setCfg('tutorial', true); settings('Accessibility'); toast('The tutorial will show on Night 1'); } }],
   Online: [{ k: 'liveFaces', t: 'toggle', l: 'Live profile pictures', p: 'Characters can use the current Discord profile picture of the person they are based on. Your device loads the picture from Discord. Off keeps the pictures that came with the game.' }, { k: 'share', t: 'toggle', l: 'Show that I am online', p: 'Tells the developer the game is open: a random ID, the version, your device type and the screen you are on. No name, no account, no location.' }, { k: 'broker', t: 'text', l: 'Custom matchmaking server', p: 'Leave empty for the default. Format host:port, for example localhost:9000.' }, { t: 'status' }],
   Data: [{ t: 'update' }, { t: 'button', l: 'Reset settings', b: 'Reset', act: () => { resetSettings(); settings('Data'); toast('Settings reset'); } }, { t: 'button', l: 'Erase progress and stats', b: 'Erase…', danger: true, act: () => { if (confirm('Erase all nights beaten and stats?')) { resetProgress(); settings('Data'); toast('Progress erased'); if (G.mode === 'title') home(); } } }]
@@ -89,6 +90,8 @@ function settings(tab = 'Audio') {
     if (r.t === 'range') return `<div class="row"><label for="s${i}">${r.l}</label><span><input id="s${i}" data-k="${r.k}" type="range" min="${r.min}" max="${r.max}" value="${cfg[r.k]}"> <output>${cfg[r.k]}</output></span></div>`;
     if (r.t === 'toggle') return `<div class="row"><label for="s${i}">${r.l}</label><input id="s${i}" class="tog" data-k="${r.k}" type="checkbox" ${cfg[r.k] ? 'checked' : ''}>${r.p ? `<p>${r.p}</p>` : ''}</div>`;
     if (r.t === 'select') return `<div class="row"><label for="s${i}">${r.l}</label><select id="s${i}" data-k="${r.k}">${r.o.map(([v, n]) => `<option value="${v}" ${cfg[r.k] === v ? 'selected' : ''}>${n}</option>`).join('')}</select>${r.p ? `<p>${r.p}</p>` : ''}</div>`;
+    if (r.t === 'binds') return BINDS.map(([k, l]) => `<div class="row"><label>${l}</label><span><button class="sm bindbtn" data-bind="${k}">${keyName(cfg[k])}</button></span></div>`).join('') + '<p class="hint">Click a button, then press the key you want. Space, M, Tab and the arrow keys keep working as extras.</p>';
+    if (r.t === 'info') return `<div class="row"><label>${r.l}</label><p>${r.p}</p></div>`;
     if (r.t === 'update') return `<div class="row"><label>Updates</label><span><button class="sm" id="updBtn">Check for updates</button></span><p id="updMsg">${Updater.dev ? 'This is a development copy. Updates apply to the published game.' : `You have version ${Online.VERSION}.`}</p></div>`;
     if (r.t === 'text') return `<div class="row"><label for="s${i}">${r.l}</label><input id="s${i}" class="sm" data-k="${r.k}" type="text" value="${esc(cfg[r.k] || '')}" style="width:170px" autocomplete="off">${r.p ? `<p>${r.p}</p>` : ''}</div>`;
     if (r.t === 'button') return `<div class="row"><label>${r.l}</label><button class="sm ${r.danger ? 'danger' : ''}" data-act="${i}">${r.b}</button></div>`;
@@ -97,6 +100,8 @@ function settings(tab = 'Audio') {
   openModal(`<h2>Settings</h2><div class="tabs">${Object.keys(TABS).map((t) => `<button class="${t === tab ? 'on' : ''}" data-tab="${t}">${t}</button>`).join('')}</div>${rows}<div class="btnrow"><button class="pri" id="mClose">Done</button></div>`);
   const m = $('#modal');
   m.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => settings(b.dataset.tab); });
+  m.querySelectorAll('.bindbtn').forEach((b) => { b.onclick = () => { // wait for the next key and give it to this action; if another action had it, they swap
+    b.textContent = 'Press a key…'; const grab = (e) => { e.preventDefault(); e.stopImmediatePropagation(); removeEventListener('keydown', grab, true); const k = e.key.toLowerCase(); if (k !== 'escape') { const old = cfg[b.dataset.bind], other = BINDS.find(([x]) => x !== b.dataset.bind && cfg[x] === k); if (other) setCfg(other[0], old); setCfg(b.dataset.bind, k); } settings('Controls'); }; addEventListener('keydown', grab, true); }; });
   m.querySelectorAll('input[type=range]').forEach((el) => { el.oninput = () => { setCfg(el.dataset.k, +el.value); el.nextElementSibling.textContent = el.value; Snd.click(); }; });
   m.querySelectorAll('input.tog').forEach((el) => { el.onchange = () => setCfg(el.dataset.k, el.checked); });
   m.querySelectorAll('select').forEach((el) => { el.onchange = () => setCfg(el.dataset.k, el.value); });
@@ -237,7 +242,7 @@ function pause(on) {
   if (G.coop) { G.menuOpen = on; if (on) pauseScreen(); else { $('#screen').hidden = true; closeModal(); } return; }
   G.paused = on; if (on) { G.light = false; G.wind = false; setMask(false); Calls.stop(); pauseScreen(); } else { $('#screen').hidden = true; closeModal(); }
 }
-function pauseScreen() { const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div class="panel pausebox"><h2>${G.coop ? 'Menu' : 'Paused'}</h2><p class="hint">${G.label} at ${(G.S.hour === 0 ? 12 : G.S.hour)} AM${G.coop ? '. The night keeps running for your partner.' : ''}</p><div class="stack"><button class="big" id="pr">Resume</button><button class="big alt" id="ps">Settings</button><button class="big alt" id="pm">${G.coop ? 'Leave the room' : 'Quit to menu'}</button></div><p class="hint">Esc or P also resumes.</p></div>`; $('#pr').onclick = () => pause(false); $('#ps').onclick = () => settings(); $('#pm').onclick = () => { if (G.coop) coop.leave(); G.mode = 'title'; home(); }; }
+function pauseScreen() { const s = $('#screen'); s.hidden = false; s.className = 'screen'; s.innerHTML = `<div class="panel pausebox"><h2>${G.coop ? 'Menu' : 'Paused'}</h2><p class="hint">${G.label} at ${(G.S.hour === 0 ? 12 : G.S.hour)} AM${G.coop ? '. The night keeps running for your partner.' : ''}</p><div class="stack"><button class="big" id="pr">Resume</button><button class="big alt" id="ps">Settings</button><button class="big alt" id="pf">Fullscreen</button><button class="big alt" id="pm">${G.coop ? 'Leave the room' : 'Quit to menu'}</button></div><p class="hint">Esc or P also resumes.</p></div>`; $('#pr').onclick = () => pause(false); $('#ps').onclick = () => settings(); $('#pf').onclick = toggleFull; $('#pm').onclick = () => { if (G.coop) coop.leave(); G.mode = 'title'; home(); }; }
 function over(win) {
   Calls.stop(); const n = G.S.night, cheated = !!(G.S.cheated || (G.adm && G.adm.used)); G.mode = win ? 'won' : 'dead'; G.cam = null; G.light = false; G.mask = false; $('#hud').hidden = true; $('#camUI').hidden = true; $('#maskOv').classList.remove('on'); $('#scareBar').hidden = true; $('#call').hidden = true; $('#staticOv').classList.remove('on'); document.body.classList.remove('playing'); const pk = $('#pings'); if (pk) pk.hidden = true;
   let rw = { parts: [], total: 0 };
@@ -284,6 +289,11 @@ addEventListener('pointerup', () => { releaseLight(); G.wind = false; });
 addEventListener('contextmenu', (e) => e.preventDefault());
 const typer = wordTyper(); let admin = null, coop = null;
 const typing = (e) => { const t = e.target; return t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName); };
+/* key bindings: each action has one key you can change in Settings, plus fixed extras (Space, M, Tab, the arrows) */
+const BINDS = [['kLight', 'Flashlight (hold)'], ['kMask', 'Mask (hold)'], ['kCams', 'Cameras'], ['kSealL', 'Seal the left vent'], ['kSealR', 'Seal the right vent'], ['kWind', 'Wind the music box (in the cameras)'], ['kLookL', 'Look left'], ['kLookR', 'Look right']];
+const ALT = { kLight: [' '], kMask: ['m'], kCams: ['tab'], kSealL: [], kSealR: [], kWind: [], kLookL: ['arrowleft'], kLookR: ['arrowright'] };
+const is = (a, k) => k === cfg[a] || ALT[a].includes(k);
+const keyName = (k) => ({ ' ': 'Space', arrowleft: '\u2190', arrowright: '\u2192', arrowup: '\u2191', arrowdown: '\u2193', shift: 'Shift', control: 'Ctrl', alt: 'Alt', tab: 'Tab', enter: 'Enter' }[k] || k.toUpperCase());
 addEventListener('keydown', (e) => {
   if (typing(e)) return; const k = e.key.toLowerCase();
   if (!e.repeat && typer(e.key) && admin) { e.preventDefault(); admin.open(); return; }
@@ -292,14 +302,14 @@ addEventListener('keydown', (e) => {
   if (k === 'escape' || k === 'p') { if (modalOpen()) { $('#mClose') ? $('#mClose').click() : closeModal(); } else if (G.mode === 'play') pause(G.coop ? !G.menuOpen : !G.paused); return; }
   if ((G.mode === 'dead' || G.mode === 'won') && (k === 'r' || k === 'enter')) { const bt = $('#rt') || $('#nx'); if (bt) bt.click(); return; }
   if (G.paused) return;
-  if (k === 'f' || k === ' ') { if (k === ' ') e.preventDefault(); pressLight(); } if (k === 'm' || k === 'shift') pressMask(); if (k === 'w') G.wind = true;
-  if (!G.cam && (k === 'q' || k === 'e')) G.sealReq = k === 'q' ? 'ventL' : 'ventR'; /* seal a vent */
-  if (k === 'c' || k === 'tab') { e.preventDefault(); toggleCam(); }
-  if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = (k === 'arrowleft' || k === 'a' ? -1 : 1) * 1.2; /* keyboard look: hold to turn */
-  if (G.cam && (k === 'arrowleft' || k === 'q' || k === 'arrowright' || k === 'e')) { const i = camIds.indexOf(G.cam), d = k === 'arrowleft' || k === 'q' ? -1 : 1; selectCam(camIds[(i + d + camIds.length) % camIds.length]); }
+  if (is('kLight', k)) { if (k === ' ') e.preventDefault(); pressLight(); } if (is('kMask', k)) pressMask(); if (is('kWind', k)) G.wind = true;
+  if (!G.cam && is('kSealL', k)) G.sealReq = 'ventL'; if (!G.cam && is('kSealR', k)) G.sealReq = 'ventR'; /* seal a vent */
+  if (is('kCams', k)) { e.preventDefault(); toggleCam(); }
+  if (!G.cam && (is('kLookL', k) || is('kLookR', k))) G.yawT = (is('kLookL', k) ? -1 : 1) * 1.2; /* keyboard look: hold to turn */
+  if (G.cam && (is('kLookL', k) || is('kLookR', k) || is('kSealL', k) || is('kSealR', k))) { const i = camIds.indexOf(G.cam), d = is('kLookL', k) || is('kSealL', k) ? -1 : 1; selectCam(camIds[(i + d + camIds.length) % camIds.length]); }
   const d = '1234567890'.indexOf(k); if (G.cam && d >= 0 && d < camIds.length) selectCam(camIds[d]);
 });
-addEventListener('keyup', (e) => { if (typing(e)) return; const k = e.key.toLowerCase(); G.keys[k] = 0; if (k === 'f' || k === ' ') releaseLight(); if (k === 'm' || k === 'shift') releaseMask(); if (k === 'w') G.wind = false; if (!G.cam && (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd')) G.yawT = 0; });
+addEventListener('keyup', (e) => { if (typing(e)) return; const k = e.key.toLowerCase(); G.keys[k] = 0; if (is('kLight', k)) releaseLight(); if (is('kMask', k)) releaseMask(); if (is('kWind', k)) G.wind = false; if (!G.cam && (is('kLookL', k) || is('kLookR', k))) G.yawT = 0; });
 const hold = (el, on, off) => { el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); on(); }); for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, off); };
 $('#bSealL').onclick = () => { G.sealReq = 'ventL'; }; $('#bSealR').onclick = () => { G.sealReq = 'ventR'; };
 hold($('#bMask'), pressMask, releaseMask); hold($('#bFlash'), pressLight, releaseLight);
@@ -412,6 +422,7 @@ function drawMini() {
   for (const [id, r] of Object.entries(ROOMS)) { const [x0, z0, x1, z1] = r.b; mini.fillStyle = G.cam && CAMS[G.cam].room === id ? '#6a84' : '#0006'; mini.fillRect(sx(x0), sz(z0), sx(x1) - sx(x0), sz(z1) - sz(z0)); mini.strokeRect(sx(x0), sz(z0), sx(x1) - sx(x0), sz(z1) - sz(z0)); }
   mini.fillStyle = '#fff'; mini.fillRect(sx(-0.2), sz(0.4), 5, 5);
 }
+function timeBar(S) { const u = $('#hBar u'); if (u) u.style.width = Math.min(100, S.t / (HOUR_SEC * 6) * 100) + '%'; }
 function updateHud() {
   const S = G.S; if (!G.guest && S.hour > (G.hourPaid | 0)) { G.hourPaid = S.hour; toast('Hour survived'); } $('#hClock').textContent = (S.hour === 0 ? 12 : S.hour) + ' AM'; $('#mFlash').style.width = S.battery + '%'; $('#boxM').style.display = ''; $('#mBox').style.width = S.box + '%';
   for (const [id, v] of [['#bSealL', 'ventL'], ['#bSealR', 'ventR']]) { const b = $(id), on = S.seal[v] > 0, cd = S.sealCd[v] > 0, key = v === 'ventL' ? 'Q' : 'E'; b.classList.toggle('on', on); b.classList.toggle('cd', cd); b.querySelector('small').textContent = on ? 'sealed ' + Math.ceil(S.seal[v]) + 's' : cd ? 'wait ' + Math.ceil(S.sealCd[v]) + 's' : key; }
@@ -422,9 +433,27 @@ function updateHud() {
 }
 function flicker(now) { for (let i = 0; i < signMats.length; i++) { const v = Math.sin(now / 210 + i * 7.3) * Math.sin(now / 330 + i * 2.1); signMats[i].emissiveIntensity = cfg.flashing && v > 0.9 ? 0.08 : 0.65 + Math.sin(now / 900 + i) * 0.05; } }
 let last = performance.now(), fpsN = 0, fpsT = 0, titleT = 3, titleBot = null, titleOn = 0;
+/* gamepad: A light (hold), B mask (hold), X wind, Y cameras, LB / RB seal the vents (or switch camera), stick or D-pad look, Start pauses */
+const padPrev = {}; let padLook = false;
+function pollPad() {
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()] : []; const gp = pads.find((x) => x && x.connected); if (!gp) return;
+  const b = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed), pad = (i) => { const n = b(i), was = !!padPrev[i]; padPrev[i] = n; return n && !was ? 'down' : !n && was ? 'up' : null; };
+  const a = pad(0), bb = pad(1), x = pad(2), y = pad(3), lb = pad(4), rb = pad(5), st = pad(9);
+  if (st === 'down' && G.mode === 'play') pause(G.coop ? !G.menuOpen : !G.paused);
+  if (G.mode !== 'play' || G.paused) return;
+  if (a === 'down') pressLight(); if (a === 'up') releaseLight();
+  if (bb === 'down') pressMask(); if (bb === 'up') releaseMask();
+  if (x === 'down') G.wind = true; if (x === 'up') G.wind = false;
+  if (y === 'down') toggleCam();
+  if (!G.cam) {
+    if (lb === 'down') G.sealReq = 'ventL'; if (rb === 'down') G.sealReq = 'ventR';
+    const ax = gp.axes[0] || 0, dir = Math.abs(ax) > 0.45 ? Math.sign(ax) : b(14) ? -1 : b(15) ? 1 : 0;
+    if (dir) { G.yawT = dir * 1.2; padLook = true; } else if (padLook) { G.yawT = 0; padLook = false; }
+  } else if (lb === 'down' || rb === 'down') { const i = camIds.indexOf(G.cam), d = lb === 'down' ? -1 : 1; selectCam(camIds[(i + d + camIds.length) % camIds.length]); }
+}
 function frame(now) {
   requestAnimationFrame(frame);
-  adapt(now - last); let dt = Math.min(0.1, (now - last) / 1000); last = now;
+  pollPad(); adapt(now - last); let dt = Math.min(0.1, (now - last) / 1000); last = now;
   const w = innerWidth, h = innerHeight, pr = renderer.getPixelRatio();
   if (G.sized !== w + 'x' + h + 'x' + pr) { G.sized = w + 'x' + h + 'x' + pr; renderer.setSize(w, h, false); player.aspect = camV.aspect = w / h; player.updateProjectionMatrix(); camV.updateProjectionMatrix(); applyFov(); }
   if (!G.ready) return;
@@ -454,7 +483,7 @@ function frame(now) {
     apply(fx); Snd.box(S.box, dt); Snd.hum(0.04 + (G.cam ? 0.02 : 0)); Snd.frame(dt, !!(G.light && !G.cam), S.battery, G.mask, S.pos);
     if (G.mask) { G.breathT -= dt; if (G.breathT <= 0) { Snd.breath(); G.breathT = 1.4; } }
     $('#maskOv').classList.toggle('on', S.mask > 0.5); $('#bWind').classList.toggle('on', G.wind && !!G.cam);
-    updateHud(); tutTick(G, dt, tutVisit); if (G.cam) drawMini();
+    updateHud(); timeBar(S); tutTick(G, dt, tutVisit); if (G.cam) drawMini();
   }
   if (G.scareWho && G.mode === 'play') { // the jumpscare: it lunges at your face, thrashes, then the picture cuts to static
     G.scareT += dt; const t = G.scareT, b = bots[G.scareWho], k = Math.min(1, t / 0.12), ease = 1 - (1 - k) * (1 - k) * (1 - k);
