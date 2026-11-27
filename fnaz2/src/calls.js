@@ -34,13 +34,25 @@ export const CALLS = {
     'If you have the four slips, put them in the order the bodies were made, and dial it on the case file. That is the only call I can still make for you.',
     '[Three knocks. A crash. Static.]']
 };
-let line = 0, timer = 0, on = false, current = null;
+let line = 0, timer = 0, on = false, current = null, clip = null;
+const RECORDED = { 1: 'assets/voice/call1.ogg' }; // real recordings, one clip per night; the lines are shown as subtitles in step with it. Nights without one use the speech voice.
+function playClip(night, lines, box) {
+  const a = new Audio(RECORDED[night]); clip = a; let started = false;
+  const fail = () => { if (clip !== a) return; clip = null; if (on) next(lines); };
+  a.onerror = fail; a.onended = () => { if (clip === a) { clip = null; setTimeout(stop, 1200); } };
+  a.onloadedmetadata = () => {
+    const total = a.duration * 1000, weight = lines.map((t) => t.length), sum = weight.reduce((x, y) => x + y, 0); let at = 0;
+    lines.forEach((t, i) => { setTimeout(() => { if (clip !== a || !on) return; line = i + 1; box.querySelector('.txt').textContent = cfg.subtitles ? t : '…'; box.classList.toggle('hidetxt', !cfg.subtitles); }, at); at += total * weight[i] / sum; });
+  };
+  a.play().then(() => { started = true; }).catch(() => { if (!started) fail(); }); // blocked or missing: fall back to the speech voice
+}
 const voice = () => (typeof speechSynthesis !== 'undefined' ? speechSynthesis : null);
 function pickVoice() { const v = voice(); if (!v) return null; const l = v.getVoices(); return l.find((x) => /en-(GB|US)/i.test(x.lang) && /male|david|daniel|guy|google uk english male/i.test(x.name)) || l.find((x) => /^en/i.test(x.lang)) || null; }
 
 export function start(night, box) {
   stop(); const lines = CALLS[night]; if (!lines || !cfg.calls) return false;
   on = true; line = 0; current = box; box.hidden = false; box.querySelector('.who').textContent = night === 6 ? 'Phone guy · Qerh Cooperations' : 'Phone guy';
+  if (cfg.voice && RECORDED[night]) { playClip(night, lines, box); return true; }
   next(lines); return true;
 }
 function next(lines) {
@@ -52,5 +64,5 @@ function next(lines) {
   if (cfg.voice && v && !/^\[/.test(text)) { try { v.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 0.92; u.pitch = 0.75; const pv = pickVoice(); if (pv) u.voice = pv; u.onend = go; u.onerror = go; v.speak(u); timer = setTimeout(go, fallback + 5000); return; } catch (e) { /* fall back to the timer */ } }
   timer = setTimeout(go, fallback);
 }
-export function stop() { on = false; clearTimeout(timer); const v = voice(); if (v) try { v.cancel(); } catch (e) { /* ignore */ } if (current) current.hidden = true; }
+export function stop() { on = false; clearTimeout(timer); if (clip) { const a = clip; clip = null; try { a.pause(); } catch (e) { /* ignore */ } } const v = voice(); if (v) try { v.cancel(); } catch (e) { /* ignore */ } if (current) current.hidden = true; }
 export const playing = () => on;

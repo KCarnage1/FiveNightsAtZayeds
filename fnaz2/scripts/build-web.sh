@@ -7,7 +7,7 @@ OUT="${1:?output folder}"; VER="${2:-dev}"
 npm run build --silent
 rm -rf "$OUT"; mkdir -p "$OUT"
 cp index.html debug.html styles.css game.bundle.js debug.bundle.js manifest.webmanifest sw.js icon.svg icon-192.png icon-512.png "$OUT/"
-mkdir -p "$OUT/assets"; cp -r assets/faces assets/models "$OUT/assets/"
+mkdir -p "$OUT/assets"; cp -r assets/faces assets/models assets/voice "$OUT/assets/"
 touch "$OUT/.nojekyll"
 VERSION=$(node -p "require('./package.json').version")
 sed -i "s/__BUILD__/$VER/g" "$OUT/game.bundle.js"
